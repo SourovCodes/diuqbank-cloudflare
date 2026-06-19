@@ -1,0 +1,27 @@
+{
+  "name": "diuqbank",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate:local": "wrangler d1 migrations apply diuqbank-db --local",
+    "db:migrate:remote": "wrangler d1 migrations apply diuqbank-db --remote",
+    "cf-typegen": "wrangler types",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@hono/zod-openapi": "^1.4.0",
+    "@scalar/hono-api-reference": "^0.11.4",
+    "drizzle-orm": "^0.45.2",
+    "hono": "^4.12.26",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.31.10",
+    "typescript": "^5.6.0",
+    "wrangler": "^4.103.0"
+  }
+}
