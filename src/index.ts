@@ -1,21 +1,104 @@
-import { configureOpenAPI } from "./lib/configure-openapi";
-import { createApp } from "./lib/create-app";
-import { authRouter } from "./routes/auth/auth.index";
+import { Hono } from "hono";
+import { cors } from "hono/cors";
+import { HTTPException } from "hono/http-exception";
+import { logger } from "hono/logger";
 
-const app = createApp();
+import { setPublicCacheHeaders } from "./lib/cache";
+import { openApiDoc } from "./openapi";
+import auth from "./routes/auth";
+import type { AppEnv } from "./types";
 
-configureOpenAPI(app);
+const app = new Hono<AppEnv>();
 
-// Simple health check / landing route.
-app.get("/", (c) =>
-  c.json({ status: "ok", service: "diuqbank", docs: "/reference", openapi: "/openapi.json" }),
-);
+app.use("*", logger());
+app.use("*", cors());
 
-// Feature routers. Each already carries its own path prefix (e.g. /auth/*),
-// so they are mounted at the root. Add future routers to this list.
-const routers = [authRouter] as const;
-for (const router of routers) {
-  app.route("/", router);
-}
+app.get("/", (c) => {
+  setPublicCacheHeaders(c, 60);
+  return c.json({ ok: true, service: "diuqbank", docs: "/docs", openapi: "/openapi.json" });
+});
+
+app.get("/health", (c) => {
+  setPublicCacheHeaders(c, 60);
+  return c.json({ ok: true });
+});
+
+app.get("/openapi.json", (c) => {
+  // Regenerated only at deploy time; a new deploy gets a new Worker version so
+  // stale edge/browser copies fall away naturally.
+  setPublicCacheHeaders(c, 3600);
+  return c.json(openApiDoc);
+});
+
+app.get("/docs", (c) => {
+  setPublicCacheHeaders(c, 3600);
+  return c.html(`<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>DIU QuestionBank API — Reference</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+  </head>
+  <body>
+    <script id="api-reference" data-url="/openapi.json"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
+  </body>
+</html>`);
+});
+
+app.route("/auth", auth);
+
+// ---------------------------------------------------------------------------
+// Error handling: HTTPException passthrough, then map common D1 constraint
+// failures to clean client errors.
+// ---------------------------------------------------------------------------
+
+const walkErrorMessages = (err: unknown): string[] => {
+  const out: string[] = [];
+  let current: unknown = err;
+  const seen = new Set<unknown>();
+  while (current && !seen.has(current)) {
+    seen.add(current);
+    const msg = (current as { message?: unknown }).message;
+    if (typeof msg === "string") out.push(msg);
+    current = (current as { cause?: unknown }).cause;
+  }
+  return out;
+};
+
+app.onError((err, c) => {
+  if (err instanceof HTTPException) {
+    return c.json({ error: err.message }, err.status);
+  }
+
+  const joined = walkErrorMessages(err).join(" | ");
+
+  const unique = joined.match(/UNIQUE constraint failed: ([\w., ]+)/);
+  if (unique) {
+    const cols = unique[1]
+      .split(",")
+      .map((s) => s.trim().split(".").pop() ?? "")
+      .filter(Boolean);
+    const message =
+      cols.length === 1
+        ? `${cols[0]} already exists`
+        : `combination of ${cols.join(", ")} already exists`;
+    return c.json({ error: message }, 409);
+  }
+
+  if (/FOREIGN KEY constraint failed/i.test(joined)) {
+    return c.json({ error: "Referenced record does not exist" }, 400);
+  }
+
+  const notNull = joined.match(/NOT NULL constraint failed: \w+\.(\w+)/);
+  if (notNull) {
+    return c.json({ error: `${notNull[1]} is required` }, 400);
+  }
+
+  console.error("Unhandled error", err);
+  return c.json({ error: "Internal server error" }, 500);
+});
+
+app.notFound((c) => c.json({ error: "Not found" }, 404));
 
 export default app;

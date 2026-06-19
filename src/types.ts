@@ -1,9 +1,16 @@
-import type { OpenAPIHono, RouteConfig, RouteHandler } from "@hono/zod-openapi";
+import type { AuthPayload } from "./lib/jwt";
 
-import type { AppBindings } from "./env";
+/** Cloudflare bindings from wrangler.jsonc + secrets. */
+export type Bindings = {
+  DB: D1Database;
+  JWT_SECRET: string;
+};
 
-/** An OpenAPIHono app/router pre-bound to our environment. */
-export type AppOpenAPI = OpenAPIHono<AppBindings>;
-
-/** A route handler whose context is typed against a specific route + our bindings. */
-export type AppRouteHandler<R extends RouteConfig> = RouteHandler<R, AppBindings>;
+/** Hono environment: bindings + context variables set by middleware. */
+export type AppEnv = {
+  Bindings: Bindings;
+  Variables: {
+    // Set by requireAuth on protected routes.
+    user: AuthPayload;
+  };
+};

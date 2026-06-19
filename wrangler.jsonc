@@ -2,16 +2,17 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "diuqbank",
   "main": "src/index.ts",
-  "compatibility_date": "2025-06-01",
-  "compatibility_flags": ["nodejs_compat"],
+  "compatibility_date": "2026-05-16",
   "observability": {
-    "enabled": true
+    "enabled": true,
+    "head_sampling_rate": 1
   },
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "diuqbank-db",
-      // Placeholder for local dev. Replace with the real id from `wrangler d1 create diuqbank-db` before deploying.
+      // Placeholder for local dev. Replace with the real id from
+      // `wrangler d1 create diuqbank-db` before deploying.
       "database_id": "local-placeholder",
       "migrations_dir": "drizzle"
     }

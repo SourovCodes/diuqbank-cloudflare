@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "wrangler dev",
-    "deploy": "wrangler deploy",
+    "deploy": "wrangler deploy --minify",
     "db:generate": "drizzle-kit generate",
     "db:migrate:local": "wrangler d1 migrations apply diuqbank-db --local",
     "db:migrate:remote": "wrangler d1 migrations apply diuqbank-db --remote",
@@ -13,15 +13,14 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@hono/zod-openapi": "^1.4.0",
-    "@scalar/hono-api-reference": "^0.11.4",
+    "@hono/zod-validator": "^0.8.0",
     "drizzle-orm": "^0.45.2",
     "hono": "^4.12.26",
-    "zod": "^4.0.0"
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "drizzle-kit": "^0.31.10",
-    "typescript": "^5.6.0",
+    "typescript": "^5.9.3",
     "wrangler": "^4.103.0"
   }
 }
