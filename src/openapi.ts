@@ -25,6 +25,12 @@ const authResponse = z.object({
   user,
 });
 
+const authConfig = z.object({
+  googleClientId: z
+    .string()
+    .describe("Google OAuth client id, used to initialize Google Sign-In on the frontend."),
+});
+
 const errorResponse = z.object({
   error: z.string(),
   issues: z
@@ -35,6 +41,7 @@ const errorResponse = z.object({
 
 const componentSchemas = {
   GoogleSignIn: toSchema(googleSignInSchema),
+  AuthConfig: toSchema(authConfig),
   User: toSchema(user),
   AuthResponse: toSchema(authResponse),
   ErrorResponse: toSchema(errorResponse),
@@ -157,6 +164,19 @@ export const buildOpenApiDoc = () => ({
     schemas: componentSchemas,
   },
   paths: {
+    "/auth/config": {
+      get: {
+        tags: ["auth"],
+        summary: "Get public auth configuration",
+        ...authFields(
+          "Public",
+          "Returns the public configuration a client needs to start the Google sign-in flow (currently the Google OAuth client id). No secrets are exposed.",
+        ),
+        responses: {
+          "200": okJson("OK", ref("AuthConfig")),
+        },
+      },
+    },
     "/auth/google": {
       post: {
         tags: ["auth"],

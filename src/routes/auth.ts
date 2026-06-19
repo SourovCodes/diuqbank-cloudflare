@@ -100,6 +100,10 @@ auth.post("/google", validate("json", googleSignInSchema), async (c) => {
   return c.json({ token, user: toAuthUser(user) }, createdNow ? 201 : 200);
 });
 
+// Public configuration the frontend needs to start the Google sign-in flow.
+// Exposes only non-secret values (the OAuth client id is public by design).
+auth.get("/config", (c) => c.json({ googleClientId: c.env.GOOGLE_CLIENT_ID }));
+
 auth.get("/me", requireAuth, async (c) => {
   const payload = c.get("user");
   const db = getDb(c.env.DB);
