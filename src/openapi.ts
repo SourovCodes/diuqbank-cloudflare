@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { loginSchema, registerSchema } from "./schemas/auth";
+import { googleSignInSchema } from "./schemas/auth";
 
 // ---------------------------------------------------------------------------
 // Component schemas
@@ -15,6 +15,7 @@ const user = z.object({
   id: z.number().int(),
   name: z.string(),
   email: z.email(),
+  username: z.string(),
   role: z.enum(["admin", "user"]),
   createdAt: z.number().int().describe("Unix epoch seconds (UTC)"),
 });
@@ -33,8 +34,7 @@ const errorResponse = z.object({
 });
 
 const componentSchemas = {
-  RegisterInput: toSchema(registerSchema),
-  LoginInput: toSchema(loginSchema),
+  GoogleSignIn: toSchema(googleSignInSchema),
   User: toSchema(user),
   AuthResponse: toSchema(authResponse),
   ErrorResponse: toSchema(errorResponse),
@@ -92,7 +92,6 @@ const commonErrors = {
   "400": errResp("Validation failed or bad request"),
   "401": errResp("Missing or invalid bearer token"),
   "404": errResp("Resource not found"),
-  "409": errResp("Conflict — unique constraint violated"),
 };
 
 // ---------------------------------------------------------------------------
@@ -103,11 +102,24 @@ const infoDescription = `Backend API for **DIU QuestionBank**, running on Cloudf
 
 ## Authentication
 
-Register or log in to receive a JWT, then pass it on every authenticated request:
+Sign in with Google. Obtain a Google ID token client-side (Google Sign-In), then exchange it for a
+DIU QuestionBank JWT:
+
+\`\`\`http
+POST /auth/google
+Content-Type: application/json
+
+{ "idToken": "<google-id-token>" }
+\`\`\`
+
+The response includes a JWT — pass it on every authenticated request:
 
 \`\`\`
 Authorization: Bearer <token>
 \`\`\`
+
+If the verified email already exists, the existing user is signed in (\`200\`). If not, a new user
+is created with an opaque generated username and \`role: "user"\` (\`201\`).
 
 ## Conventions
 
@@ -126,7 +138,7 @@ export const buildOpenApiDoc = () => ({
   tags: [
     {
       name: "auth",
-      description: "Register, log in, and read the currently signed-in user.",
+      description: "Sign in with Google and read the currently signed-in user.",
     },
   ],
   "x-tagGroups": [
@@ -139,38 +151,26 @@ export const buildOpenApiDoc = () => ({
         type: "http",
         scheme: "bearer",
         bearerFormat: "JWT",
-        description: "JWT from `POST /auth/register` or `POST /auth/login`.",
+        description: "JWT obtained from `POST /auth/google`.",
       },
     },
     schemas: componentSchemas,
   },
   paths: {
-    "/auth/register": {
+    "/auth/google": {
       post: {
         tags: ["auth"],
-        summary: "Register a new user",
+        summary: "Sign in with Google",
         ...authFields(
           "Public",
-          "Creates a user with email + password and returns a JWT. Email must be unique.",
+          "Exchange a Google ID token for a DIU QuestionBank JWT. Existing email → `200`; new user created → `201`. The response shape is the same in both cases.",
         ),
-        requestBody: { required: true, content: json(ref("RegisterInput")) },
+        requestBody: { required: true, content: json(ref("GoogleSignIn")) },
         responses: {
-          "201": okJson("User created", ref("AuthResponse")),
+          "200": okJson("Authenticated — existing user", ref("AuthResponse")),
+          "201": okJson("Authenticated — new user created", ref("AuthResponse")),
           "400": commonErrors["400"],
-          "409": errResp("Email already exists"),
-        },
-      },
-    },
-    "/auth/login": {
-      post: {
-        tags: ["auth"],
-        summary: "Log in with email and password",
-        ...authFields("Public", "Exchanges email + password for a JWT."),
-        requestBody: { required: true, content: json(ref("LoginInput")) },
-        responses: {
-          "200": okJson("Authenticated", ref("AuthResponse")),
-          "400": commonErrors["400"],
-          "401": errResp("Invalid email or password"),
+          "401": errResp("Invalid or expired Google ID token"),
         },
       },
     },

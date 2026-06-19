@@ -4,6 +4,8 @@ import type { AuthPayload } from "./lib/jwt";
 export type Bindings = {
   DB: D1Database;
   JWT_SECRET: string;
+  // Google OAuth client id; used as the expected `aud` when verifying ID tokens.
+  GOOGLE_CLIENT_ID: string;
 };
 
 /** Hono environment: bindings + context variables set by middleware. */

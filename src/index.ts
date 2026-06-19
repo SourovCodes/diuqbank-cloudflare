@@ -3,7 +3,6 @@ import { cors } from "hono/cors";
 import { HTTPException } from "hono/http-exception";
 import { logger } from "hono/logger";
 
-import { setPublicCacheHeaders } from "./lib/cache";
 import { openApiDoc } from "./openapi";
 import auth from "./routes/auth";
 import type { AppEnv } from "./types";
@@ -13,26 +12,16 @@ const app = new Hono<AppEnv>();
 app.use("*", logger());
 app.use("*", cors());
 
-app.get("/", (c) => {
-  setPublicCacheHeaders(c, 60);
-  return c.json({ ok: true, service: "diuqbank", docs: "/docs", openapi: "/openapi.json" });
-});
+app.get("/", (c) =>
+  c.json({ ok: true, service: "diuqbank", docs: "/docs", openapi: "/openapi.json" }),
+);
 
-app.get("/health", (c) => {
-  setPublicCacheHeaders(c, 60);
-  return c.json({ ok: true });
-});
+app.get("/health", (c) => c.json({ ok: true }));
 
-app.get("/openapi.json", (c) => {
-  // Regenerated only at deploy time; a new deploy gets a new Worker version so
-  // stale edge/browser copies fall away naturally.
-  setPublicCacheHeaders(c, 3600);
-  return c.json(openApiDoc);
-});
+app.get("/openapi.json", (c) => c.json(openApiDoc));
 
-app.get("/docs", (c) => {
-  setPublicCacheHeaders(c, 3600);
-  return c.html(`<!doctype html>
+app.get("/docs", (c) =>
+  c.html(`<!doctype html>
 <html>
   <head>
     <meta charset="utf-8" />
@@ -43,8 +32,8 @@ app.get("/docs", (c) => {
     <script id="api-reference" data-url="/openapi.json"></script>
     <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
   </body>
-</html>`);
-});
+</html>`),
+);
 
 app.route("/auth", auth);
 

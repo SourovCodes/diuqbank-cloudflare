@@ -4,59 +4,100 @@ import { eq } from "drizzle-orm";
 
 import { getDb } from "../db/client";
 import { users } from "../db/schema";
-import { setPrivateCacheHeaders } from "../lib/cache";
+import { GoogleAuthError, verifyGoogleIdToken } from "../lib/google-oauth";
 import { signAuthToken } from "../lib/jwt";
-import { hashPassword, verifyPassword } from "../lib/password";
 import { toAuthUser } from "../lib/user-shape";
 import { validate } from "../lib/validator";
 import { requireAuth } from "../middleware/auth";
-import { loginSchema, registerSchema } from "../schemas/auth";
+import { googleSignInSchema } from "../schemas/auth";
 import type { AppEnv } from "../types";
 
-// Columns safe to read for the public user shape (excludes passwordHash).
 const authUserColumns = {
   id: users.id,
   name: users.name,
   email: users.email,
+  username: users.username,
   role: users.role,
   createdAt: users.createdAt,
 };
 
 const auth = new Hono<AppEnv>();
 
-auth.post("/register", validate("json", registerSchema), async (c) => {
-  const { name, email, password } = c.req.valid("json");
+// 24-bit hex; ~16.7M space, collision odds vanishingly small. We still retry
+// on the unique constraint below to be defensive.
+const generateOpaqueUsername = (): string => {
+  const bytes = new Uint8Array(3);
+  crypto.getRandomValues(bytes);
+  return `user_${[...bytes].map((b) => b.toString(16).padStart(2, "0")).join("")}`;
+};
+
+const MAX_USERNAME_ATTEMPTS = 5;
+
+auth.post("/google", validate("json", googleSignInSchema), async (c) => {
+  const { idToken } = c.req.valid("json");
   const db = getDb(c.env.DB);
 
-  const passwordHash = await hashPassword(password);
-
-  // A duplicate email surfaces as a UNIQUE constraint error and is mapped to
-  // 409 by the global onError handler in src/index.ts.
-  const [user] = await db
-    .insert(users)
-    .values({ name, email: email.toLowerCase(), passwordHash })
-    .returning(authUserColumns);
-
-  const token = await signAuthToken({ id: user.id, role: user.role }, c.env.JWT_SECRET);
-  return c.json({ token, user: toAuthUser(user) }, 201);
-});
-
-auth.post("/login", validate("json", loginSchema), async (c) => {
-  const { email, password } = c.req.valid("json");
-  const db = getDb(c.env.DB);
-
-  const [user] = await db
-    .select()
-    .from(users)
-    .where(eq(users.email, email.toLowerCase()))
-    .limit(1);
-
-  if (!user || !(await verifyPassword(password, user.passwordHash))) {
-    throw new HTTPException(401, { message: "Invalid email or password" });
+  let claims;
+  try {
+    claims = await verifyGoogleIdToken(idToken, c.env.GOOGLE_CLIENT_ID);
+  } catch (err) {
+    if (err instanceof GoogleAuthError) {
+      throw new HTTPException(401, { message: err.message });
+    }
+    throw err;
   }
 
-  const token = await signAuthToken({ id: user.id, role: user.role }, c.env.JWT_SECRET);
-  return c.json({ token, user: toAuthUser(user) });
+  const email = claims.email.toLowerCase();
+
+  const findByEmail = async () => {
+    const [row] = await db
+      .select(authUserColumns)
+      .from(users)
+      .where(eq(users.email, email))
+      .limit(1);
+    return row;
+  };
+
+  let user = await findByEmail();
+  let createdNow = false;
+
+  if (!user) {
+    const name = claims.name?.trim() || email.split("@")[0];
+    let lastErr: unknown;
+    for (let attempt = 0; attempt < MAX_USERNAME_ATTEMPTS; attempt++) {
+      try {
+        [user] = await db
+          .insert(users)
+          .values({ name, email, username: generateOpaqueUsername(), role: "user" })
+          .returning(authUserColumns);
+        createdNow = true;
+        break;
+      } catch (err) {
+        lastErr = err;
+        // Race: another request for the same email beat us to the insert.
+        // Use that row instead of retrying.
+        const existing = await findByEmail();
+        if (existing) {
+          user = existing;
+          break;
+        }
+        // Otherwise assume the username collided — retry with a new one.
+      }
+    }
+    if (!user) {
+      console.error("Google sign-in: insert failed after retries", lastErr);
+      throw new HTTPException(500, {
+        message: "Could not create user from Google sign-in",
+      });
+    }
+  }
+
+  const token = await signAuthToken(
+    { id: user.id, username: user.username, role: user.role },
+    c.env.JWT_SECRET,
+  );
+
+  return c.json({ token, user: toAuthUser(user) }, createdNow ? 201 : 200);
 });
 
 auth.get("/me", requireAuth, async (c) => {
@@ -73,9 +114,6 @@ auth.get("/me", requireAuth, async (c) => {
     throw new HTTPException(404, { message: "User not found" });
   }
 
-  // Per-user, short TTL: deflect rapid /auth/me hits a frontend makes on
-  // navigation while still letting profile changes propagate quickly.
-  setPrivateCacheHeaders(c, 60);
   return c.json({ user: toAuthUser(me) });
 });
 

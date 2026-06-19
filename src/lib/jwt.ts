@@ -5,18 +5,20 @@ const ALG = "HS256";
 
 export type AuthPayload = {
   sub: number;
+  username: string;
   role: "admin" | "user";
   iat: number;
   exp: number;
 };
 
 export const signAuthToken = async (
-  user: { id: number; role: "admin" | "user" },
+  user: { id: number; username: string; role: "admin" | "user" },
   secret: string,
 ): Promise<string> => {
   const now = Math.floor(Date.now() / 1000);
   const payload: AuthPayload = {
     sub: user.id,
+    username: user.username,
     role: user.role,
     iat: now,
     exp: now + SEVEN_DAYS_SECONDS,

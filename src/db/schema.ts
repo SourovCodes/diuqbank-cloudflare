@@ -5,7 +5,8 @@ export const users = sqliteTable("users", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   name: text("name").notNull(),
   email: text("email").notNull().unique(),
-  passwordHash: text("password_hash").notNull(),
+  // Public handle, opaque-generated on first Google sign-in.
+  username: text("username").notNull().unique(),
   role: text("role", { enum: ["admin", "user"] })
     .notNull()
     .default("user"),
