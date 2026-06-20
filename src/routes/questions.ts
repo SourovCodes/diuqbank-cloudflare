@@ -20,6 +20,12 @@ const entityColumns = {
   examType: { columns: { id: true, name: true } },
 } as const;
 
+// Parse a positive-integer path id, or null if it isn't one (→ 404).
+const parseId = (raw: string): number | null => {
+  const id = Number(raw);
+  return Number.isInteger(id) && id > 0 ? id : null;
+};
+
 questionRoutes.get("/", validate("query", questionsListQuery), async (c) => {
   const { page, perPage, departmentId, courseId, semesterId, examTypeId } =
     c.req.valid("query");
@@ -73,49 +79,76 @@ questionRoutes.get("/", validate("query", questionsListQuery), async (c) => {
 });
 
 questionRoutes.get("/:id", async (c) => {
-  const id = Number(c.req.param("id"));
-  if (!Number.isInteger(id) || id <= 0) {
+  const id = parseId(c.req.param("id"));
+  if (id === null) {
     throw new HTTPException(404, { message: "Question not found" });
   }
 
   const db = getDb(c.env.DB);
-  const origin = new URL(c.req.url).origin;
 
   const question = await db.query.questions.findFirst({
     where: eq(questions.id, id),
     columns: { id: true },
-    with: {
-      ...entityColumns,
-      submissions: {
-        columns: {
-          id: true,
-          section: true,
-          batch: true,
-          fileSize: true,
-          watermarkStatus: true,
-          createdAt: true,
-          pdfKey: true,
-        },
-        with: {
-          user: { columns: { id: true, name: true, username: true, imageKey: true } },
-        },
-        orderBy: (s, { desc: descOp }) => descOp(s.createdAt),
-      },
-    },
+    with: entityColumns,
   });
 
   if (!question) {
     throw new HTTPException(404, { message: "Question not found" });
   }
 
+  const [{ value: submissionCount }] = await db
+    .select({ value: count() })
+    .from(submissions)
+    .where(eq(submissions.questionId, id));
+
   return c.json({
     id: question.id,
-    submissionCount: question.submissions.length,
+    submissionCount,
     department: question.department,
     course: question.course,
     semester: question.semester,
     examType: question.examType,
-    submissions: question.submissions.map((s) => ({
+  });
+});
+
+// All submissions for a question (no pagination — a single question has few).
+questionRoutes.get("/:id/submissions", async (c) => {
+  const id = parseId(c.req.param("id"));
+  if (id === null) {
+    throw new HTTPException(404, { message: "Question not found" });
+  }
+
+  const db = getDb(c.env.DB);
+  const origin = new URL(c.req.url).origin;
+
+  // Confirm the question exists so a bad id is a clear 404, not an empty list.
+  const question = await db.query.questions.findFirst({
+    where: eq(questions.id, id),
+    columns: { id: true },
+  });
+  if (!question) {
+    throw new HTTPException(404, { message: "Question not found" });
+  }
+
+  const rows = await db.query.submissions.findMany({
+    where: eq(submissions.questionId, id),
+    columns: {
+      id: true,
+      section: true,
+      batch: true,
+      fileSize: true,
+      watermarkStatus: true,
+      createdAt: true,
+      pdfKey: true,
+    },
+    with: {
+      user: { columns: { id: true, name: true, username: true, imageKey: true } },
+    },
+    orderBy: desc(submissions.createdAt),
+  });
+
+  return c.json({
+    data: rows.map((s) => ({
       id: s.id,
       section: s.section,
       batch: s.batch,

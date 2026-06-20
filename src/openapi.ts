@@ -134,7 +134,10 @@ const questionDetail = z.object({
   course,
   semester,
   examType,
-  submissions: z.array(publicSubmission),
+});
+
+const questionSubmissions = z.object({
+  data: z.array(publicSubmission),
 });
 
 const componentSchemas = {
@@ -168,6 +171,7 @@ const componentSchemas = {
   QuestionList: toSchema(questionList),
   PublicSubmission: toSchema(publicSubmission),
   QuestionDetail: toSchema(questionDetail),
+  QuestionSubmissions: toSchema(questionSubmissions),
 };
 
 // ---------------------------------------------------------------------------
@@ -520,7 +524,7 @@ export const buildOpenApiDoc = () => ({
         summary: "Get a question by id",
         ...authFields(
           "Public",
-          "A single question with **all** of its submissions (no pagination). Each submission links to its PDF via `pdfUrl` (served by `GET /files/:key`) and includes the contributor, if any.",
+          "A single question with its lookup entities and submission count. The submissions themselves are served by `GET /questions/{id}/submissions`.",
         ),
         parameters: [
           {
@@ -533,6 +537,29 @@ export const buildOpenApiDoc = () => ({
         ],
         responses: {
           "200": okJson("OK", ref("QuestionDetail")),
+          "404": commonErrors["404"],
+        },
+      },
+    },
+    "/questions/{id}/submissions": {
+      get: {
+        tags: ["questions"],
+        summary: "List a question's submissions",
+        ...authFields(
+          "Public",
+          "**All** submissions for a question (no pagination — a single question has few). Each submission links to its PDF via `pdfUrl` (served by `GET /files/:key`) and includes the contributor, if any.",
+        ),
+        parameters: [
+          {
+            name: "id",
+            in: "path",
+            required: true,
+            schema: { type: "integer" },
+            description: "Question id.",
+          },
+        ],
+        responses: {
+          "200": okJson("OK", ref("QuestionSubmissions")),
           "404": commonErrors["404"],
         },
       },
