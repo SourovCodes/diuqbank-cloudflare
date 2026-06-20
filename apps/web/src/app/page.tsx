@@ -1,121 +1,62 @@
 import Link from "next/link";
-import {
-  ArrowRight,
-  BookOpen,
-  Download,
-  FileCheck2,
-  FileText,
-  GraduationCap,
-  Search,
-  Users,
-} from "lucide-react";
+import { BookOpen, Download, FileText, GraduationCap, Search, Upload, Users } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const features = [
-  {
-    icon: FileText,
-    title: "Organized collection",
-    description: "Browse question papers by department, course, semester, and exam type.",
-    tone: "bg-blue-50 text-blue-600",
-  },
-  {
-    icon: Download,
-    title: "Read or download",
-    description: "Open submitted PDFs in the built-in reader or save them for offline study.",
-    tone: "bg-emerald-50 text-emerald-600",
-  },
-  {
-    icon: Users,
-    title: "Community powered",
-    description: "Every useful paper comes from students helping the next batch prepare.",
-    tone: "bg-violet-50 text-violet-600",
-  },
-  {
-    icon: GraduationCap,
-    title: "All departments",
-    description: "One searchable home for courses across the university.",
-    tone: "bg-cyan-50 text-cyan-600",
-  },
-  {
-    icon: FileCheck2,
-    title: "Useful metadata",
-    description: "See exam type, semester, contributor, section, batch, and file details.",
-    tone: "bg-rose-50 text-rose-600",
-  },
-  {
-    icon: BookOpen,
-    title: "Study with context",
-    description: "Compare multiple submissions for the same question without losing your place.",
-    tone: "bg-amber-50 text-amber-600",
-  },
-] as const;
+  { icon: FileText, title: "Extensive Collection", text: "Thousands of previous year question papers from various midterm and final exams.", color: "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400" },
+  { icon: Download, title: "Easy Downloads", text: "Download question papers in PDF format for offline studying and printing.", color: "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400" },
+  { icon: Upload, title: "Community Driven", text: "Students can contribute question papers to help fellow students succeed.", color: "bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400" },
+  { icon: GraduationCap, title: "All Departments", text: "Questions from CSE, EEE, BBA, English, Law, Pharmacy, and other DIU departments.", color: "bg-cyan-100 text-cyan-600 dark:bg-cyan-900/30 dark:text-cyan-400" },
+  { icon: Users, title: "Verified Content", text: "Submissions are reviewed to ensure the quality and accuracy of question papers.", color: "bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400" },
+  { icon: BookOpen, title: "Study Smart", text: "Understand exam patterns and focus on important topics to improve your grades.", color: "bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400" },
+];
 
 export default function Home() {
   return (
-    <>
-      <section className="relative overflow-hidden px-4 py-24 sm:px-6 lg:py-32">
-        <div className="absolute inset-x-0 top-0 -z-10 mx-auto h-96 max-w-4xl rounded-full bg-blue-200/30 blur-3xl" />
-        <div className="mx-auto max-w-4xl text-center">
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border bg-white/80 px-4 py-2 text-sm font-medium text-slate-600 shadow-sm">
-            <span aria-hidden="true">📚</span>
-            Daffodil International University
-          </div>
-          <h1 className="text-balance text-5xl font-bold tracking-[-0.045em] text-slate-950 sm:text-6xl lg:text-7xl">
-            Find the paper. <span className="text-primary">Focus on the exam.</span>
-          </h1>
-          <p className="mx-auto mt-6 max-w-2xl text-pretty text-lg leading-8 text-muted-foreground sm:text-xl">
-            Past exam questions from DIU, arranged so you can get from a course name to the right PDF in seconds.
-          </p>
-          <div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row">
-            <Link
-              href="/questions"
-              className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-primary px-6 font-semibold text-primary-foreground shadow-lg shadow-blue-200 transition hover:-translate-y-0.5 hover:bg-blue-700"
-            >
-              <Search className="size-4.5" /> Browse questions
-            </Link>
-            <a
-              href="https://diuqbank.sourovcodes.workers.dev/docs"
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border bg-white px-6 font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50"
-            >
-              Explore the API <ArrowRight className="size-4.5" />
-            </a>
+    <div className="flex flex-col">
+      <section className="relative overflow-hidden py-24 lg:py-32">
+        <div className="container relative z-10 mx-auto px-4">
+          <div className="mx-auto max-w-3xl text-center">
+            <div className="mb-6 inline-flex items-center rounded-full border bg-muted/50 px-4 py-1.5 text-sm"><span className="mr-2">📚</span>Daffodil International University</div>
+            <h1 className="mb-6 text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">DIU <span className="text-primary">Question Bank</span></h1>
+            <p className="mb-8 text-lg text-muted-foreground sm:text-xl">Access past exam questions from all departments and courses. Study smarter with our comprehensive collection organized by semester and exam type.</p>
+            <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
+              <Button size="lg" className="w-full sm:w-auto" asChild><Link href="/questions"><Search />Browse Questions</Link></Button>
+              <Button variant="outline" size="lg" className="w-full sm:w-auto" asChild><a href="https://diuqbank.sourovcodes.workers.dev/docs"><Upload />API Documentation</a></Button>
+            </div>
           </div>
         </div>
       </section>
 
-      <section className="border-y bg-white/70 px-4 py-20 sm:px-6">
-        <div className="mx-auto max-w-7xl">
-          <div className="mx-auto mb-12 max-w-2xl text-center">
-            <p className="text-sm font-bold uppercase tracking-[0.2em] text-primary">Made for revision</p>
-            <h2 className="mt-3 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">
-              Less searching, more studying
-            </h2>
-          </div>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {features.map(({ icon: Icon, title, description, tone }) => (
-              <article key={title} className="rounded-2xl border bg-card p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
-                <div className={`flex size-11 items-center justify-center rounded-xl ${tone}`}>
-                  <Icon className="size-5.5" />
-                </div>
-                <h3 className="mt-5 text-lg font-bold text-slate-950">{title}</h3>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">{description}</p>
-              </article>
-            ))}
+      <section className="bg-muted/30 py-24">
+        <div className="container mx-auto px-4">
+          <div className="mb-12 text-center"><h2 className="mb-4 text-3xl font-bold">Why Use DIU Question Bank?</h2><p className="mx-auto max-w-2xl text-muted-foreground">Everything you need to prepare for your exams. Access and study with past questions.</p></div>
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {features.map(({ icon: Icon, title, text, color }) => <Card key={title}><CardHeader><div className={`mb-4 flex size-12 items-center justify-center rounded-lg ${color}`}><Icon className="size-6" /></div><CardTitle>{title}</CardTitle><CardDescription>{text}</CardDescription></CardHeader></Card>)}
           </div>
         </div>
       </section>
 
-      <section className="px-4 py-20 sm:px-6">
-        <div className="mx-auto max-w-5xl overflow-hidden rounded-3xl bg-slate-950 px-6 py-14 text-center text-white shadow-2xl sm:px-12">
-          <BookOpen className="mx-auto size-10 text-blue-300" />
-          <h2 className="mt-5 text-3xl font-bold tracking-tight sm:text-4xl">Ready for the next exam?</h2>
-          <p className="mx-auto mt-3 max-w-xl text-slate-300">Choose your department and semester, then open the paper you need.</p>
-          <Link href="/questions" className="mt-8 inline-flex h-11 items-center gap-2 rounded-xl bg-white px-5 font-semibold text-slate-950 transition hover:bg-blue-50">
-            Start browsing <ArrowRight className="size-4" />
-          </Link>
+      <section className="py-24">
+        <div className="container mx-auto px-4">
+          <div className="mb-12 text-center"><h2 className="mb-4 text-3xl font-bold">How It Works</h2><p className="mx-auto max-w-2xl text-muted-foreground">Simple and easy to use. Find what you need in seconds.</p></div>
+          <div className="relative grid gap-12 md:grid-cols-3">
+            <Step icon={Search} color="bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400" title="1. Find Your Paper">Filter by course, department, semester, and exam type.</Step>
+            <Step icon={Download} color="bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400" title="2. Download & Study">View question papers online or download the PDF.</Step>
+            <Step icon={Upload} color="bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400" title="3. Contribute Back">Use the Android app to submit papers for other students.</Step>
+            <div className="absolute top-8 right-[15%] left-[15%] -z-10 hidden h-px bg-muted md:block" />
+          </div>
         </div>
       </section>
-    </>
+
+      <section className="py-24 pt-0">
+        <div className="container mx-auto px-4"><div className="rounded-2xl bg-primary p-8 text-center md:p-16"><h2 className="mb-4 text-3xl font-bold text-primary-foreground md:text-4xl">Ready to Ace Your Exams?</h2><p className="mx-auto mb-8 max-w-2xl text-primary-foreground/80 md:text-lg">Start exploring our collection of past exam questions.</p><Button size="lg" variant="secondary" asChild><Link href="/questions"><BookOpen />Browse Questions</Link></Button></div></div>
+      </section>
+    </div>
   );
+}
+
+function Step({ icon: Icon, color, title, children }: { icon: typeof Search; color: string; title: string; children: React.ReactNode }) {
+  return <div className="relative z-10 text-center"><div className={`mx-auto mb-4 flex size-16 items-center justify-center rounded-full ${color}`}><Icon className="size-8" /></div><h3 className="mb-2 text-xl font-semibold">{title}</h3><p className="text-muted-foreground">{children}</p></div>;
 }

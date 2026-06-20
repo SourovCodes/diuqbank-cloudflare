@@ -1,41 +1,7 @@
 import Link from "next/link";
-import { ArrowRight, CalendarDays, Files, School } from "lucide-react";
+import { ArrowRight, Calendar, FileText, School } from "lucide-react";
 import type { QuestionListItem } from "@diuqbank/api-client";
 
 export function QuestionCard({ question }: { question: QuestionListItem }) {
-  return (
-    <Link
-      href={`/questions/${question.id}`}
-      className="group grid gap-4 rounded-2xl border bg-card p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-lg sm:grid-cols-[1fr_auto] sm:items-center"
-    >
-      <div className="min-w-0">
-        <div className="flex flex-wrap gap-2 text-xs font-semibold">
-          <span className="rounded-full bg-blue-50 px-2.5 py-1 text-blue-700">
-            {question.department.shortName}
-          </span>
-          <span className="rounded-full bg-violet-50 px-2.5 py-1 text-violet-700">
-            {question.examType.name}
-          </span>
-        </div>
-        <h2 className="mt-3 text-lg font-bold tracking-tight text-slate-950 group-hover:text-primary sm:text-xl">
-          {question.title}
-        </h2>
-        <p className="mt-1 truncate text-sm text-muted-foreground">{question.course.name}</p>
-        <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm text-slate-500">
-          <span className="inline-flex items-center gap-1.5">
-            <School className="size-4 text-slate-400" /> {question.department.name}
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <CalendarDays className="size-4 text-slate-400" /> {question.semester.name}
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <Files className="size-4 text-slate-400" /> {question.submissionCount} submission{question.submissionCount === 1 ? "" : "s"}
-          </span>
-        </div>
-      </div>
-      <span className="hidden size-10 items-center justify-center rounded-full bg-slate-50 text-slate-400 transition group-hover:bg-primary group-hover:text-white sm:flex">
-        <ArrowRight className="size-4.5" />
-      </span>
-    </Link>
-  );
+  return <Link href={`/questions/${question.id}`} className="group block"><article className="relative h-full overflow-hidden rounded-xl border bg-card py-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-md"><div className="relative z-10 flex h-full flex-col px-4"><h2 className="line-clamp-2 text-base font-semibold transition-colors group-hover:text-primary sm:text-lg">{question.title}</h2><div className="mt-2 mb-4 flex flex-wrap gap-2"><span className="inline-flex items-center gap-1 rounded-md bg-blue-100 px-2 py-1 text-xs text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"><School className="size-3.5" />{question.department.shortName}</span><span className="rounded-md bg-amber-100 px-2 py-1 text-xs text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">{question.examType.name}</span><span className="inline-flex items-center gap-1 rounded-md bg-purple-100 px-2 py-1 text-xs text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"><Calendar className="size-3" />{question.semester.name}</span></div><p className="mb-3 text-sm text-muted-foreground">{question.course.name}</p><div className="mt-auto flex items-center text-sm text-muted-foreground"><FileText className="mr-1.5 size-3.5" />{question.submissionCount} {question.submissionCount === 1 ? "submission" : "submissions"}</div><span className="absolute right-4 bottom-4 flex size-6 items-center justify-center rounded-full bg-primary/10 opacity-0 transition group-hover:opacity-100"><ArrowRight className="size-3 text-primary" /></span></div></article></Link>;
 }

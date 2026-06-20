@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { FileSearch } from "lucide-react";
+import { FileText } from "lucide-react";
 
 import { EmptyState } from "@/components/empty-state";
 import { Pagination } from "@/components/pagination";
@@ -46,11 +46,10 @@ export default async function QuestionsPage({ searchParams }: { searchParams: Pr
   };
 
   return (
-    <div className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+    <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
-        <p className="text-sm font-bold uppercase tracking-[0.18em] text-primary">Archive</p>
-        <h1 className="mt-2 text-4xl font-bold tracking-tight text-slate-950">Question bank</h1>
-        <p className="mt-3 max-w-2xl text-muted-foreground">Filter previous exam papers and open any available submission in the reader.</p>
+        <h1 className="text-3xl font-bold tracking-tight">Question Bank</h1>
+        <p className="mt-2 text-muted-foreground">Browse past exam questions by department, course, semester, and exam type.</p>
       </div>
 
       <QuestionFilters options={options} values={filters} />
@@ -65,7 +64,7 @@ export default async function QuestionsPage({ searchParams }: { searchParams: Pr
           {questions.data.map((question) => <QuestionCard key={question.id} question={question} />)}
         </div>
       ) : (
-        <div className="mt-5"><EmptyState icon={FileSearch} title="No questions found" description="Try clearing one or more filters, or check back after more papers are added." /></div>
+        <div className="mt-5"><EmptyState icon={FileText} title="No questions found" description="Try adjusting your filters or check back later for new questions." /></div>
       )}
 
       <Pagination currentPage={questions.meta.page} totalPages={questions.meta.totalPages} hrefForPage={hrefForPage} />

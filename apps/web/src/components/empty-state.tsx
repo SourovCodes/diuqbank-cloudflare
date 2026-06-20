@@ -1,11 +1,4 @@
 import type { LucideIcon } from "lucide-react";
-
 export function EmptyState({ icon: Icon, title, description }: { icon: LucideIcon; title: string; description: string }) {
-  return (
-    <div className="rounded-2xl border border-dashed bg-white px-6 py-16 text-center">
-      <span className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-500"><Icon className="size-7" /></span>
-      <h2 className="mt-5 text-lg font-bold text-slate-900">{title}</h2>
-      <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-muted-foreground">{description}</p>
-    </div>
-  );
+  return <div className="rounded-xl border bg-card p-12 text-center shadow-sm"><Icon className="mx-auto mb-4 size-16 text-blue-400/50 dark:text-blue-500/40" /><h2 className="mb-2 text-lg font-medium">{title}</h2><p className="text-muted-foreground">{description}</p></div>;
 }

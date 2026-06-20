@@ -1,95 +1,37 @@
 "use client";
 
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useMemo, useTransition } from "react";
-import { Filter, RotateCcw } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { Book, Calendar, FileText, Filter, FilterX, School } from "lucide-react";
 import type { FilterOptions } from "@diuqbank/api-client";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { ComboboxFilter } from "@/components/combobox-filter";
 
-type FilterValues = {
-  departmentId?: number;
-  courseId?: number;
-  semesterId?: number;
-  examTypeId?: number;
-};
+type Values = { departmentId?: number; courseId?: number; semesterId?: number; examTypeId?: number };
 
-export function QuestionFilters({
-  options,
-  values,
-}: {
-  options: FilterOptions;
-  values: FilterValues;
-}) {
+export function QuestionFilters({ options, values }: { options: FilterOptions; values: Values }) {
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const [pending, startTransition] = useTransition();
-
-  const courses = useMemo(
-    () =>
-      values.departmentId
-        ? options.courses.filter((course) => course.departmentId === values.departmentId)
-        : options.courses,
-    [options.courses, values.departmentId],
-  );
-
-  const update = (key: keyof FilterValues, value: string) => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (value) params.set(key, value);
-    else params.delete(key);
-    if (key === "departmentId") params.delete("courseId");
-    params.set("page", "1");
-    startTransition(() => router.push(`${pathname}?${params.toString()}`, { scroll: false }));
-  };
-
-  const clear = () => startTransition(() => router.push(pathname, { scroll: false }));
-  const hasFilters = Object.values(values).some(Boolean);
+  const courses = values.departmentId ? options.courses.filter((item) => item.departmentId === values.departmentId) : options.courses;
+  const selected = [
+    values.departmentId ? options.departments.find((item) => item.id === values.departmentId)?.shortName : null,
+    values.courseId ? options.courses.find((item) => item.id === values.courseId)?.name : null,
+    values.semesterId ? options.semesters.find((item) => item.id === values.semesterId)?.name : null,
+    values.examTypeId ? options.examTypes.find((item) => item.id === values.examTypeId)?.name : null,
+  ].filter(Boolean) as string[];
 
   return (
-    <section className="rounded-2xl border bg-white p-4 shadow-sm sm:p-5" aria-busy={pending}>
-      <div className="mb-4 flex items-center justify-between gap-4">
-        <h2 className="flex items-center gap-2 font-bold text-slate-900">
-          <Filter className="size-4.5 text-primary" /> Filter questions
-        </h2>
-        {hasFilters ? (
-          <button type="button" onClick={clear} className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-primary">
-            <RotateCcw className="size-3.5" /> Clear
-          </button>
-        ) : null}
+    <section className="rounded-xl border bg-card p-4 shadow-sm">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <h2 className="flex items-center gap-2 text-lg font-medium"><Filter className="size-5 text-blue-600 dark:text-blue-400" />Filter Questions</h2>
+        {selected.length ? <div className="flex flex-wrap items-center gap-2">{selected.map((name) => <Badge key={name} className="bg-primary/10 text-primary">{name}</Badge>)}<Button variant="outline" size="sm" onClick={() => router.push(pathname, { scroll: false })}><FilterX />Clear{selected.length > 1 ? ` (${selected.length})` : ""}</Button></div> : null}
       </div>
-      <div className={`grid gap-3 sm:grid-cols-2 lg:grid-cols-4 ${pending ? "opacity-60" : ""}`}>
-        <Select label="Department" value={values.departmentId} onChange={(value) => update("departmentId", value)} options={options.departments.map((item) => ({ id: item.id, name: item.shortName }))} />
-        <Select label="Course" value={values.courseId} onChange={(value) => update("courseId", value)} options={courses} />
-        <Select label="Semester" value={values.semesterId} onChange={(value) => update("semesterId", value)} options={options.semesters} />
-        <Select label="Exam type" value={values.examTypeId} onChange={(value) => update("examTypeId", value)} options={options.examTypes} />
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <ComboboxFilter label="Department" param="departmentId" value={values.departmentId} options={options.departments.map((item) => ({ id: item.id, name: item.shortName }))} clearCourse icon={<School className="size-4 text-blue-600 dark:text-blue-400" />} />
+        <ComboboxFilter label="Course" param="courseId" value={values.courseId} options={courses} icon={<Book className="size-4 text-emerald-600 dark:text-emerald-400" />} />
+        <ComboboxFilter label="Semester" param="semesterId" value={values.semesterId} options={options.semesters} icon={<Calendar className="size-4 text-purple-600 dark:text-purple-400" />} />
+        <ComboboxFilter label="Exam Type" param="examTypeId" value={values.examTypeId} options={options.examTypes} icon={<FileText className="size-4 text-amber-600 dark:text-amber-400" />} />
       </div>
     </section>
-  );
-}
-
-function Select({
-  label,
-  value,
-  options,
-  onChange,
-}: {
-  label: string;
-  value?: number;
-  options: Array<{ id: number; name: string }>;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <label className="grid gap-1.5 text-xs font-bold uppercase tracking-wide text-slate-500">
-      {label}
-      <select
-        value={value ?? ""}
-        onChange={(event) => onChange(event.target.value)}
-        className="h-11 w-full rounded-xl border bg-slate-50 px-3 text-sm font-medium normal-case tracking-normal text-slate-800 outline-none transition focus:border-primary focus:ring-3 focus:ring-blue-100"
-      >
-        <option value="">All {label.toLowerCase()}s</option>
-        {options.map((option) => (
-          <option key={option.id} value={option.id}>{option.name}</option>
-        ))}
-      </select>
-    </label>
   );
 }
