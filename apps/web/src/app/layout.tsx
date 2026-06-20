@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist_Mono, Instrument_Sans } from "next/font/google";
+import NextTopLoader from "nextjs-toploader";
 
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
@@ -37,6 +38,7 @@ export default function RootLayout({
     >
       <body className="flex min-h-full flex-col">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+          <NextTopLoader showSpinner={false} />
           <SiteHeader />
           <main className="flex flex-1 flex-col">{children}</main>
           <SiteFooter />

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { FileText } from "lucide-react";
 
 import { EmptyState } from "@/components/empty-state";
-import { Pagination } from "@/components/pagination";
+import { CustomPagination } from "@/components/custom-pagination";
 import { QuestionCard } from "@/components/question-card";
 import { QuestionFilters } from "@/components/question-filters";
 import { getFilterOptions, getQuestions } from "@/lib/api/server";
@@ -37,14 +37,6 @@ export default async function QuestionsPage({ searchParams }: { searchParams: Pr
     getQuestions({ ...filters, page, perPage: 12 }),
   ]);
 
-  const hrefForPage = (nextPage: number) => {
-    const params = new URLSearchParams();
-    for (const [key, value] of Object.entries(filters)) if (value) params.set(key, String(value));
-    if (nextPage > 1) params.set("page", String(nextPage));
-    const query = params.toString();
-    return query ? `/questions?${query}` : "/questions";
-  };
-
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
@@ -52,7 +44,15 @@ export default async function QuestionsPage({ searchParams }: { searchParams: Pr
         <p className="mt-2 text-muted-foreground">Browse past exam questions by department, course, semester, and exam type.</p>
       </div>
 
-      <QuestionFilters options={options} values={filters} />
+      <QuestionFilters
+        initialFilters={{
+          department: filters.departmentId ?? null,
+          course: filters.courseId ?? null,
+          semester: filters.semesterId ?? null,
+          examType: filters.examTypeId ?? null,
+        }}
+        filterOptions={options}
+      />
 
       <div className="mt-7 flex items-center justify-between gap-4 text-sm text-muted-foreground">
         <p>{questions.meta.total} question{questions.meta.total === 1 ? "" : "s"}</p>
@@ -67,7 +67,7 @@ export default async function QuestionsPage({ searchParams }: { searchParams: Pr
         <div className="mt-5"><EmptyState icon={FileText} title="No questions found" description="Try adjusting your filters or check back later for new questions." /></div>
       )}
 
-      <Pagination currentPage={questions.meta.page} totalPages={questions.meta.totalPages} hrefForPage={hrefForPage} />
+      <CustomPagination currentPage={questions.meta.page} totalPages={questions.meta.totalPages} />
     </div>
   );
 }
