@@ -5,11 +5,13 @@ import { eq } from "drizzle-orm";
 import { getDb } from "../db/client";
 import { users } from "../db/schema";
 import { GoogleAuthError, verifyGoogleIdToken } from "../lib/google-oauth";
+import { parseImageUpload } from "../lib/image-upload";
 import { signAuthToken } from "../lib/jwt";
 import { toAuthUser } from "../lib/user-shape";
 import { validate } from "../lib/validator";
 import { requireAuth } from "../middleware/auth";
 import { googleSignInSchema } from "../schemas/auth";
+import { profileUpdateSchema } from "../schemas/profile";
 import type { AppEnv } from "../types";
 
 const authUserColumns = {
@@ -18,6 +20,7 @@ const authUserColumns = {
   email: users.email,
   username: users.username,
   role: users.role,
+  imageKey: users.imageKey,
   createdAt: users.createdAt,
 };
 
@@ -32,6 +35,8 @@ const generateOpaqueUsername = (): string => {
 };
 
 const MAX_USERNAME_ATTEMPTS = 5;
+
+auth.get("/config", (c) => c.json({ googleClientId: c.env.GOOGLE_CLIENT_ID }));
 
 auth.post("/google", validate("json", googleSignInSchema), async (c) => {
   const { idToken } = c.req.valid("json");
@@ -97,12 +102,9 @@ auth.post("/google", validate("json", googleSignInSchema), async (c) => {
     c.env.JWT_SECRET,
   );
 
-  return c.json({ token, user: toAuthUser(user) }, createdNow ? 201 : 200);
+  const origin = new URL(c.req.url).origin;
+  return c.json({ token, user: toAuthUser(user, origin) }, createdNow ? 201 : 200);
 });
-
-// Public configuration the frontend needs to start the Google sign-in flow.
-// Exposes only non-secret values (the OAuth client id is public by design).
-auth.get("/config", (c) => c.json({ googleClientId: c.env.GOOGLE_CLIENT_ID }));
 
 auth.get("/me", requireAuth, async (c) => {
   const payload = c.get("user");
@@ -118,7 +120,79 @@ auth.get("/me", requireAuth, async (c) => {
     throw new HTTPException(404, { message: "User not found" });
   }
 
-  return c.json({ user: toAuthUser(me) });
+  const origin = new URL(c.req.url).origin;
+  return c.json({ user: toAuthUser(me, origin) });
+});
+
+auth.patch("/me", requireAuth, validate("json", profileUpdateSchema), async (c) => {
+  const input = c.req.valid("json");
+  if (Object.keys(input).length === 0) {
+    throw new HTTPException(400, { message: "No fields to update" });
+  }
+
+  const payload = c.get("user");
+  const db = getDb(c.env.DB);
+
+  // A duplicate username surfaces as a UNIQUE constraint error → 409 via onError.
+  const [updated] = await db
+    .update(users)
+    .set(input)
+    .where(eq(users.id, payload.sub))
+    .returning(authUserColumns);
+
+  if (!updated) {
+    throw new HTTPException(404, { message: "User not found" });
+  }
+
+  const origin = new URL(c.req.url).origin;
+  return c.json({ user: toAuthUser(updated, origin) });
+});
+
+auth.put("/me/image", requireAuth, async (c) => {
+  const { buffer, contentType, ext } = await parseImageUpload(c);
+  const payload = c.get("user");
+  const db = getDb(c.env.DB);
+
+  const [prev] = await db
+    .select({ imageKey: users.imageKey })
+    .from(users)
+    .where(eq(users.id, payload.sub))
+    .limit(1);
+  if (!prev) {
+    throw new HTTPException(404, { message: "User not found" });
+  }
+
+  const key = `users/${crypto.randomUUID()}.${ext}`;
+  await c.env.BUCKET.put(key, buffer, { httpMetadata: { contentType } });
+
+  let updated;
+  try {
+    [updated] = await db
+      .update(users)
+      .set({ imageKey: key })
+      .where(eq(users.id, payload.sub))
+      .returning(authUserColumns);
+  } catch (err) {
+    // DB update failed — don't leave an orphan object in R2.
+    try {
+      await c.env.BUCKET.delete(key);
+    } catch (cleanupErr) {
+      console.error("R2 cleanup failed for orphan image key", key, cleanupErr);
+    }
+    throw err;
+  }
+
+  // Best-effort delete of the previous image after a successful swap.
+  if (prev.imageKey && prev.imageKey !== key) {
+    try {
+      await c.env.BUCKET.delete(prev.imageKey);
+    } catch (err) {
+      console.error("R2 delete failed for old image", prev.imageKey, err);
+    }
+  }
+
+  const origin = new URL(c.req.url).origin;
+  return c.json({ user: toAuthUser(updated, origin) });
 });
 
 export default auth;

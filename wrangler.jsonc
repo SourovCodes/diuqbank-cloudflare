@@ -11,10 +11,14 @@
     {
       "binding": "DB",
       "database_name": "diuqbank-db",
-      // Placeholder for local dev. Replace with the real id from
-      // `wrangler d1 create diuqbank-db` before deploying.
-      "database_id": "local-placeholder",
+      "database_id": "a0975903-4f94-4819-9be1-5cef71ea7b81",
       "migrations_dir": "drizzle"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "BUCKET",
+      "bucket_name": "diuqbank-files"
     }
   ],
   "vars": {

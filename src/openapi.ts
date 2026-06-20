@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { googleSignInSchema } from "./schemas/auth";
+import { profileUpdateSchema } from "./schemas/profile";
 
 // ---------------------------------------------------------------------------
 // Component schemas
@@ -17,6 +18,10 @@ const user = z.object({
   email: z.email(),
   username: z.string(),
   role: z.enum(["admin", "user"]),
+  image: z
+    .string()
+    .nullable()
+    .describe("Absolute URL to the profile image, or null if none is set."),
   createdAt: z.number().int().describe("Unix epoch seconds (UTC)"),
 });
 
@@ -42,6 +47,18 @@ const errorResponse = z.object({
 const componentSchemas = {
   GoogleSignIn: toSchema(googleSignInSchema),
   AuthConfig: toSchema(authConfig),
+  ProfileUpdate: toSchema(profileUpdateSchema),
+  ImageUploadForm: {
+    type: "object",
+    properties: {
+      image: {
+        type: "string",
+        format: "binary",
+        description: "Image file (PNG, JPEG, GIF, or WebP — max 5 MB).",
+      },
+    },
+    required: ["image"],
+  },
   User: toSchema(user),
   AuthResponse: toSchema(authResponse),
   ErrorResponse: toSchema(errorResponse),
@@ -101,6 +118,13 @@ const commonErrors = {
   "404": errResp("Resource not found"),
 };
 
+// `{ user: User }` — the envelope returned by the auth endpoints.
+const userEnvelope = {
+  type: "object",
+  properties: { user: ref("User") },
+  required: ["user"],
+};
+
 // ---------------------------------------------------------------------------
 // Document
 // ---------------------------------------------------------------------------
@@ -145,11 +169,16 @@ export const buildOpenApiDoc = () => ({
   tags: [
     {
       name: "auth",
-      description: "Sign in with Google and read the currently signed-in user.",
+      description:
+        "Sign in with Google and manage the currently signed-in user (profile, avatar).",
+    },
+    {
+      name: "files",
+      description: "Public file serving for uploaded objects (e.g. profile images).",
     },
   ],
   "x-tagGroups": [
-    { name: "Public", tags: ["auth"] },
+    { name: "Public", tags: ["auth", "files"] },
     // The "Admin" group is reserved for future admin-only routes.
   ],
   components: {
@@ -200,12 +229,71 @@ export const buildOpenApiDoc = () => ({
         summary: "Get the current user",
         ...authFields("User", "Returns the user record for the token on the request."),
         responses: {
-          "200": okJson("OK", {
-            type: "object",
-            properties: { user: ref("User") },
-            required: ["user"],
-          }),
+          "200": okJson("OK", userEnvelope),
           "401": commonErrors["401"],
+          "404": commonErrors["404"],
+        },
+      },
+      patch: {
+        tags: ["auth"],
+        summary: "Update your own profile",
+        ...authFields(
+          "User",
+          "Updates editable fields on your own account (`name` and/or `username`). Only the fields you send are changed. Email is immutable (it comes from Google).",
+        ),
+        requestBody: { required: true, content: json(ref("ProfileUpdate")) },
+        responses: {
+          "200": okJson("Updated", userEnvelope),
+          "400": commonErrors["400"],
+          "401": commonErrors["401"],
+          "404": commonErrors["404"],
+          "409": errResp("Username already taken"),
+        },
+      },
+    },
+    "/auth/me/image": {
+      put: {
+        tags: ["auth"],
+        summary: "Upload your profile image",
+        ...authFields(
+          "User",
+          "Uploads a new profile image (or replaces the existing one), stored in R2. Accepts PNG, JPEG, GIF, or WebP, max 5 MB. The previous image, if any, is deleted after the swap. The returned `user.image` is an absolute URL.",
+        ),
+        requestBody: {
+          required: true,
+          content: { "multipart/form-data": { schema: ref("ImageUploadForm") } },
+        },
+        responses: {
+          "200": okJson("Uploaded", userEnvelope),
+          "400": commonErrors["400"],
+          "401": commonErrors["401"],
+          "404": commonErrors["404"],
+          "413": errResp("Image exceeds the 5 MB size limit"),
+        },
+      },
+    },
+    "/files/{key}": {
+      get: {
+        tags: ["files"],
+        summary: "Serve an uploaded file",
+        ...authFields(
+          "Public",
+          "Streams a stored file (e.g. a profile image) from object storage. Keys come from the `image` field on user objects. Responses are immutable and cacheable.",
+        ),
+        parameters: [
+          {
+            name: "key",
+            in: "path",
+            required: true,
+            schema: { type: "string" },
+            description: "Object key, e.g. `users/<uuid>.png` (may contain slashes).",
+          },
+        ],
+        responses: {
+          "200": {
+            description: "The file",
+            content: { "image/*": { schema: { type: "string", format: "binary" } } },
+          },
           "404": commonErrors["404"],
         },
       },

@@ -10,6 +10,8 @@ export const users = sqliteTable("users", {
   role: text("role", { enum: ["admin", "user"] })
     .notNull()
     .default("user"),
+  // R2 object key for the profile image (e.g. `users/<uuid>.png`); null = none.
+  imageKey: text("image_key"),
   // Unix epoch seconds (UTC). Returned to clients as a number.
   createdAt: integer("created_at")
     .notNull()

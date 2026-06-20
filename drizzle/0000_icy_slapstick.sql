@@ -4,6 +4,7 @@ CREATE TABLE `users` (
 	`email` text NOT NULL,
 	`username` text NOT NULL,
 	`role` text DEFAULT 'user' NOT NULL,
+	`image_key` text,
 	`created_at` integer DEFAULT (unixepoch()) NOT NULL
 );
 --> statement-breakpoint
