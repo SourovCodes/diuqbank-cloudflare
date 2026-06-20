@@ -26,6 +26,14 @@ const parseId = (raw: string): number | null => {
   return Number.isInteger(id) && id > 0 ? id : null;
 };
 
+// Human-readable label for a question, e.g. "Data Structures (CSE), Summer 26, Quiz".
+const buildTitle = (q: {
+  department: { shortName: string };
+  course: { name: string };
+  semester: { name: string };
+  examType: { name: string };
+}) => `${q.course.name} (${q.department.shortName}), ${q.semester.name}, ${q.examType.name}`;
+
 questionRoutes.get("/", validate("query", questionsListQuery), async (c) => {
   const { page, perPage, departmentId, courseId, semesterId, examTypeId } =
     c.req.valid("query");
@@ -68,6 +76,7 @@ questionRoutes.get("/", validate("query", questionsListQuery), async (c) => {
   return c.json({
     data: items.map((q) => ({
       id: q.id,
+      title: buildTitle(q),
       submissionCount: countMap.get(q.id) ?? 0,
       department: q.department,
       course: q.course,
@@ -103,6 +112,7 @@ questionRoutes.get("/:id", async (c) => {
 
   return c.json({
     id: question.id,
+    title: buildTitle(question),
     submissionCount,
     department: question.department,
     course: question.course,

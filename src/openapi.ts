@@ -101,6 +101,9 @@ const contributorList = z.object({
 
 const questionListItem = z.object({
   id: z.number().int(),
+  title: z
+    .string()
+    .describe("Human-readable label, e.g. \"Data Structures (CSE), Summer 26, Quiz\"."),
   submissionCount: z.number().int(),
   department,
   course,
@@ -129,6 +132,9 @@ const publicSubmission = z.object({
 
 const questionDetail = z.object({
   id: z.number().int(),
+  title: z
+    .string()
+    .describe("Human-readable label, e.g. \"Data Structures (CSE), Summer 26, Quiz\"."),
   submissionCount: z.number().int(),
   department,
   course,
