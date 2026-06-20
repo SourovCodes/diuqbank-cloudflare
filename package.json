@@ -9,6 +9,9 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate:local": "wrangler d1 migrations apply diuqbank-db --local",
     "db:migrate:remote": "wrangler d1 migrations apply diuqbank-db --remote",
+    "db:import:build": "tsx scripts/import.ts",
+    "db:import:local": "tsx scripts/import.ts && wrangler d1 execute diuqbank-db --local --file=scripts/import.sql",
+    "db:import:remote": "tsx scripts/import.ts && wrangler d1 execute diuqbank-db --remote --file=scripts/import.sql",
     "cf-typegen": "wrangler types",
     "typecheck": "tsc --noEmit"
   },
@@ -20,6 +23,7 @@
   },
   "devDependencies": {
     "drizzle-kit": "^0.31.10",
+    "tsx": "^4.19.2",
     "typescript": "^5.9.3",
     "wrangler": "^4.103.0"
   }

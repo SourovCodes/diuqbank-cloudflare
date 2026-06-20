@@ -44,6 +44,99 @@ const errorResponse = z.object({
     .describe("Field-level details, present on validation failures."),
 });
 
+// --- Question bank read models -------------------------------------------
+
+const paginationMeta = z.object({
+  page: z.number().int(),
+  perPage: z.number().int(),
+  total: z.number().int(),
+  totalPages: z.number().int(),
+});
+
+const department = z.object({
+  id: z.number().int(),
+  name: z.string(),
+  shortName: z.string(),
+});
+
+const course = z.object({
+  id: z.number().int(),
+  departmentId: z.number().int(),
+  name: z.string(),
+});
+
+const semester = z.object({ id: z.number().int(), name: z.string() });
+const examType = z.object({ id: z.number().int(), name: z.string() });
+
+const filterOptions = z.object({
+  departments: z.array(department),
+  courses: z.array(course),
+  semesters: z.array(semester),
+  examTypes: z.array(examType),
+});
+
+const contributor = z.object({
+  id: z.number().int(),
+  name: z.string(),
+  username: z.string(),
+  image: z
+    .string()
+    .nullable()
+    .describe("Absolute URL to the profile image, or null if none is set."),
+  submissionCount: z.number().int(),
+  createdAt: z.number().int().describe("Unix epoch seconds (UTC)"),
+});
+
+const contributorSummary = z.object({
+  id: z.number().int(),
+  name: z.string(),
+  username: z.string(),
+  image: z.string().nullable(),
+});
+
+const contributorList = z.object({
+  data: z.array(contributor),
+  meta: paginationMeta,
+});
+
+const questionListItem = z.object({
+  id: z.number().int(),
+  submissionCount: z.number().int(),
+  department,
+  course,
+  semester,
+  examType,
+});
+
+const questionList = z.object({
+  data: z.array(questionListItem),
+  meta: paginationMeta,
+});
+
+const publicSubmission = z.object({
+  id: z.number().int(),
+  section: z.string().nullable(),
+  batch: z.string().nullable(),
+  fileSize: z.number().int().describe("Size of the PDF in bytes."),
+  watermarkStatus: z.enum(["awaiting", "completed", "failed"]),
+  createdAt: z.number().int().describe("Unix epoch seconds (UTC)"),
+  pdfUrl: z
+    .string()
+    .nullable()
+    .describe("Absolute URL to the submission PDF, served by `GET /files/:key`."),
+  contributor: contributorSummary.nullable(),
+});
+
+const questionDetail = z.object({
+  id: z.number().int(),
+  submissionCount: z.number().int(),
+  department,
+  course,
+  semester,
+  examType,
+  submissions: z.array(publicSubmission),
+});
+
 const componentSchemas = {
   GoogleSignIn: toSchema(googleSignInSchema),
   AuthConfig: toSchema(authConfig),
@@ -62,6 +155,19 @@ const componentSchemas = {
   User: toSchema(user),
   AuthResponse: toSchema(authResponse),
   ErrorResponse: toSchema(errorResponse),
+  PaginationMeta: toSchema(paginationMeta),
+  Department: toSchema(department),
+  Course: toSchema(course),
+  Semester: toSchema(semester),
+  ExamType: toSchema(examType),
+  FilterOptions: toSchema(filterOptions),
+  Contributor: toSchema(contributor),
+  ContributorSummary: toSchema(contributorSummary),
+  ContributorList: toSchema(contributorList),
+  QuestionListItem: toSchema(questionListItem),
+  QuestionList: toSchema(questionList),
+  PublicSubmission: toSchema(publicSubmission),
+  QuestionDetail: toSchema(questionDetail),
 };
 
 // ---------------------------------------------------------------------------
@@ -125,6 +231,35 @@ const userEnvelope = {
   required: ["user"],
 };
 
+// Shared query parameters for paginated list endpoints.
+const pageParams = [
+  {
+    name: "page",
+    in: "query",
+    required: false,
+    schema: { type: "integer", minimum: 1, default: 1 },
+    description: "1-based page number.",
+  },
+  {
+    name: "perPage",
+    in: "query",
+    required: false,
+    schema: { type: "integer", minimum: 1, maximum: 100, default: 20 },
+    description: "Items per page (max 100).",
+  },
+];
+
+// Optional question filters, matched to the ids returned by `/filter-options`.
+const questionFilterParams = (
+  ["departmentId", "courseId", "semesterId", "examTypeId"] as const
+).map((name) => ({
+  name,
+  in: "query",
+  required: false,
+  schema: { type: "integer", minimum: 1 },
+  description: `Filter by ${name}.`,
+}));
+
 // ---------------------------------------------------------------------------
 // Document
 // ---------------------------------------------------------------------------
@@ -176,9 +311,24 @@ export const buildOpenApiDoc = () => ({
       name: "files",
       description: "Public file serving for uploaded objects (e.g. profile images).",
     },
+    {
+      name: "contributors",
+      description: "Public read access to contributors (users who have submitted).",
+    },
+    {
+      name: "questions",
+      description: "Public read access to the question bank.",
+    },
+    {
+      name: "filter-options",
+      description: "Lookup entities (departments, courses, semesters, exam types) for the filter UI.",
+    },
   ],
   "x-tagGroups": [
-    { name: "Public", tags: ["auth", "files"] },
+    {
+      name: "Public",
+      tags: ["auth", "files", "contributors", "questions", "filter-options"],
+    },
     // The "Admin" group is reserved for future admin-only routes.
   ],
   components: {
@@ -294,6 +444,95 @@ export const buildOpenApiDoc = () => ({
             description: "The file",
             content: { "image/*": { schema: { type: "string", format: "binary" } } },
           },
+          "404": commonErrors["404"],
+        },
+      },
+    },
+    "/contributors": {
+      get: {
+        tags: ["contributors"],
+        summary: "List contributors",
+        ...authFields(
+          "Public",
+          "Users who have at least one submission, most prolific first. Paginated.",
+        ),
+        parameters: pageParams,
+        responses: {
+          "200": okJson("OK", ref("ContributorList")),
+          "400": commonErrors["400"],
+        },
+      },
+    },
+    "/contributors/{username}": {
+      get: {
+        tags: ["contributors"],
+        summary: "Get a contributor by username",
+        ...authFields(
+          "Public",
+          "A single contributor's public profile and total submission count.",
+        ),
+        parameters: [
+          {
+            name: "username",
+            in: "path",
+            required: true,
+            schema: { type: "string" },
+            description: "The contributor's username.",
+          },
+        ],
+        responses: {
+          "200": okJson("OK", ref("Contributor")),
+          "404": commonErrors["404"],
+        },
+      },
+    },
+    "/filter-options": {
+      get: {
+        tags: ["filter-options"],
+        summary: "Get filter options",
+        ...authFields(
+          "Public",
+          "All departments, courses, semesters, and exam types — the lookup entities a client needs to build the questions filter UI.",
+        ),
+        responses: {
+          "200": okJson("OK", ref("FilterOptions")),
+        },
+      },
+    },
+    "/questions": {
+      get: {
+        tags: ["questions"],
+        summary: "List questions",
+        ...authFields(
+          "Public",
+          "Questions with their lookup entities and submission count, newest first. Paginated and filterable by `departmentId`, `courseId`, `semesterId`, and `examTypeId`.",
+        ),
+        parameters: [...pageParams, ...questionFilterParams],
+        responses: {
+          "200": okJson("OK", ref("QuestionList")),
+          "400": commonErrors["400"],
+        },
+      },
+    },
+    "/questions/{id}": {
+      get: {
+        tags: ["questions"],
+        summary: "Get a question by id",
+        ...authFields(
+          "Public",
+          "A single question with **all** of its submissions (no pagination). Each submission links to its PDF via `pdfUrl` (served by `GET /files/:key`) and includes the contributor, if any.",
+        ),
+        parameters: [
+          {
+            name: "id",
+            in: "path",
+            required: true,
+            schema: { type: "integer" },
+            description: "Question id.",
+          },
+        ],
+        responses: {
+          "200": okJson("OK", ref("QuestionDetail")),
           "404": commonErrors["404"],
         },
       },

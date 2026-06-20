@@ -5,7 +5,10 @@ import { logger } from "hono/logger";
 
 import { openApiDoc } from "./openapi";
 import auth from "./routes/auth";
+import contributors from "./routes/contributors";
 import files from "./routes/files";
+import filterOptions from "./routes/filter-options";
+import questions from "./routes/questions";
 import type { AppEnv } from "./types";
 
 const app = new Hono<AppEnv>();
@@ -38,6 +41,9 @@ app.get("/docs", (c) =>
 
 app.route("/auth", auth);
 app.route("/files", files);
+app.route("/contributors", contributors);
+app.route("/questions", questions);
+app.route("/filter-options", filterOptions);
 
 // ---------------------------------------------------------------------------
 // Error handling: HTTPException passthrough, then map common D1 constraint
