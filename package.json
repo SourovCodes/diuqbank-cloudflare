@@ -8,9 +8,10 @@
     "dev:api": "pnpm --filter @diuqbank/api dev",
     "dev:web": "pnpm --filter @diuqbank/web dev",
     "build": "pnpm -r --if-present build",
+    "api:generate": "pnpm --filter @diuqbank/api-client generate",
     "typecheck": "pnpm -r --if-present typecheck",
     "lint": "pnpm -r --if-present lint",
-    "deploy:api": "pnpm --filter @diuqbank/api deploy",
-    "deploy:web": "pnpm --filter @diuqbank/web deploy"
+    "deploy:api": "pnpm --filter @diuqbank/api run deploy",
+    "deploy:web": "pnpm --filter @diuqbank/web run deploy"
   }
 }

@@ -8,6 +8,15 @@
     "directory": ".open-next/assets",
     "binding": "ASSETS"
   },
+  "services": [
+    {
+      "binding": "API",
+      "service": "diuqbank"
+    }
+  ],
+  "vars": {
+    "API_PUBLIC_ORIGIN": "https://diuqbank.sourovcodes.workers.dev"
+  },
   "observability": {
     "enabled": true
   }

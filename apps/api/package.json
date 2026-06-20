@@ -13,6 +13,7 @@
     "db:import:local": "tsx scripts/import.ts && wrangler d1 execute diuqbank-db --local --file=scripts/import.sql",
     "db:import:remote": "tsx scripts/import.ts && wrangler d1 execute diuqbank-db --remote --file=scripts/import.sql",
     "cf-typegen": "wrangler types",
+    "lint": "eslint .",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -22,7 +23,10 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@diuqbank/config": "workspace:*",
+    "@types/node": "^20.19.43",
     "drizzle-kit": "^0.31.10",
+    "eslint": "^9.39.4",
     "tsx": "^4.19.2",
     "typescript": "^5.9.3",
     "wrangler": "^4.103.0"
