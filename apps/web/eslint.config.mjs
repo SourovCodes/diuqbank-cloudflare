@@ -6,6 +6,14 @@ import { generatedIgnores } from "@diuqbank/config/eslint/ignores";
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
+  {
+    files: ["src/components/ui/**/*.tsx", "src/hooks/use-mobile.ts"],
+    rules: {
+      // Registry components follow shadcn's upstream implementation. Keep them
+      // byte-for-byte replaceable by future `shadcn add --overwrite` runs.
+      "react-hooks/set-state-in-effect": "off",
+    },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:

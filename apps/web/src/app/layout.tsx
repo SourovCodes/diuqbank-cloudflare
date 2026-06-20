@@ -5,6 +5,7 @@ import NextTopLoader from "nextjs-toploader";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { ThemeProvider } from "@/components/theme-provider";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
 
 const instrumentSans = Instrument_Sans({
@@ -38,10 +39,12 @@ export default function RootLayout({
     >
       <body className="flex min-h-full flex-col">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          <NextTopLoader showSpinner={false} />
-          <SiteHeader />
-          <main className="flex flex-1 flex-col">{children}</main>
-          <SiteFooter />
+          <TooltipProvider>
+            <NextTopLoader showSpinner={false} />
+            <SiteHeader />
+            <main className="flex flex-1 flex-col">{children}</main>
+            <SiteFooter />
+          </TooltipProvider>
         </ThemeProvider>
       </body>
     </html>
