@@ -4,9 +4,9 @@ import { useCallback, useEffect, useState } from "react";
 
 import { useAuth } from "@/components/auth-provider";
 import type {
+  AdminLister,
   ListParams,
   ListResult,
-  ResourceClient,
 } from "@/lib/api/admin-client";
 
 /**
@@ -14,8 +14,8 @@ import type {
  * whenever the query params change or `refetch()` is called. setState only ever runs
  * inside async callbacks (or a microtask) to satisfy the React Compiler lint rules.
  */
-export function useAdminList<Item, Create, Update>(
-  client: ResourceClient<Item, Create, Update>,
+export function useAdminList<Item>(
+  client: AdminLister<Item>,
   params: ListParams,
 ) {
   const { token } = useAuth();

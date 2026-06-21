@@ -18,18 +18,23 @@ import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 
 const labels: Record<string, string> = {
+  questions: "Questions",
   departments: "Departments",
   courses: "Courses",
   semesters: "Semesters",
   "exam-types": "Exam Types",
+  users: "Users",
 };
 
 export function AdminHeader() {
   const pathname = usePathname();
   const { resolvedTheme, setTheme } = useTheme();
 
-  const segment = pathname.split("/")[2];
+  const parts = pathname.split("/").filter(Boolean); // e.g. ["admin","questions","5","submissions"]
+  const segment = parts[1];
   const current = segment ? (labels[segment] ?? segment) : null;
+  // Nested submissions live under a question: /admin/questions/[id]/submissions.
+  const nestedSubmissions = segment === "questions" && parts[3] === "submissions";
 
   return (
     <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
@@ -46,7 +51,21 @@ export function AdminHeader() {
             <>
               <BreadcrumbSeparator className="hidden sm:block" />
               <BreadcrumbItem>
-                <BreadcrumbPage>{current}</BreadcrumbPage>
+                {nestedSubmissions ? (
+                  <BreadcrumbLink asChild>
+                    <Link href="/admin/questions">{current}</Link>
+                  </BreadcrumbLink>
+                ) : (
+                  <BreadcrumbPage>{current}</BreadcrumbPage>
+                )}
+              </BreadcrumbItem>
+            </>
+          ) : null}
+          {nestedSubmissions ? (
+            <>
+              <BreadcrumbSeparator className="hidden sm:block" />
+              <BreadcrumbItem>
+                <BreadcrumbPage>Submissions</BreadcrumbPage>
               </BreadcrumbItem>
             </>
           ) : null}

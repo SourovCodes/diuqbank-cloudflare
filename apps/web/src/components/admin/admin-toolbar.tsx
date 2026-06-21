@@ -12,15 +12,15 @@ import { Input } from "@/components/ui/input";
  * controls are passed as `children`.
  */
 export function AdminToolbar({
-  search,
+  search = "",
   onSearchChange,
   placeholder = "Search…",
   onNew,
   newLabel = "New",
   children,
 }: {
-  search: string;
-  onSearchChange: (value: string) => void;
+  search?: string;
+  onSearchChange?: (value: string) => void;
   placeholder?: string;
   onNew?: () => void;
   newLabel?: string;
@@ -29,6 +29,7 @@ export function AdminToolbar({
   const [value, setValue] = useState(search);
 
   useEffect(() => {
+    if (!onSearchChange) return;
     const id = setTimeout(() => {
       if (value !== search) onSearchChange(value);
     }, 350);
@@ -38,15 +39,17 @@ export function AdminToolbar({
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex flex-1 flex-wrap items-center gap-2">
-        <div className="relative w-full sm:max-w-xs">
-          <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={value}
-            onChange={(event) => setValue(event.target.value)}
-            placeholder={placeholder}
-            className="pl-8"
-          />
-        </div>
+        {onSearchChange ? (
+          <div className="relative w-full sm:max-w-xs">
+            <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={value}
+              onChange={(event) => setValue(event.target.value)}
+              placeholder={placeholder}
+              className="pl-8"
+            />
+          </div>
+        ) : null}
         {children}
       </div>
       {onNew ? (

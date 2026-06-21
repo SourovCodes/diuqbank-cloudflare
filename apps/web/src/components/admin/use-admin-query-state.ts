@@ -46,5 +46,13 @@ export function useAdminQueryState() {
     [setParams],
   );
 
-  return { page, search, getFilter, setSearch, setFilter };
+  // Set several filters in one navigation (and reset the page). Used when changing one
+  // filter must clear a dependent one — e.g. picking a department clears the course.
+  const setFilters = useCallback(
+    (updates: Record<string, string | null>) =>
+      setParams({ ...updates, page: null }),
+    [setParams],
+  );
+
+  return { page, search, getFilter, setSearch, setFilter, setFilters };
 }

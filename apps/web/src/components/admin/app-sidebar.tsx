@@ -7,9 +7,11 @@ import {
   Building2,
   CalendarDays,
   ExternalLink,
+  FileQuestion,
   FileText,
   GraduationCap,
   LogOut,
+  Users,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -31,10 +33,12 @@ import {
 } from "@/components/ui/sidebar";
 
 const catalog = [
+  { href: "/admin/questions", label: "Questions", icon: FileQuestion },
   { href: "/admin/departments", label: "Departments", icon: Building2 },
   { href: "/admin/courses", label: "Courses", icon: GraduationCap },
   { href: "/admin/semesters", label: "Semesters", icon: CalendarDays },
   { href: "/admin/exam-types", label: "Exam Types", icon: FileText },
+  { href: "/admin/users", label: "Users", icon: Users },
 ];
 
 export function AppSidebar() {
