@@ -19,6 +19,7 @@ declare global {
         id: {
           initialize(options: {
             client_id: string;
+            hd?: string;
             callback: (response: GoogleCredentialResponse) => void;
           }): void;
           renderButton(parent: HTMLElement, options: Record<string, string | number>): void;
@@ -58,6 +59,7 @@ export function SignInPage({ googleClientId }: { googleClientId: string }) {
     parent.replaceChildren();
     window.google.accounts.id.initialize({
       client_id: googleClientId,
+      hd: "diu.edu.bd",
       callback: (response) => {
         if (response.credential) void finishSignIn(response.credential);
       },
@@ -81,7 +83,7 @@ export function SignInPage({ googleClientId }: { googleClientId: string }) {
           </span>
           <h1 className="mt-5 text-2xl font-semibold tracking-tight">Sign in to DIU QBank</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Continue with Google to access your profile.
+            Continue with your DIU Google account to access your profile.
           </p>
         </div>
 
@@ -105,7 +107,7 @@ export function SignInPage({ googleClientId }: { googleClientId: string }) {
                 ) : null}
               </div>
               <p className="mt-5 text-center text-xs leading-relaxed text-muted-foreground">
-                We only use your Google email to identify your account.
+                Only <span className="font-medium text-foreground">@diu.edu.bd</span> email addresses can sign in.
               </p>
             </>
           )}

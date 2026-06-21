@@ -35,6 +35,7 @@ const generateOpaqueUsername = (): string => {
 };
 
 const MAX_USERNAME_ATTEMPTS = 5;
+const ALLOWED_EMAIL_DOMAIN = "diu.edu.bd";
 
 auth.get("/config", (c) => c.json({ googleClientId: c.env.GOOGLE_CLIENT_ID }));
 
@@ -52,7 +53,12 @@ auth.post("/google", validate("json", googleSignInSchema), async (c) => {
     throw err;
   }
 
-  const email = claims.email.toLowerCase();
+  const email = claims.email.trim().toLowerCase();
+  if (!email.endsWith(`@${ALLOWED_EMAIL_DOMAIN}`)) {
+    throw new HTTPException(403, {
+      message: `Only @${ALLOWED_EMAIL_DOMAIN} email addresses can sign in`,
+    });
+  }
 
   const findByEmail = async () => {
     const [row] = await db

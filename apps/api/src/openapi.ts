@@ -872,8 +872,8 @@ const infoDescription = `Backend API for **DIU QuestionBank**, running on Cloudf
 
 ## Authentication
 
-Sign in with Google. Obtain a Google ID token client-side (Google Sign-In), then exchange it for a
-DIU QuestionBank JWT:
+Sign in with a verified \`@diu.edu.bd\` Google account. Obtain a Google ID token client-side
+(Google Sign-In), then exchange it for a DIU QuestionBank JWT:
 
 \`\`\`http
 POST /auth/google
@@ -888,8 +888,9 @@ The response includes a JWT — pass it on every authenticated request:
 Authorization: Bearer <token>
 \`\`\`
 
-If the verified email already exists, the existing user is signed in (\`200\`). If not, a new user
-is created with an opaque generated username and \`role: "user"\` (\`201\`).
+If the verified DIU email already exists, the existing user is signed in (\`200\`). If not, a new
+user is created with an opaque generated username and \`role: "user"\` (\`201\`). Google accounts
+outside the \`diu.edu.bd\` domain are rejected (\`403\`).
 
 ## Conventions
 
@@ -984,7 +985,7 @@ export const buildOpenApiDoc = () => ({
         summary: "Sign in with Google",
         ...authFields(
           "Public",
-          "Exchange a Google ID token for a DIU QuestionBank JWT. Existing email → `200`; new user created → `201`. The response shape is the same in both cases.",
+          "Exchange a Google ID token for a DIU QuestionBank JWT. Only verified `@diu.edu.bd` emails are allowed. Existing email → `200`; new user created → `201`. The response shape is the same in both cases.",
         ),
         requestBody: { required: true, content: json(ref("GoogleSignIn")) },
         responses: {
@@ -992,6 +993,7 @@ export const buildOpenApiDoc = () => ({
           "201": okJson("Authenticated — new user created", ref("AuthResponse")),
           "400": commonErrors["400"],
           "401": errResp("Invalid or expired Google ID token"),
+          "403": errResp("Only @diu.edu.bd email addresses can sign in"),
         },
       },
     },
