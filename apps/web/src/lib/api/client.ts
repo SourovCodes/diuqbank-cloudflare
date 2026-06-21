@@ -43,9 +43,6 @@ const bearerHeaders = (token: string, headers?: HeadersInit) => ({
   Authorization: `Bearer ${token}`,
 });
 
-export const getAuthConfig = () =>
-  request<components["schemas"]["AuthConfig"]>("/auth/config");
-
 export const signInWithGoogle = (idToken: string) =>
   request<AuthResponse>("/auth/google", {
     method: "POST",

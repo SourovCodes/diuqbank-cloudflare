@@ -24,7 +24,7 @@ const navigation = [
 
 export function SiteHeader() {
   const { resolvedTheme, setTheme } = useTheme();
-  const { user, loading, signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const [open, setOpen] = useState(false);
   const initials = user?.name
     .split(" ")
@@ -51,7 +51,7 @@ export function SiteHeader() {
             <Moon className="absolute size-5 scale-0 rotate-90 transition-all dark:scale-100 dark:rotate-0" />
             <span className="sr-only">Toggle theme</span>
           </Button>
-          {!loading && !user ? (
+          {!user ? (
             <Button size="sm" asChild><Link href="/sign-in">Sign in</Link></Button>
           ) : null}
           {user ? (

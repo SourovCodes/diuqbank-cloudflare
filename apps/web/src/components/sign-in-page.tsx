@@ -8,7 +8,6 @@ import { BookOpen, CheckCircle2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { useAuth } from "@/components/auth-provider";
-import { getAuthConfig } from "@/lib/api/client";
 import { Button } from "@/components/ui/button";
 
 type GoogleCredentialResponse = { credential?: string };
@@ -29,30 +28,12 @@ declare global {
   }
 }
 
-export function SignInPage() {
+export function SignInPage({ googleClientId }: { googleClientId: string }) {
   const router = useRouter();
   const { user, loading, authenticateWithGoogle } = useAuth();
   const [googleReady, setGoogleReady] = useState(false);
-  const [googleClientId, setGoogleClientId] = useState<string | null>(null);
   const [signingIn, setSigningIn] = useState(false);
-  const [loadFailed, setLoadFailed] = useState(false);
   const googleButtonRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    let active = true;
-    getAuthConfig()
-      .then((config) => {
-        if (active) setGoogleClientId(config.googleClientId);
-      })
-      .catch((error: unknown) => {
-        if (!active) return;
-        setLoadFailed(true);
-        toast.error(error instanceof Error ? error.message : "Could not load Google sign-in");
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
 
   const finishSignIn = useCallback(
     async (idToken: string) => {
@@ -119,10 +100,9 @@ export function SignInPage() {
               <Script src="https://accounts.google.com/gsi/client" strategy="afterInteractive" onLoad={() => setGoogleReady(true)} onReady={() => setGoogleReady(true)} />
               <div className="relative min-h-11 overflow-hidden">
                 <div ref={googleButtonRef} className={signingIn ? "pointer-events-none opacity-50" : ""} />
-                {(!googleReady || !googleClientId || signingIn) && !loadFailed ? (
+                {!googleReady || signingIn ? (
                   <div className="absolute inset-0 flex items-center justify-center rounded-md border bg-background text-sm text-muted-foreground"><Loader2 className="mr-2 size-4 animate-spin" />{signingIn ? "Signing in…" : "Loading Google sign-in…"}</div>
                 ) : null}
-                {loadFailed ? <div className="flex h-11 items-center justify-center rounded-md border px-3 text-center text-sm text-destructive">Google sign-in is unavailable. Please reload.</div> : null}
               </div>
               <p className="mt-5 text-center text-xs leading-relaxed text-muted-foreground">
                 We only use your Google email to identify your account.

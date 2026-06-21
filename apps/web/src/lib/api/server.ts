@@ -56,6 +56,14 @@ const getClient = cache(async () => {
 const apiError = (operation: string, response: Response) =>
   new Error(`${operation} failed with ${response.status} ${response.statusText}`);
 
+export const getAuthConfig = cache(async (): Promise<string> => {
+  const client = await getClient();
+  const { data, response } = await client.GET("/auth/config");
+
+  if (!data) throw apiError("Loading authentication config", response);
+  return data.googleClientId;
+});
+
 export const getFilterOptions = cache(async (): Promise<FilterOptions> => {
   const client = await getClient();
   const { data, response } = await client.GET("/filter-options");
