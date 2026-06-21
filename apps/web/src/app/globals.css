@@ -100,38 +100,30 @@
 }
 
 /*
- * Admin-only accent. The admin shell wraps its subtree in `.admin-theme`, which
- * re-points the shared CSS variables to a WrapPixel-flavored indigo palette.
- * Because every shadcn component reads these tokens via `@theme inline`, the whole
- * panel re-themes without touching the public site (which keeps the neutral tokens).
+ * Admin-only accent. The admin shell wraps its subtree in `.admin-theme`. We override
+ * ONLY the accent tokens (primary / ring + their sidebar equivalents) with a blue and
+ * deliberately leave the neutral surface tokens (`--background`, `--sidebar`, `--card`,
+ * borders…) to the base `:root`/`.dark` values. That keeps the panel neutral like the
+ * shadcn dashboard, scopes the accent to `/admin`, and — because the sidebar background
+ * now comes from the same base tokens the public site uses — makes dark mode work for
+ * the sidebar without depending on this nested selector.
  */
 .admin-theme {
-  --primary: oklch(0.55 0.22 264);
+  --primary: oklch(0.546 0.245 262.881);
   --primary-foreground: oklch(0.985 0 0);
-  --ring: oklch(0.55 0.22 264);
-  --radius: 0.75rem;
-  --sidebar: oklch(0.985 0.006 264);
-  --sidebar-foreground: oklch(0.21 0.02 264);
-  --sidebar-primary: oklch(0.55 0.22 264);
+  --ring: oklch(0.546 0.245 262.881);
+  --sidebar-primary: oklch(0.546 0.245 262.881);
   --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.95 0.02 264);
-  --sidebar-accent-foreground: oklch(0.42 0.18 264);
-  --sidebar-border: oklch(0.922 0.01 264);
-  --sidebar-ring: oklch(0.55 0.22 264);
+  --sidebar-ring: oklch(0.546 0.245 262.881);
 }
 
 .dark .admin-theme {
-  --primary: oklch(0.62 0.19 264);
+  --primary: oklch(0.623 0.214 259.815);
   --primary-foreground: oklch(0.985 0 0);
-  --ring: oklch(0.62 0.19 264);
-  --sidebar: oklch(0.22 0.02 264);
-  --sidebar-foreground: oklch(0.95 0 0);
-  --sidebar-primary: oklch(0.62 0.19 264);
+  --ring: oklch(0.623 0.214 259.815);
+  --sidebar-primary: oklch(0.623 0.214 259.815);
   --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.3 0.04 264);
-  --sidebar-accent-foreground: oklch(0.97 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.62 0.19 264);
+  --sidebar-ring: oklch(0.623 0.214 259.815);
 }
 
 @layer base {

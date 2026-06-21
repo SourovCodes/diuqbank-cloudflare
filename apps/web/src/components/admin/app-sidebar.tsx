@@ -49,22 +49,27 @@ export function AppSidebar() {
     .toUpperCase();
 
   return (
-    <Sidebar>
+    <Sidebar variant="inset">
       <SidebarHeader>
-        <Link
-          href="/admin"
-          className="flex items-center gap-2 px-2 py-1.5"
-        >
-          <span className="flex size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-            <BookOpen className="size-5" />
-          </span>
-          <div className="grid leading-tight">
-            <span className="text-sm font-semibold">DIU QBank</span>
-            <span className="text-xs text-sidebar-foreground/70">
-              Admin panel
-            </span>
-          </div>
-        </Link>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton size="lg" asChild>
+              <Link href="/admin">
+                <span className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                  <BookOpen className="size-5" />
+                </span>
+                <div className="grid flex-1 text-left leading-tight">
+                  <span className="truncate text-sm font-semibold">
+                    DIU QBank
+                  </span>
+                  <span className="truncate text-xs text-sidebar-foreground/70">
+                    Admin panel
+                  </span>
+                </div>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
       </SidebarHeader>
 
       <SidebarContent>

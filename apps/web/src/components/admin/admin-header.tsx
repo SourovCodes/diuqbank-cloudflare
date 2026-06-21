@@ -32,9 +32,9 @@ export function AdminHeader() {
   const current = segment ? (labels[segment] ?? segment) : null;
 
   return (
-    <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-2 border-b bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <SidebarTrigger />
-      <Separator orientation="vertical" className="mr-1 data-[orientation=vertical]:h-5" />
+    <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+      <SidebarTrigger className="-ml-1" />
+      <Separator orientation="vertical" className="mr-1 data-[orientation=vertical]:h-4" />
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem className="hidden sm:block">
