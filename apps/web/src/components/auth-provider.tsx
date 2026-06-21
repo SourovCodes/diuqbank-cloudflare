@@ -24,10 +24,19 @@ import {
   type AuthUser,
   type ProfileUpdate,
 } from "@/lib/api/client";
+import { silenceGsiNoise } from "@/lib/silence-gsi-noise";
+
+// Filter the benign FedCM AbortError that GSI logs when One Tap is dismissed.
+silenceGsiNoise();
 
 const TOKEN_KEY = "diuqbank.auth.token";
 
 type GoogleCredentialResponse = { credential?: string };
+
+type PromptMomentNotification = {
+  isDismissedMoment(): boolean;
+  getDismissedReason(): string;
+};
 
 declare global {
   interface Window {
@@ -39,9 +48,10 @@ declare global {
             hd?: string;
             context?: "signin" | "signup" | "use";
             itp_support?: boolean;
+            use_fedcm_for_prompt?: boolean;
             callback: (response: GoogleCredentialResponse) => void;
           }): void;
-          prompt(): void;
+          prompt(listener?: (notification: PromptMomentNotification) => void): void;
           cancel(): void;
           disableAutoSelect(): void;
           renderButton(parent: HTMLElement, options: Record<string, string | number>): void;
@@ -186,6 +196,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       hd: "diu.edu.bd",
       context: "signin",
       itp_support: true,
+      use_fedcm_for_prompt: true,
       callback: (response) => void handleGoogleCredential(response),
     });
     googleInitializedRef.current = true;
@@ -205,7 +216,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     oneTapPromptedRef.current = true;
-    window.google.accounts.id.prompt();
+    // Under FedCM the browser owns the prompt UI; only the dismissed-moment methods
+    // remain supported. The oneTapPromptedRef guard already prevents re-prompting.
+    window.google.accounts.id.prompt((notification) => {
+      if (notification.isDismissedMoment()) {
+        setSuppressOneTap(true);
+      }
+    });
   }, [googleReady, loading, suppressOneTap, user]);
 
   const renderGoogleButton = useCallback((parent: HTMLElement) => {
