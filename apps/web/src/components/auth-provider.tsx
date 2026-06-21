@@ -1,17 +1,22 @@
 "use client";
 
+import Script from "next/script";
+import { usePathname, useRouter } from "next/navigation";
 import {
   createContext,
   useCallback,
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
+import { toast } from "sonner";
 
 import {
   ApiError,
+  getAuthConfig,
   getMe,
   signInWithGoogle,
   updateMe,
@@ -22,9 +27,37 @@ import {
 
 const TOKEN_KEY = "diuqbank.auth.token";
 
+type GoogleCredentialResponse = { credential?: string };
+
+declare global {
+  interface Window {
+    google?: {
+      accounts: {
+        id: {
+          initialize(options: {
+            client_id: string;
+            hd?: string;
+            context?: "signin" | "signup" | "use";
+            itp_support?: boolean;
+            callback: (response: GoogleCredentialResponse) => void;
+          }): void;
+          prompt(): void;
+          cancel(): void;
+          disableAutoSelect(): void;
+          renderButton(parent: HTMLElement, options: Record<string, string | number>): void;
+        };
+      };
+    };
+  }
+}
+
 type AuthContextValue = {
   user: AuthUser | null;
   loading: boolean;
+  googleReady: boolean;
+  googleSigningIn: boolean;
+  googleError: string | null;
+  renderGoogleButton: (parent: HTMLElement) => void;
   authenticateWithGoogle: (idToken: string) => Promise<AuthUser>;
   signOut: () => void;
   updateProfile: (input: ProfileUpdate) => Promise<AuthUser>;
@@ -34,14 +67,49 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
+  const router = useRouter();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [googleClientId, setGoogleClientId] = useState<string | null>(null);
+  const [googleScriptReady, setGoogleScriptReady] = useState(false);
+  const [googleReady, setGoogleReady] = useState(false);
+  const [googleSigningIn, setGoogleSigningIn] = useState(false);
+  const [googleError, setGoogleError] = useState<string | null>(null);
+  const [suppressOneTap, setSuppressOneTap] = useState(false);
+  const googleInitializedRef = useRef(false);
+  const oneTapPromptedRef = useRef(false);
+  const pathnameRef = useRef(pathname);
+
+  useEffect(() => {
+    pathnameRef.current = pathname;
+  }, [pathname]);
 
   const signOut = useCallback(() => {
+    window.google?.accounts.id.cancel();
+    window.google?.accounts.id.disableAutoSelect();
     localStorage.removeItem(TOKEN_KEY);
+    oneTapPromptedRef.current = true;
+    setSuppressOneTap(true);
     setToken(null);
     setUser(null);
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    getAuthConfig()
+      .then(({ googleClientId: clientId }) => {
+        if (active) setGoogleClientId(clientId);
+      })
+      .catch(() => {
+        if (active) setGoogleError("Google sign-in is temporarily unavailable");
+      });
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -85,6 +153,74 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return result.user;
   }, []);
 
+  const handleGoogleCredential = useCallback(
+    async (response: GoogleCredentialResponse) => {
+      if (!response.credential) return;
+
+      setGoogleSigningIn(true);
+      try {
+        await authenticateWithGoogle(response.credential);
+        toast.success("Welcome to DIU Question Bank");
+        if (pathnameRef.current === "/sign-in") router.replace("/profile");
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Sign-in failed");
+      } finally {
+        setGoogleSigningIn(false);
+      }
+    },
+    [authenticateWithGoogle, router],
+  );
+
+  useEffect(() => {
+    if (
+      !googleScriptReady ||
+      !googleClientId ||
+      !window.google ||
+      googleInitializedRef.current
+    ) {
+      return;
+    }
+
+    window.google.accounts.id.initialize({
+      client_id: googleClientId,
+      hd: "diu.edu.bd",
+      context: "signin",
+      itp_support: true,
+      callback: (response) => void handleGoogleCredential(response),
+    });
+    googleInitializedRef.current = true;
+    setGoogleReady(true);
+  }, [googleClientId, googleScriptReady, handleGoogleCredential]);
+
+  useEffect(() => {
+    if (
+      !googleReady ||
+      loading ||
+      user ||
+      suppressOneTap ||
+      oneTapPromptedRef.current ||
+      !window.google
+    ) {
+      return;
+    }
+
+    oneTapPromptedRef.current = true;
+    window.google.accounts.id.prompt();
+  }, [googleReady, loading, suppressOneTap, user]);
+
+  const renderGoogleButton = useCallback((parent: HTMLElement) => {
+    if (!googleInitializedRef.current || !window.google) return;
+
+    window.google.accounts.id.renderButton(parent, {
+      type: "standard",
+      theme: "outline",
+      size: "large",
+      shape: "rectangular",
+      text: "continue_with",
+      width: Math.min(Math.floor(parent.getBoundingClientRect().width), 360),
+    });
+  }, []);
+
   const updateProfile = useCallback(
     async (input: ProfileUpdate) => {
       if (!token) throw new ApiError("Please sign in first", 401);
@@ -109,15 +245,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () => ({
       user,
       loading,
+      googleReady,
+      googleSigningIn,
+      googleError,
+      renderGoogleButton,
       authenticateWithGoogle,
       signOut,
       updateProfile,
       updateImage,
     }),
-    [authenticateWithGoogle, loading, signOut, updateImage, updateProfile, user],
+    [
+      authenticateWithGoogle,
+      googleError,
+      googleReady,
+      googleSigningIn,
+      loading,
+      renderGoogleButton,
+      signOut,
+      updateImage,
+      updateProfile,
+      user,
+    ],
   );
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+      <Script
+        src="https://accounts.google.com/gsi/client"
+        strategy="afterInteractive"
+        onLoad={() => setGoogleScriptReady(true)}
+        onReady={() => setGoogleScriptReady(true)}
+        onError={() => setGoogleError("Google sign-in is temporarily unavailable")}
+      />
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth() {

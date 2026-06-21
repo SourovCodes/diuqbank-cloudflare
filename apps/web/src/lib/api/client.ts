@@ -4,6 +4,7 @@ export type AuthUser = components["schemas"]["User"];
 export type ProfileUpdate = components["schemas"]["ProfileUpdate"];
 
 type AuthResponse = components["schemas"]["AuthResponse"];
+type AuthConfig = components["schemas"]["AuthConfig"];
 type UserResponse = { user: AuthUser };
 type ErrorResponse = components["schemas"]["ErrorResponse"];
 
@@ -49,6 +50,8 @@ export const signInWithGoogle = (idToken: string) =>
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ idToken }),
   });
+
+export const getAuthConfig = () => request<AuthConfig>("/auth/config");
 
 export const getMe = (token: string) =>
   request<UserResponse>("/auth/me", {
