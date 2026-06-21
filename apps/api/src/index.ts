@@ -4,6 +4,7 @@ import { HTTPException } from "hono/http-exception";
 import { logger } from "hono/logger";
 
 import { openApiDoc } from "./openapi";
+import admin from "./routes/admin";
 import auth from "./routes/auth";
 import contributors from "./routes/contributors";
 import files from "./routes/files";
@@ -44,6 +45,7 @@ app.route("/files", files);
 app.route("/contributors", contributors);
 app.route("/questions", questions);
 app.route("/filter-options", filterOptions);
+app.route("/admin", admin);
 
 // ---------------------------------------------------------------------------
 // Error handling: HTTPException passthrough, then map common D1 constraint

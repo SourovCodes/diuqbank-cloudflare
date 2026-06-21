@@ -1,5 +1,24 @@
 import { z } from "zod";
 
+import { courseCreateSchema, courseUpdateSchema } from "./schemas/admin/courses";
+import {
+  departmentCreateSchema,
+  departmentUpdateSchema,
+} from "./schemas/admin/departments";
+import {
+  examTypeCreateSchema,
+  examTypeUpdateSchema,
+} from "./schemas/admin/exam-types";
+import {
+  questionCreateSchema,
+  questionUpdateSchema,
+} from "./schemas/admin/questions";
+import {
+  semesterCreateSchema,
+  semesterUpdateSchema,
+} from "./schemas/admin/semesters";
+import { submissionUpdateSchema } from "./schemas/admin/submissions";
+import { userUpdateSchema } from "./schemas/admin/users";
 import { googleSignInSchema } from "./schemas/auth";
 import { profileUpdateSchema } from "./schemas/profile";
 
@@ -146,6 +165,73 @@ const questionSubmissions = z.object({
   data: z.array(publicSubmission),
 });
 
+// --- Admin read models ----------------------------------------------------
+
+const departmentList = z.object({
+  data: z.array(department),
+  meta: paginationMeta,
+});
+const courseList = z.object({ data: z.array(course), meta: paginationMeta });
+const semesterList = z.object({ data: z.array(semester), meta: paginationMeta });
+const examTypeList = z.object({ data: z.array(examType), meta: paginationMeta });
+
+const adminQuestion = z.object({
+  id: z.number().int(),
+  title: z.string(),
+  departmentId: z.number().int(),
+  courseId: z.number().int(),
+  semesterId: z.number().int(),
+  examTypeId: z.number().int(),
+  submissionCount: z.number().int(),
+  department,
+  course,
+  semester,
+  examType,
+});
+const adminQuestionList = z.object({
+  data: z.array(adminQuestion),
+  meta: paginationMeta,
+});
+
+const adminSubmission = z.object({
+  id: z.number().int(),
+  question: z.object({ id: z.number().int(), title: z.string() }),
+  contributor: contributorSummary.nullable(),
+  section: z.string().nullable(),
+  batch: z.string().nullable(),
+  fileSize: z.number().int().describe("Size of the PDF in bytes."),
+  watermarkStatus: z.enum(["awaiting", "completed", "failed"]),
+  watermarkError: z.string().nullable(),
+  pdfUrl: z
+    .string()
+    .nullable()
+    .describe("Absolute URL to the original PDF, served by `GET /files/:key`."),
+  watermarkedPdfUrl: z
+    .string()
+    .nullable()
+    .describe("Absolute URL to the watermarked PDF, if one has been generated."),
+  createdAt: z.number().int().describe("Unix epoch seconds (UTC)"),
+});
+const adminSubmissionList = z.object({
+  data: z.array(adminSubmission),
+  meta: paginationMeta,
+});
+
+const adminUser = z.object({
+  id: z.number().int(),
+  name: z.string(),
+  email: z.email(),
+  username: z.string(),
+  role: z.enum(["admin", "user"]),
+  image: z.string().nullable(),
+  submissionCount: z.number().int(),
+  createdAt: z.number().int().describe("Unix epoch seconds (UTC)"),
+});
+const adminUserList = z.object({
+  data: z.array(adminUser),
+  meta: paginationMeta,
+});
+
 const componentSchemas = {
   GoogleSignIn: toSchema(googleSignInSchema),
   AuthConfig: toSchema(authConfig),
@@ -178,6 +264,61 @@ const componentSchemas = {
   PublicSubmission: toSchema(publicSubmission),
   QuestionDetail: toSchema(questionDetail),
   QuestionSubmissions: toSchema(questionSubmissions),
+
+  // Admin request bodies (derived from the route validation schemas).
+  CreateDepartment: toSchema(departmentCreateSchema),
+  UpdateDepartment: toSchema(departmentUpdateSchema),
+  CreateCourse: toSchema(courseCreateSchema),
+  UpdateCourse: toSchema(courseUpdateSchema),
+  CreateSemester: toSchema(semesterCreateSchema),
+  UpdateSemester: toSchema(semesterUpdateSchema),
+  CreateExamType: toSchema(examTypeCreateSchema),
+  UpdateExamType: toSchema(examTypeUpdateSchema),
+  CreateQuestion: toSchema(questionCreateSchema),
+  UpdateQuestion: toSchema(questionUpdateSchema),
+  UpdateSubmission: toSchema(submissionUpdateSchema),
+  UpdateUser: toSchema(userUpdateSchema),
+  SubmissionCreateForm: {
+    type: "object",
+    properties: {
+      pdf: {
+        type: "string",
+        format: "binary",
+        description: "PDF file (max 20 MB).",
+      },
+      questionId: { type: "integer", description: "Parent question id." },
+      userId: {
+        type: "integer",
+        description: "Optional contributor (user) id.",
+      },
+      section: { type: "string", description: "Optional section label." },
+      batch: { type: "string", description: "Optional batch label." },
+    },
+    required: ["pdf", "questionId"],
+  },
+  PdfUploadForm: {
+    type: "object",
+    properties: {
+      pdf: {
+        type: "string",
+        format: "binary",
+        description: "Replacement PDF file (max 20 MB).",
+      },
+    },
+    required: ["pdf"],
+  },
+
+  // Admin response models.
+  DepartmentList: toSchema(departmentList),
+  CourseList: toSchema(courseList),
+  SemesterList: toSchema(semesterList),
+  ExamTypeList: toSchema(examTypeList),
+  AdminQuestion: toSchema(adminQuestion),
+  AdminQuestionList: toSchema(adminQuestionList),
+  AdminSubmission: toSchema(adminSubmission),
+  AdminSubmissionList: toSchema(adminSubmissionList),
+  AdminUser: toSchema(adminUser),
+  AdminUserList: toSchema(adminUserList),
 };
 
 // ---------------------------------------------------------------------------
@@ -231,8 +372,11 @@ const errResp = (description: string) => ({
 const commonErrors = {
   "400": errResp("Validation failed or bad request"),
   "401": errResp("Missing or invalid bearer token"),
+  "403": errResp("Admin access required"),
   "404": errResp("Resource not found"),
 };
+
+const noContent = { description: "Deleted — no content" };
 
 // `{ user: User }` — the envelope returned by the auth endpoints.
 const userEnvelope = {
@@ -269,6 +413,456 @@ const questionFilterParams = (
   schema: { type: "integer", minimum: 1 },
   description: `Filter by ${name}.`,
 }));
+
+// ---------------------------------------------------------------------------
+// Admin paths
+// ---------------------------------------------------------------------------
+
+type SchemaName = keyof typeof componentSchemas;
+
+const idPathParam = (noun: string) => ({
+  name: "id",
+  in: "path",
+  required: true,
+  schema: { type: "integer" },
+  description: `${noun} id.`,
+});
+
+const searchParam = (what: string) => ({
+  name: "search",
+  in: "query",
+  required: false,
+  schema: { type: "string" },
+  description: `Case-insensitive substring match on ${what}.`,
+});
+
+const departmentIdFilter = {
+  name: "departmentId",
+  in: "query",
+  required: false,
+  schema: { type: "integer", minimum: 1 },
+  description: "Filter by department id.",
+};
+
+// Standard CRUD path entries for a simple lookup resource.
+const lookupResource = (cfg: {
+  base: string;
+  tag: string;
+  noun: string;
+  nounPlural: string;
+  listRef: SchemaName;
+  itemRef: SchemaName;
+  createRef: SchemaName;
+  updateRef: SchemaName;
+  listParams: object[];
+}) => ({
+  [cfg.base]: {
+    get: {
+      tags: [cfg.tag],
+      summary: `List ${cfg.nounPlural}`,
+      ...authFields("Admin", `Paginated list of ${cfg.nounPlural}.`),
+      parameters: cfg.listParams,
+      responses: {
+        "200": okJson("OK", ref(cfg.listRef)),
+        "400": commonErrors["400"],
+        "401": commonErrors["401"],
+        "403": commonErrors["403"],
+      },
+    },
+    post: {
+      tags: [cfg.tag],
+      summary: `Create a ${cfg.noun}`,
+      ...authFields("Admin", `Creates a new ${cfg.noun}.`),
+      requestBody: { required: true, content: json(ref(cfg.createRef)) },
+      responses: {
+        "201": okJson("Created", ref(cfg.itemRef)),
+        "400": commonErrors["400"],
+        "401": commonErrors["401"],
+        "403": commonErrors["403"],
+        "409": errResp("A conflicting record already exists"),
+      },
+    },
+  },
+  [`${cfg.base}/{id}`]: {
+    get: {
+      tags: [cfg.tag],
+      summary: `Get a ${cfg.noun} by id`,
+      ...authFields("Admin", `A single ${cfg.noun}.`),
+      parameters: [idPathParam(cfg.noun)],
+      responses: {
+        "200": okJson("OK", ref(cfg.itemRef)),
+        "401": commonErrors["401"],
+        "403": commonErrors["403"],
+        "404": commonErrors["404"],
+      },
+    },
+    patch: {
+      tags: [cfg.tag],
+      summary: `Update a ${cfg.noun}`,
+      ...authFields(
+        "Admin",
+        `Updates a ${cfg.noun}. Only the fields you send are changed.`,
+      ),
+      parameters: [idPathParam(cfg.noun)],
+      requestBody: { required: true, content: json(ref(cfg.updateRef)) },
+      responses: {
+        "200": okJson("Updated", ref(cfg.itemRef)),
+        "400": commonErrors["400"],
+        "401": commonErrors["401"],
+        "403": commonErrors["403"],
+        "404": commonErrors["404"],
+        "409": errResp("A conflicting record already exists"),
+      },
+    },
+    delete: {
+      tags: [cfg.tag],
+      summary: `Delete a ${cfg.noun}`,
+      ...authFields(
+        "Admin",
+        `Deletes a ${cfg.noun}. Blocked with 409 if other records reference it.`,
+      ),
+      parameters: [idPathParam(cfg.noun)],
+      responses: {
+        "204": noContent,
+        "401": commonErrors["401"],
+        "403": commonErrors["403"],
+        "404": commonErrors["404"],
+        "409": errResp("In use by other records"),
+      },
+    },
+  },
+});
+
+const submissionFilterParams = [
+  {
+    name: "questionId",
+    in: "query",
+    required: false,
+    schema: { type: "integer", minimum: 1 },
+    description: "Filter by question id.",
+  },
+  {
+    name: "userId",
+    in: "query",
+    required: false,
+    schema: { type: "integer", minimum: 1 },
+    description: "Filter by contributor (user) id.",
+  },
+  {
+    name: "watermarkStatus",
+    in: "query",
+    required: false,
+    schema: { type: "string", enum: ["awaiting", "completed", "failed"] },
+    description: "Filter by watermark status.",
+  },
+];
+
+const userFilterParams = [
+  searchParam("name, email, or username"),
+  {
+    name: "role",
+    in: "query",
+    required: false,
+    schema: { type: "string", enum: ["admin", "user"] },
+    description: "Filter by role.",
+  },
+];
+
+const multipart = (schema: SchemaName) => ({
+  "multipart/form-data": { schema: ref(schema) },
+});
+
+const adminPaths = {
+  ...lookupResource({
+    base: "/admin/departments",
+    tag: "admin-departments",
+    noun: "department",
+    nounPlural: "departments",
+    listRef: "DepartmentList",
+    itemRef: "Department",
+    createRef: "CreateDepartment",
+    updateRef: "UpdateDepartment",
+    listParams: [...pageParams, searchParam("name or short name")],
+  }),
+  ...lookupResource({
+    base: "/admin/courses",
+    tag: "admin-courses",
+    noun: "course",
+    nounPlural: "courses",
+    listRef: "CourseList",
+    itemRef: "Course",
+    createRef: "CreateCourse",
+    updateRef: "UpdateCourse",
+    listParams: [...pageParams, departmentIdFilter, searchParam("name")],
+  }),
+  ...lookupResource({
+    base: "/admin/semesters",
+    tag: "admin-semesters",
+    noun: "semester",
+    nounPlural: "semesters",
+    listRef: "SemesterList",
+    itemRef: "Semester",
+    createRef: "CreateSemester",
+    updateRef: "UpdateSemester",
+    listParams: [...pageParams, searchParam("name")],
+  }),
+  ...lookupResource({
+    base: "/admin/exam-types",
+    tag: "admin-exam-types",
+    noun: "exam type",
+    nounPlural: "exam types",
+    listRef: "ExamTypeList",
+    itemRef: "ExamType",
+    createRef: "CreateExamType",
+    updateRef: "UpdateExamType",
+    listParams: [...pageParams, searchParam("name")],
+  }),
+  "/admin/questions": {
+    get: {
+      tags: ["admin-questions"],
+      summary: "List questions",
+      ...authFields(
+        "Admin",
+        "Paginated, filterable by `departmentId`/`courseId`/`semesterId`/`examTypeId`. Each item includes the nested lookup entities and a dynamic submission count.",
+      ),
+      parameters: [...pageParams, ...questionFilterParams],
+      responses: {
+        "200": okJson("OK", ref("AdminQuestionList")),
+        "400": commonErrors["400"],
+        "401": commonErrors["401"],
+        "403": commonErrors["403"],
+      },
+    },
+    post: {
+      tags: ["admin-questions"],
+      summary: "Create a question",
+      ...authFields(
+        "Admin",
+        "Creates a question from the four lookup ids. The combination must be unique.",
+      ),
+      requestBody: { required: true, content: json(ref("CreateQuestion")) },
+      responses: {
+        "201": okJson("Created", ref("AdminQuestion")),
+        "400": errResp("Validation failed, or a referenced entity does not exist"),
+        "401": commonErrors["401"],
+        "403": commonErrors["403"],
+        "409": errResp("A question with this combination already exists"),
+      },
+    },
+  },
+  "/admin/questions/{id}": {
+    get: {
+      tags: ["admin-questions"],
+      summary: "Get a question by id",
+      ...authFields("Admin", "A single question with its entities and submission count."),
+      parameters: [idPathParam("Question")],
+      responses: {
+        "200": okJson("OK", ref("AdminQuestion")),
+        "401": commonErrors["401"],
+        "403": commonErrors["403"],
+        "404": commonErrors["404"],
+      },
+    },
+    patch: {
+      tags: ["admin-questions"],
+      summary: "Update a question",
+      ...authFields(
+        "Admin",
+        "Updates the lookup ids of a question. Only the fields you send are changed.",
+      ),
+      parameters: [idPathParam("Question")],
+      requestBody: { required: true, content: json(ref("UpdateQuestion")) },
+      responses: {
+        "200": okJson("Updated", ref("AdminQuestion")),
+        "400": errResp("Validation failed, or a referenced entity does not exist"),
+        "401": commonErrors["401"],
+        "403": commonErrors["403"],
+        "404": commonErrors["404"],
+        "409": errResp("A question with this combination already exists"),
+      },
+    },
+    delete: {
+      tags: ["admin-questions"],
+      summary: "Delete a question",
+      ...authFields(
+        "Admin",
+        "Deletes a question. Blocked with 409 if it has submissions.",
+      ),
+      parameters: [idPathParam("Question")],
+      responses: {
+        "204": noContent,
+        "401": commonErrors["401"],
+        "403": commonErrors["403"],
+        "404": commonErrors["404"],
+        "409": errResp("The question has submissions"),
+      },
+    },
+  },
+  "/admin/submissions": {
+    get: {
+      tags: ["admin-submissions"],
+      summary: "List submissions",
+      ...authFields(
+        "Admin",
+        "Paginated, filterable by `questionId`, `userId`, and `watermarkStatus`. Newest first.",
+      ),
+      parameters: [...pageParams, ...submissionFilterParams],
+      responses: {
+        "200": okJson("OK", ref("AdminSubmissionList")),
+        "400": commonErrors["400"],
+        "401": commonErrors["401"],
+        "403": commonErrors["403"],
+      },
+    },
+    post: {
+      tags: ["admin-submissions"],
+      summary: "Create a submission",
+      ...authFields(
+        "Admin",
+        "Uploads a PDF (multipart field `pdf`, max 20 MB) and creates a submission for the given `questionId`, optionally attributed to a `userId`.",
+      ),
+      requestBody: { required: true, content: multipart("SubmissionCreateForm") },
+      responses: {
+        "201": okJson("Created", ref("AdminSubmission")),
+        "400": commonErrors["400"],
+        "401": commonErrors["401"],
+        "403": commonErrors["403"],
+        "413": errResp("PDF exceeds the 20 MB size limit"),
+      },
+    },
+  },
+  "/admin/submissions/{id}": {
+    get: {
+      tags: ["admin-submissions"],
+      summary: "Get a submission by id",
+      ...authFields("Admin", "A single submission with its question, contributor, and file URLs."),
+      parameters: [idPathParam("Submission")],
+      responses: {
+        "200": okJson("OK", ref("AdminSubmission")),
+        "401": commonErrors["401"],
+        "403": commonErrors["403"],
+        "404": commonErrors["404"],
+      },
+    },
+    patch: {
+      tags: ["admin-submissions"],
+      summary: "Update submission metadata",
+      ...authFields(
+        "Admin",
+        "Updates submission metadata (`questionId`, `userId`, `section`, `batch`, `watermarkStatus`). `userId`/`section`/`batch` accept `null` to clear them. Use `PUT /admin/submissions/{id}/pdf` to replace the file.",
+      ),
+      parameters: [idPathParam("Submission")],
+      requestBody: { required: true, content: json(ref("UpdateSubmission")) },
+      responses: {
+        "200": okJson("Updated", ref("AdminSubmission")),
+        "400": errResp("Validation failed, or a referenced entity does not exist"),
+        "401": commonErrors["401"],
+        "403": commonErrors["403"],
+        "404": commonErrors["404"],
+      },
+    },
+    delete: {
+      tags: ["admin-submissions"],
+      summary: "Delete a submission",
+      ...authFields(
+        "Admin",
+        "Deletes a submission and removes its PDF (and watermarked PDF) from storage.",
+      ),
+      parameters: [idPathParam("Submission")],
+      responses: {
+        "204": noContent,
+        "401": commonErrors["401"],
+        "403": commonErrors["403"],
+        "404": commonErrors["404"],
+      },
+    },
+  },
+  "/admin/submissions/{id}/pdf": {
+    put: {
+      tags: ["admin-submissions"],
+      summary: "Replace a submission's PDF",
+      ...authFields(
+        "Admin",
+        "Replaces the PDF (multipart field `pdf`, max 20 MB). Resets watermarking to `awaiting` and clears any existing watermarked file.",
+      ),
+      parameters: [idPathParam("Submission")],
+      requestBody: { required: true, content: multipart("PdfUploadForm") },
+      responses: {
+        "200": okJson("Replaced", ref("AdminSubmission")),
+        "400": commonErrors["400"],
+        "401": commonErrors["401"],
+        "403": commonErrors["403"],
+        "404": commonErrors["404"],
+        "413": errResp("PDF exceeds the 20 MB size limit"),
+      },
+    },
+  },
+  "/admin/users": {
+    get: {
+      tags: ["admin-users"],
+      summary: "List users",
+      ...authFields(
+        "Admin",
+        "Paginated, searchable by name/email/username and filterable by `role`. Each item includes `email`, `role`, and a dynamic submission count.",
+      ),
+      parameters: [...pageParams, ...userFilterParams],
+      responses: {
+        "200": okJson("OK", ref("AdminUserList")),
+        "400": commonErrors["400"],
+        "401": commonErrors["401"],
+        "403": commonErrors["403"],
+      },
+    },
+  },
+  "/admin/users/{id}": {
+    get: {
+      tags: ["admin-users"],
+      summary: "Get a user by id",
+      ...authFields("Admin", "A single user, including email, role, and submission count."),
+      parameters: [idPathParam("User")],
+      responses: {
+        "200": okJson("OK", ref("AdminUser")),
+        "401": commonErrors["401"],
+        "403": commonErrors["403"],
+        "404": commonErrors["404"],
+      },
+    },
+    patch: {
+      tags: ["admin-users"],
+      summary: "Update a user",
+      ...authFields(
+        "Admin",
+        "Updates a user's `name`, `username`, and/or `role`. You cannot remove your own admin role.",
+      ),
+      parameters: [idPathParam("User")],
+      requestBody: { required: true, content: json(ref("UpdateUser")) },
+      responses: {
+        "200": okJson("Updated", ref("AdminUser")),
+        "400": commonErrors["400"],
+        "401": commonErrors["401"],
+        "403": commonErrors["403"],
+        "404": commonErrors["404"],
+        "409": errResp("Username already taken, or you tried to demote yourself"),
+      },
+    },
+    delete: {
+      tags: ["admin-users"],
+      summary: "Delete a user",
+      ...authFields(
+        "Admin",
+        "Deletes a user. Their submissions are kept but become anonymous. You cannot delete your own account.",
+      ),
+      parameters: [idPathParam("User")],
+      responses: {
+        "204": noContent,
+        "401": commonErrors["401"],
+        "403": commonErrors["403"],
+        "404": commonErrors["404"],
+        "409": errResp("You cannot delete your own account"),
+      },
+    },
+  },
+};
 
 // ---------------------------------------------------------------------------
 // Document
@@ -333,13 +927,31 @@ export const buildOpenApiDoc = () => ({
       name: "filter-options",
       description: "Lookup entities (departments, courses, semesters, exam types) for the filter UI.",
     },
+    { name: "admin-departments", description: "Admin: manage departments." },
+    { name: "admin-courses", description: "Admin: manage courses." },
+    { name: "admin-semesters", description: "Admin: manage semesters." },
+    { name: "admin-exam-types", description: "Admin: manage exam types." },
+    { name: "admin-questions", description: "Admin: manage questions." },
+    { name: "admin-submissions", description: "Admin: manage submissions." },
+    { name: "admin-users", description: "Admin: manage users." },
   ],
   "x-tagGroups": [
     {
       name: "Public",
       tags: ["auth", "files", "contributors", "questions", "filter-options"],
     },
-    // The "Admin" group is reserved for future admin-only routes.
+    {
+      name: "Admin",
+      tags: [
+        "admin-departments",
+        "admin-courses",
+        "admin-semesters",
+        "admin-exam-types",
+        "admin-questions",
+        "admin-submissions",
+        "admin-users",
+      ],
+    },
   ],
   components: {
     securitySchemes: {
@@ -570,6 +1182,7 @@ export const buildOpenApiDoc = () => ({
         },
       },
     },
+    ...adminPaths,
   },
 });
 
