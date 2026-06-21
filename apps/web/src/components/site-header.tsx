@@ -1,10 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { BookOpen, Menu, Moon, Sun, X } from "lucide-react";
+import { BookOpen, LogOut, Menu, Moon, Settings, Sun, X } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useState } from "react";
+import { toast } from "sonner";
+import { useAuth } from "@/components/auth-provider";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const navigation = [
   { href: "/", label: "Home" },
@@ -13,7 +24,14 @@ const navigation = [
 
 export function SiteHeader() {
   const { resolvedTheme, setTheme } = useTheme();
+  const { user, loading, signOut } = useAuth();
   const [open, setOpen] = useState(false);
+  const initials = user?.name
+    .split(" ")
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -33,12 +51,57 @@ export function SiteHeader() {
             <Moon className="absolute size-5 scale-0 rotate-90 transition-all dark:scale-100 dark:rotate-0" />
             <span className="sr-only">Toggle theme</span>
           </Button>
+          {!loading && !user ? (
+            <Button size="sm" asChild><Link href="/sign-in">Sign in</Link></Button>
+          ) : null}
+          {user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="rounded-full">
+                  <Avatar>
+                    {user.image ? <AvatarImage src={user.image} alt={user.name} /> : null}
+                    <AvatarFallback>{initials}</AvatarFallback>
+                  </Avatar>
+                  <span className="sr-only">Open account menu</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel className="font-normal">
+                  <span className="block truncate font-medium text-foreground">{user.name}</span>
+                  <span className="block truncate text-xs">{user.email}</span>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/profile"><Settings /> Edit profile</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem variant="destructive" onClick={() => {
+                  signOut();
+                  toast.success("Signed out");
+                }}>
+                  <LogOut /> Sign out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : null}
           <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setOpen((value) => !value)}>
             {open ? <X /> : <Menu />}<span className="sr-only">Toggle menu</span>
           </Button>
         </div>
       </div>
-      {open ? <nav className="border-t px-4 py-3 md:hidden">{navigation.map((item) => <Button key={item.href} variant="ghost" className="w-full justify-start" asChild><Link href={item.href} onClick={() => setOpen(false)}>{item.label}</Link></Button>)}</nav> : null}
+      {open ? (
+        <nav className="border-t px-4 py-3 md:hidden">
+          {navigation.map((item) => (
+            <Button key={item.href} variant="ghost" className="w-full justify-start" asChild>
+              <Link href={item.href} onClick={() => setOpen(false)}>{item.label}</Link>
+            </Button>
+          ))}
+          {user ? (
+            <Button variant="ghost" className="w-full justify-start" asChild>
+              <Link href="/profile" onClick={() => setOpen(false)}>Profile</Link>
+            </Button>
+          ) : null}
+        </nav>
+      ) : null}
     </header>
   );
 }
