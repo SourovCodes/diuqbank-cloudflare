@@ -52,6 +52,7 @@ export default function DepartmentsPage() {
         loading={loading}
         error={error}
         meta={meta}
+        currentPage={page}
         rowKey={(item) => item.id}
         columns={[
           {

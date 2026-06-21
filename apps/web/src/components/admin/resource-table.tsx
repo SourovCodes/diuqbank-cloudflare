@@ -2,6 +2,8 @@
 
 import type { LucideIcon } from "lucide-react";
 import { Pencil, Trash2 } from "lucide-react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useEffect } from "react";
 
 import { CustomPagination } from "@/components/custom-pagination";
 import { EmptyState } from "@/components/empty-state";
@@ -17,6 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 
 export type Column<Item> = {
   header: React.ReactNode;
@@ -93,6 +96,7 @@ export function ResourceTable<Item>({
   loading,
   error,
   meta,
+  currentPage,
   rowKey,
   actions,
   emptyIcon,
@@ -103,7 +107,8 @@ export function ResourceTable<Item>({
   items: Item[];
   loading: boolean;
   error: string | null;
-  meta: { page: number; totalPages: number } | null;
+  meta: { totalPages: number } | null;
+  currentPage: number;
   rowKey: (item: Item) => string | number;
   actions?: (item: Item) => React.ReactNode;
   emptyIcon: LucideIcon;
@@ -111,6 +116,26 @@ export function ResourceTable<Item>({
   emptyDescription: string;
 }) {
   const colSpan = columns.length + (actions ? 1 : 0);
+  // `meta` is set only by a successful response, so `meta === null` means nothing has
+  // loaded yet → show skeletons. Once data exists, a `loading` pass is a refetch
+  // (pagination / search / reload): keep the old rows and just dim them, so the page
+  // doesn't flash back to skeletons every time.
+  const firstLoad = loading && meta === null;
+  const refetching = loading && meta !== null;
+  const showEmpty = !loading && items.length === 0;
+
+  // If the current page falls past the last page — e.g. you deleted the last row on a
+  // page, or landed on a stale `?page=` — snap back to the last valid page instead of
+  // showing a misleading empty state. `replace` so it doesn't add history.
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    if (!meta || currentPage <= meta.totalPages) return;
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("page", String(meta.totalPages));
+    router.replace(`${pathname}?${params}`, { scroll: false });
+  }, [meta, currentPage, router, pathname, searchParams]);
 
   return (
     <div className="space-y-4">
@@ -120,14 +145,20 @@ export function ResourceTable<Item>({
         </p>
       ) : null}
 
-      {!loading && items.length === 0 ? (
+      {showEmpty ? (
         <EmptyState
           icon={emptyIcon}
           title={emptyTitle}
           description={emptyDescription}
         />
       ) : (
-        <Card className="overflow-hidden py-0">
+        <Card
+          aria-busy={refetching}
+          className={cn(
+            "overflow-hidden py-0 transition-opacity",
+            refetching && "pointer-events-none opacity-60",
+          )}
+        >
           <CardContent className="p-0">
             <Table>
               <TableHeader>
@@ -143,7 +174,7 @@ export function ResourceTable<Item>({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {loading
+                {firstLoad
                   ? Array.from({ length: 5 }).map((_, rowIndex) => (
                       <TableRow key={`skeleton-${rowIndex}`}>
                         {Array.from({ length: colSpan }).map((__, cellIndex) => (
@@ -175,7 +206,7 @@ export function ResourceTable<Item>({
 
       {meta ? (
         <CustomPagination
-          currentPage={meta.page}
+          currentPage={currentPage}
           totalPages={meta.totalPages}
         />
       ) : null}
