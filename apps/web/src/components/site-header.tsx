@@ -43,6 +43,7 @@ export function SiteHeader() {
 
         <nav className="hidden items-center gap-1 md:flex">
           {navigation.map((item) => <Button key={item.href} variant="ghost" size="sm" asChild><Link href={item.href}>{item.label}</Link></Button>)}
+          {user?.role === "admin" ? <Button variant="ghost" size="sm" asChild><Link href="/admin">Admin</Link></Button> : null}
         </nav>
 
         <div className="flex items-center gap-1">
@@ -98,6 +99,11 @@ export function SiteHeader() {
           {user ? (
             <Button variant="ghost" className="w-full justify-start" asChild>
               <Link href="/profile" onClick={() => setOpen(false)}>Profile</Link>
+            </Button>
+          ) : null}
+          {user?.role === "admin" ? (
+            <Button variant="ghost" className="w-full justify-start" asChild>
+              <Link href="/admin" onClick={() => setOpen(false)}>Admin</Link>
             </Button>
           ) : null}
         </nav>

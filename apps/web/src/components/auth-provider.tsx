@@ -63,6 +63,7 @@ declare global {
 
 type AuthContextValue = {
   user: AuthUser | null;
+  token: string | null;
   loading: boolean;
   googleReady: boolean;
   googleSigningIn: boolean;
@@ -261,6 +262,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
+      token,
       loading,
       googleReady,
       googleSigningIn,
@@ -279,6 +281,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loading,
       renderGoogleButton,
       signOut,
+      token,
       updateImage,
       updateProfile,
       user,

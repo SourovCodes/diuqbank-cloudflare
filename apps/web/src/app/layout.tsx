@@ -3,8 +3,6 @@ import { Geist_Mono, Instrument_Sans } from "next/font/google";
 import NextTopLoader from "nextjs-toploader";
 
 import { AuthProvider } from "@/components/auth-provider";
-import { SiteFooter } from "@/components/site-footer";
-import { SiteHeader } from "@/components/site-header";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ThemeScript } from "@/components/theme-script";
 import { Toaster } from "@/components/ui/sonner";
@@ -48,9 +46,7 @@ export default function RootLayout({
           <TooltipProvider>
             <AuthProvider>
               <NextTopLoader showSpinner={false} />
-              <SiteHeader />
-              <main className="flex flex-1 flex-col">{children}</main>
-              <SiteFooter />
+              {children}
               <Toaster position="top-right" richColors />
             </AuthProvider>
           </TooltipProvider>

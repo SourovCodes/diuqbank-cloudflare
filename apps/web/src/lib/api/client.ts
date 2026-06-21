@@ -8,7 +8,7 @@ type AuthConfig = components["schemas"]["AuthConfig"];
 type UserResponse = { user: AuthUser };
 type ErrorResponse = components["schemas"]["ErrorResponse"];
 
-const API_ORIGIN = (
+export const API_ORIGIN = (
   process.env.NEXT_PUBLIC_API_ORIGIN ??
   "https://diuqbank.sourovcodes.workers.dev"
 ).replace(/\/$/, "");
@@ -23,7 +23,7 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+export async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_ORIGIN}${path}`, init);
   const payload = (await response.json().catch(() => null)) as
     | T
@@ -39,7 +39,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return payload as T;
 }
 
-const bearerHeaders = (token: string, headers?: HeadersInit) => ({
+export const bearerHeaders = (token: string, headers?: HeadersInit) => ({
   ...Object.fromEntries(new Headers(headers).entries()),
   Authorization: `Bearer ${token}`,
 });
