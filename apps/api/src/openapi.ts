@@ -193,6 +193,30 @@ const questionSubmissions = z.object({
   data: z.array(publicSubmission),
 });
 
+const manualSubmission = z.object({
+  id: z.number().int(),
+  userId: z.number().int(),
+  department,
+  course,
+  semester,
+  examType,
+  status: z.enum(["pending_review", "approved", "rejected"]),
+  rejectedReason: z.string().nullable(),
+  reviewedBy: z.number().int().nullable(),
+  questionId: z.number().int().nullable(),
+  submissionId: z.number().int().nullable(),
+  pdfUrl: z
+    .string()
+    .nullable()
+    .describe("Absolute URL to the uploaded PDF, served by `GET /files/:key`."),
+  createdAt: z.number().int().describe("Unix epoch seconds (UTC)"),
+});
+
+const manualSubmissionList = z.object({
+  data: z.array(manualSubmission),
+  meta: paginationMeta,
+});
+
 // --- Admin read models ----------------------------------------------------
 
 const departmentList = z.object({
@@ -294,6 +318,23 @@ const componentSchemas = {
   PublicSubmission: toSchema(publicSubmission),
   QuestionDetail: toSchema(questionDetail),
   QuestionSubmissions: toSchema(questionSubmissions),
+  ManualSubmission: toSchema(manualSubmission),
+  ManualSubmissionList: toSchema(manualSubmissionList),
+  ManualSubmissionCreateForm: {
+    type: "object",
+    properties: {
+      pdf: {
+        type: "string",
+        format: "binary",
+        description: "PDF file (max 20 MB).",
+      },
+      departmentId: { type: "integer", minimum: 1 },
+      courseId: { type: "integer", minimum: 1 },
+      semesterId: { type: "integer", minimum: 1 },
+      examTypeId: { type: "integer", minimum: 1 },
+    },
+    required: ["pdf", "departmentId", "courseId", "semesterId", "examTypeId"],
+  },
 
   // Admin request bodies (derived from the route validation schemas).
   CreateDepartment: toSchema(departmentCreateSchema),
@@ -804,6 +845,7 @@ const adminPaths = {
         "401": commonErrors["401"],
         "403": commonErrors["403"],
         "404": commonErrors["404"],
+        "409": errResp("An approved manual submission references this submission"),
       },
     },
   },
@@ -878,9 +920,9 @@ const adminPaths = {
     delete: {
       tags: ["admin-users"],
       summary: "Delete a user",
-      ...authFields(
-        "Admin",
-        "Deletes a user. Their submissions are kept but become anonymous. You cannot delete your own account.",
+        ...authFields(
+          "Admin",
+          "Deletes a user only when no question-bank or manual submissions reference them. You cannot delete your own account.",
       ),
       parameters: [idPathParam("User")],
       responses: {
@@ -888,7 +930,7 @@ const adminPaths = {
         "401": commonErrors["401"],
         "403": commonErrors["403"],
         "404": commonErrors["404"],
-        "409": errResp("You cannot delete your own account"),
+        "409": errResp("Self-delete is forbidden, or submissions reference this user"),
       },
     },
   },
@@ -959,6 +1001,10 @@ export const buildOpenApiDoc = () => ({
       name: "filter-options",
       description: "Lookup entities (departments, courses, semesters, exam types) for the filter UI.",
     },
+    {
+      name: "manual-submissions",
+      description: "Signed-in users: upload and manage PDFs submitted for review.",
+    },
     { name: "admin-departments", description: "Admin: manage departments." },
     { name: "admin-courses", description: "Admin: manage courses." },
     { name: "admin-semesters", description: "Admin: manage semesters." },
@@ -971,6 +1017,10 @@ export const buildOpenApiDoc = () => ({
     {
       name: "Public",
       tags: ["auth", "files", "contributors", "questions", "filter-options"],
+    },
+    {
+      name: "User",
+      tags: ["manual-submissions"],
     },
     {
       name: "Admin",
@@ -1236,6 +1286,56 @@ export const buildOpenApiDoc = () => ({
         ],
         responses: {
           "200": okJson("OK", ref("QuestionSubmissions")),
+          "404": commonErrors["404"],
+        },
+      },
+    },
+    "/manual-submissions": {
+      get: {
+        tags: ["manual-submissions"],
+        summary: "List your manual submissions",
+        ...authFields(
+          "User",
+          "Returns only manual submissions owned by the authenticated user, newest first.",
+        ),
+        parameters: pageParams,
+        responses: {
+          "200": okJson("OK", ref("ManualSubmissionList")),
+          "400": commonErrors["400"],
+          "401": commonErrors["401"],
+        },
+      },
+      post: {
+        tags: ["manual-submissions"],
+        summary: "Create a manual submission",
+        ...authFields(
+          "User",
+          "Uploads a PDF for review. Ownership comes from the bearer token and status starts as `pending_review`.",
+        ),
+        requestBody: {
+          required: true,
+          content: multipart("ManualSubmissionCreateForm"),
+        },
+        responses: {
+          "201": okJson("Created", ref("ManualSubmission")),
+          "400": commonErrors["400"],
+          "401": commonErrors["401"],
+          "413": errResp("PDF exceeds the 20 MB size limit"),
+        },
+      },
+    },
+    "/manual-submissions/{id}": {
+      delete: {
+        tags: ["manual-submissions"],
+        summary: "Delete your manual submission",
+        ...authFields(
+          "User",
+          "Deletes a manual submission only when it belongs to the authenticated user, then removes its PDF from storage.",
+        ),
+        parameters: [idPathParam("Manual submission")],
+        responses: {
+          "204": noContent,
+          "401": commonErrors["401"],
           "404": commonErrors["404"],
         },
       },

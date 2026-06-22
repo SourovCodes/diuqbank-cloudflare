@@ -3,7 +3,7 @@ import { HTTPException } from "hono/http-exception";
 import { and, count, desc, eq, type SQL } from "drizzle-orm";
 
 import { getDb } from "../../db/client";
-import { submissions } from "../../db/schema";
+import { manualSubmissions, submissions } from "../../db/schema";
 import { toAdminSubmission } from "../../lib/admin-shape";
 import { buildMeta } from "../../lib/pagination";
 import { parseId } from "../../lib/parse-id";
@@ -237,6 +237,16 @@ route.delete("/:id", async (c) => {
     .where(eq(submissions.id, id))
     .limit(1);
   if (!row) throw new HTTPException(404, { message: "Submission not found" });
+
+  const [{ value: manualSubmissionCount }] = await db
+    .select({ value: count() })
+    .from(manualSubmissions)
+    .where(eq(manualSubmissions.submissionId, id));
+  if (manualSubmissionCount > 0) {
+    throw new HTTPException(409, {
+      message: `Cannot delete: ${manualSubmissionCount} approved manual submission(s) reference this submission`,
+    });
+  }
 
   await db.delete(submissions).where(eq(submissions.id, id));
 

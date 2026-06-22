@@ -775,6 +775,186 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/manual-submissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List your manual submissions
+         * @description **Access:** `User` — Requires a bearer token. Open to any signed-in user (admins included).
+         *
+         *     Returns only manual submissions owned by the authenticated user, newest first.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description 1-based page number. */
+                    page?: number;
+                    /** @description Items per page (max 100). */
+                    perPage?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ManualSubmissionList"];
+                    };
+                };
+                /** @description Validation failed or bad request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Missing or invalid bearer token */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /**
+         * Create a manual submission
+         * @description **Access:** `User` — Requires a bearer token. Open to any signed-in user (admins included).
+         *
+         *     Uploads a PDF for review. Ownership comes from the bearer token and status starts as `pending_review`.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "multipart/form-data": components["schemas"]["ManualSubmissionCreateForm"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ManualSubmission"];
+                    };
+                };
+                /** @description Validation failed or bad request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Missing or invalid bearer token */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description PDF exceeds the 20 MB size limit */
+                413: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/manual-submissions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete your manual submission
+         * @description **Access:** `User` — Requires a bearer token. Open to any signed-in user (admins included).
+         *
+         *     Deletes a manual submission only when it belongs to the authenticated user, then removes its PDF from storage.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Manual submission id. */
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Deleted — no content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Missing or invalid bearer token */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Resource not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/departments": {
         parameters: {
             query?: never;
@@ -2794,6 +2974,15 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
+                /** @description An approved manual submission references this submission */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
             };
         };
         options?: never;
@@ -3108,7 +3297,7 @@ export interface paths {
          * Delete a user
          * @description **Access:** `Admin` — Requires a bearer token from an account with `role: "admin"`.
          *
-         *     Deletes a user. Their submissions are kept but become anonymous. You cannot delete your own account.
+         *     Deletes a user only when no question-bank or manual submissions reference them. You cannot delete your own account.
          */
         delete: {
             parameters: {
@@ -3156,7 +3345,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description You cannot delete your own account */
+                /** @description Self-delete is forbidden, or submissions reference this user */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -3586,6 +3775,89 @@ export interface components {
                     image: string | null;
                 } | null;
             }[];
+        };
+        ManualSubmission: {
+            id: number;
+            userId: number;
+            department: {
+                id: number;
+                name: string;
+                shortName: string;
+            };
+            course: {
+                id: number;
+                departmentId: number;
+                name: string;
+            };
+            semester: {
+                id: number;
+                name: string;
+            };
+            examType: {
+                id: number;
+                name: string;
+            };
+            /** @enum {string} */
+            status: "pending_review" | "approved" | "rejected";
+            rejectedReason: string | null;
+            reviewedBy: number | null;
+            questionId: number | null;
+            submissionId: number | null;
+            /** @description Absolute URL to the uploaded PDF, served by `GET /files/:key`. */
+            pdfUrl: string | null;
+            /** @description Unix epoch seconds (UTC) */
+            createdAt: number;
+        };
+        ManualSubmissionList: {
+            data: {
+                id: number;
+                userId: number;
+                department: {
+                    id: number;
+                    name: string;
+                    shortName: string;
+                };
+                course: {
+                    id: number;
+                    departmentId: number;
+                    name: string;
+                };
+                semester: {
+                    id: number;
+                    name: string;
+                };
+                examType: {
+                    id: number;
+                    name: string;
+                };
+                /** @enum {string} */
+                status: "pending_review" | "approved" | "rejected";
+                rejectedReason: string | null;
+                reviewedBy: number | null;
+                questionId: number | null;
+                submissionId: number | null;
+                /** @description Absolute URL to the uploaded PDF, served by `GET /files/:key`. */
+                pdfUrl: string | null;
+                /** @description Unix epoch seconds (UTC) */
+                createdAt: number;
+            }[];
+            meta: {
+                page: number;
+                perPage: number;
+                total: number;
+                totalPages: number;
+            };
+        };
+        ManualSubmissionCreateForm: {
+            /**
+             * Format: binary
+             * @description PDF file (max 20 MB).
+             */
+            pdf: string;
+            departmentId: number;
+            courseId: number;
+            semesterId: number;
+            examTypeId: number;
         };
         CreateDepartment: {
             name: string;

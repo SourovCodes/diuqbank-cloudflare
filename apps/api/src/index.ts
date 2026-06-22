@@ -9,6 +9,7 @@ import auth from "./routes/auth";
 import contributors from "./routes/contributors";
 import files from "./routes/files";
 import filterOptions from "./routes/filter-options";
+import manualSubmissions from "./routes/manual-submissions";
 import questions from "./routes/questions";
 import type { AppEnv } from "./types";
 
@@ -45,6 +46,7 @@ app.route("/files", files);
 app.route("/contributors", contributors);
 app.route("/questions", questions);
 app.route("/filter-options", filterOptions);
+app.route("/manual-submissions", manualSubmissions);
 app.route("/admin", admin);
 
 // ---------------------------------------------------------------------------

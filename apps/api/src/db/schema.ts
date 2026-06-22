@@ -1,5 +1,6 @@
 import { sql, relations } from "drizzle-orm";
 import {
+  check,
   index,
   integer,
   sqliteTable,
@@ -126,6 +127,59 @@ export const submissions = sqliteTable(
   ],
 );
 
+export const manualSubmissions = sqliteTable(
+  "manual_submissions",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    departmentId: integer("department_id")
+      .notNull()
+      .references(() => departments.id, { onDelete: "restrict" }),
+    courseId: integer("course_id")
+      .notNull()
+      .references(() => courses.id, { onDelete: "restrict" }),
+    semesterId: integer("semester_id")
+      .notNull()
+      .references(() => semesters.id, { onDelete: "restrict" }),
+    examTypeId: integer("exam_type_id")
+      .notNull()
+      .references(() => examTypes.id, { onDelete: "restrict" }),
+    pdfKey: text("pdf_key").notNull(),
+    status: text("status", {
+      enum: ["pending_review", "approved", "rejected"],
+    })
+      .notNull()
+      .default("pending_review"),
+    rejectedReason: text("rejected_reason"),
+    reviewedBy: integer("reviewed_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    questionId: integer("question_id").references(() => questions.id, {
+      onDelete: "restrict",
+    }),
+    submissionId: integer("submission_id").references(() => submissions.id, {
+      onDelete: "restrict",
+    }),
+    createdAt: integer("created_at")
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (table) => [
+    index("manual_submissions_user_id_idx").on(table.userId),
+    index("manual_submissions_status_idx").on(table.status),
+    check(
+      "manual_submissions_status_check",
+      sql`${table.status} IN ('pending_review', 'approved', 'rejected')`,
+    ),
+    check(
+      "manual_submissions_approval_links_check",
+      sql`(${table.status} = 'approved' AND ${table.questionId} IS NOT NULL AND ${table.submissionId} IS NOT NULL) OR (${table.status} <> 'approved' AND ${table.questionId} IS NULL AND ${table.submissionId} IS NULL)`,
+    ),
+  ],
+);
+
 export const coursesRelations = relations(courses, ({ one, many }) => ({
   department: one(departments, {
     fields: [courses.departmentId],
@@ -165,10 +219,17 @@ export const questionsRelations = relations(questions, ({ one, many }) => ({
     references: [examTypes.id],
   }),
   submissions: many(submissions),
+  manualSubmissions: many(manualSubmissions),
 }));
 
 export const usersRelations = relations(users, ({ many }) => ({
   submissions: many(submissions),
+  manualSubmissions: many(manualSubmissions, {
+    relationName: "manualSubmissionOwner",
+  }),
+  reviewedManualSubmissions: many(manualSubmissions, {
+    relationName: "manualSubmissionReviewer",
+  }),
 }));
 
 export const submissionsRelations = relations(submissions, ({ one }) => ({
@@ -182,6 +243,46 @@ export const submissionsRelations = relations(submissions, ({ one }) => ({
   }),
 }));
 
+export const manualSubmissionsRelations = relations(
+  manualSubmissions,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [manualSubmissions.userId],
+      references: [users.id],
+      relationName: "manualSubmissionOwner",
+    }),
+    reviewer: one(users, {
+      fields: [manualSubmissions.reviewedBy],
+      references: [users.id],
+      relationName: "manualSubmissionReviewer",
+    }),
+    department: one(departments, {
+      fields: [manualSubmissions.departmentId],
+      references: [departments.id],
+    }),
+    course: one(courses, {
+      fields: [manualSubmissions.courseId],
+      references: [courses.id],
+    }),
+    semester: one(semesters, {
+      fields: [manualSubmissions.semesterId],
+      references: [semesters.id],
+    }),
+    examType: one(examTypes, {
+      fields: [manualSubmissions.examTypeId],
+      references: [examTypes.id],
+    }),
+    question: one(questions, {
+      fields: [manualSubmissions.questionId],
+      references: [questions.id],
+    }),
+    submission: one(submissions, {
+      fields: [manualSubmissions.submissionId],
+      references: [submissions.id],
+    }),
+  }),
+);
+
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type Department = typeof departments.$inferSelect;
@@ -190,3 +291,4 @@ export type Semester = typeof semesters.$inferSelect;
 export type ExamType = typeof examTypes.$inferSelect;
 export type Question = typeof questions.$inferSelect;
 export type Submission = typeof submissions.$inferSelect;
+export type ManualSubmission = typeof manualSubmissions.$inferSelect;
