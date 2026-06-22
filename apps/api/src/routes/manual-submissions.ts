@@ -3,7 +3,7 @@ import { HTTPException } from "hono/http-exception";
 import { and, count, desc, eq } from "drizzle-orm";
 
 import { getDb } from "../db/client";
-import { courses, manualSubmissions } from "../db/schema";
+import { manualSubmissions, type ManualSubmission } from "../db/schema";
 import { buildMeta } from "../lib/pagination";
 import { parseId } from "../lib/parse-id";
 import { parsePdfFile } from "../lib/pdf-upload";
@@ -20,30 +20,24 @@ const route = new Hono<AppEnv>();
 
 route.use("*", requireAuth);
 
-const lookupWith = {
-  department: { columns: { id: true, name: true, shortName: true } },
-  course: { columns: { id: true, departmentId: true, name: true } },
-  semester: { columns: { id: true, name: true } },
-  examType: { columns: { id: true, name: true } },
-} as const;
-
-type ManualSubmissionRow = typeof manualSubmissions.$inferSelect & {
-  department: { id: number; name: string; shortName: string };
-  course: { id: number; departmentId: number; name: string };
-  semester: { id: number; name: string };
-  examType: { id: number; name: string };
-};
-
 const toManualSubmission = (
-  row: ManualSubmissionRow,
+  row: ManualSubmission,
   origin: string,
 ) => ({
   id: row.id,
   userId: row.userId,
-  department: row.department,
-  course: row.course,
-  semester: row.semester,
-  examType: row.examType,
+  department: {
+    id: row.departmentId,
+    name: row.departmentName,
+    shortName: row.departmentShortName,
+  },
+  course: {
+    id: row.courseId,
+    departmentId: row.departmentId,
+    name: row.courseName,
+  },
+  semester: { id: row.semesterId, name: row.semesterName },
+  examType: { id: row.examTypeId, name: row.examTypeName },
   status: row.status,
   rejectedReason: row.rejectedReason,
   reviewedBy: row.reviewedBy,
@@ -71,7 +65,6 @@ route.get("/", validate("query", manualSubmissionsListQuery), async (c) => {
   const [items, [{ value: total }]] = await Promise.all([
     db.query.manualSubmissions.findMany({
       where,
-      with: lookupWith,
       orderBy: [desc(manualSubmissions.createdAt), desc(manualSubmissions.id)],
       limit: perPage,
       offset: (page - 1) * perPage,
@@ -89,23 +82,18 @@ route.post(
   "/",
   validate("form", manualSubmissionCreateForm),
   async (c) => {
-    const { departmentId, courseId, semesterId, examTypeId } =
-      c.req.valid("form");
+    const {
+      departmentName,
+      departmentShortName,
+      courseName,
+      semesterName,
+      examTypeName,
+    } = c.req.valid("form");
     const body = await c.req.parseBody();
     const pdf = await parsePdfFile(body["pdf"]);
     const userId = c.get("user").sub;
     const db = getDb(c.env.DB);
     const origin = new URL(c.req.url).origin;
-
-    const course = await db.query.courses.findFirst({
-      where: and(eq(courses.id, courseId), eq(courses.departmentId, departmentId)),
-      columns: { id: true },
-    });
-    if (!course) {
-      throw new HTTPException(400, {
-        message: "Course does not belong to the selected department",
-      });
-    }
 
     const key = `manual-submissions/${crypto.randomUUID()}.pdf`;
     await c.env.BUCKET.put(key, pdf.buffer, {
@@ -118,10 +106,11 @@ route.post(
         .insert(manualSubmissions)
         .values({
           userId,
-          departmentId,
-          courseId,
-          semesterId,
-          examTypeId,
+          departmentName,
+          departmentShortName,
+          courseName,
+          semesterName,
+          examTypeName,
           pdfKey: key,
         })
         .returning({ id: manualSubmissions.id });
@@ -132,7 +121,6 @@ route.post(
 
     const row = await db.query.manualSubmissions.findFirst({
       where: eq(manualSubmissions.id, created.id),
-      with: lookupWith,
     });
     if (!row) {
       throw new HTTPException(500, {

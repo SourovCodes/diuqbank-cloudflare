@@ -1,11 +1,15 @@
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
-import { and, count, desc, eq, type SQL } from "drizzle-orm";
+import { and, count, desc, eq, or, sql, type SQL } from "drizzle-orm";
+import type { AnySQLiteColumn } from "drizzle-orm/sqlite-core";
 
 import { getDb, type Db } from "../../db/client";
 import {
   courses,
+  departments,
+  examTypes,
   manualSubmissions,
+  semesters,
   type ManualSubmission,
   type User,
 } from "../../db/schema";
@@ -24,10 +28,6 @@ import type { AppEnv } from "../../types";
 const route = new Hono<AppEnv>();
 
 const lookupWith = {
-  department: { columns: { id: true, name: true, shortName: true } },
-  course: { columns: { id: true, departmentId: true, name: true } },
-  semester: { columns: { id: true, name: true } },
-  examType: { columns: { id: true, name: true } },
   user: {
     columns: {
       id: true,
@@ -60,10 +60,6 @@ type EmbeddedUser = Pick<
 >;
 
 type AdminManualSubmissionRow = ManualSubmission & {
-  department: { id: number; name: string; shortName: string };
-  course: { id: number; departmentId: number; name: string };
-  semester: { id: number; name: string };
-  examType: { id: number; name: string };
   user: EmbeddedUser;
   reviewer: EmbeddedUser | null;
   question: { id: number } | null;
@@ -77,10 +73,18 @@ const toAdminManualSubmission = (
   id: row.id,
   userId: row.userId,
   contributor: toAuthUser(row.user, origin),
-  department: row.department,
-  course: row.course,
-  semester: row.semester,
-  examType: row.examType,
+  department: {
+    id: row.departmentId,
+    name: row.departmentName,
+    shortName: row.departmentShortName,
+  },
+  course: {
+    id: row.courseId,
+    departmentId: row.departmentId,
+    name: row.courseName,
+  },
+  semester: { id: row.semesterId, name: row.semesterName },
+  examType: { id: row.examTypeId, name: row.examTypeName },
   status: row.status,
   rejectedReason: row.rejectedReason,
   reviewedBy: row.reviewedBy,
@@ -99,20 +103,83 @@ const loadManualSubmission = async (db: Db, id: number, origin: string) => {
   return row ? toAdminManualSubmission(row, origin) : null;
 };
 
-const ensureCourseDepartment = async (
-  db: Db,
-  departmentId: number,
-  courseId: number,
-): Promise<void> => {
-  const course = await db.query.courses.findFirst({
-    where: and(eq(courses.id, courseId), eq(courses.departmentId, departmentId)),
-    columns: { id: true },
-  });
-  if (!course) {
-    throw new HTTPException(400, {
-      message: "Course does not belong to the selected department",
+const caseInsensitiveEq = (column: AnySQLiteColumn, value: string): SQL =>
+  sql`lower(${column}) = lower(${value})`;
+
+const normalizeName = (value: string): string => value.toLowerCase();
+
+const requireSingleMatch = <T>(rows: T[], label: string): T => {
+  if (rows.length === 0) {
+    throw new HTTPException(409, {
+      message: `${label} does not exist; create it before approving`,
     });
   }
+  if (rows.length > 1) {
+    throw new HTTPException(409, {
+      message: `Multiple ${label.toLowerCase()} records match; resolve the duplicates before approving`,
+    });
+  }
+  return rows[0];
+};
+
+const resolveLookups = async (db: Db, row: ManualSubmission) => {
+  const [departmentMatches, semesterMatches, examTypeMatches] = await Promise.all([
+    db
+      .select({
+        id: departments.id,
+        name: departments.name,
+        shortName: departments.shortName,
+      })
+      .from(departments)
+      .where(
+        or(
+          caseInsensitiveEq(departments.name, row.departmentName),
+          caseInsensitiveEq(departments.shortName, row.departmentShortName),
+        ),
+      ),
+    db
+      .select({ id: semesters.id, name: semesters.name })
+      .from(semesters)
+      .where(caseInsensitiveEq(semesters.name, row.semesterName)),
+    db
+      .select({ id: examTypes.id, name: examTypes.name })
+      .from(examTypes)
+      .where(caseInsensitiveEq(examTypes.name, row.examTypeName)),
+  ]);
+
+  if (departmentMatches.length === 0) {
+    throw new HTTPException(409, {
+      message: "Department does not exist; create it before approving",
+    });
+  }
+  const exactDepartmentMatches = departmentMatches.filter(
+    (department) =>
+      normalizeName(department.name) === normalizeName(row.departmentName) &&
+      normalizeName(department.shortName) ===
+        normalizeName(row.departmentShortName),
+  );
+  if (exactDepartmentMatches.length !== 1) {
+    throw new HTTPException(409, {
+      message:
+        "Department name and short name do not identify one existing department",
+    });
+  }
+  const department = exactDepartmentMatches[0];
+  const semester = requireSingleMatch(semesterMatches, "Semester");
+  const examType = requireSingleMatch(examTypeMatches, "Exam type");
+
+  const courseMatches = await db
+    .select({ id: courses.id, departmentId: courses.departmentId, name: courses.name })
+    .from(courses)
+    .where(
+      and(
+        eq(courses.departmentId, department.id),
+        caseInsensitiveEq(courses.name, row.courseName),
+      ),
+    );
+  const course = requireSingleMatch(courseMatches, "Course");
+
+  return { department, course, semester, examType };
 };
 
 const deletePdf = async (bucket: R2Bucket, key: string): Promise<void> => {
@@ -129,10 +196,11 @@ route.get("/", validate("query", adminManualSubmissionsListQuery), async (c) => 
     perPage,
     status,
     userId,
-    departmentId,
-    courseId,
-    semesterId,
-    examTypeId,
+    departmentName,
+    departmentShortName,
+    courseName,
+    semesterName,
+    examTypeName,
   } = c.req.valid("query");
   const db = getDb(c.env.DB);
   const origin = new URL(c.req.url).origin;
@@ -140,11 +208,27 @@ route.get("/", validate("query", adminManualSubmissionsListQuery), async (c) => 
   const filters: SQL[] = [];
   if (status) filters.push(eq(manualSubmissions.status, status));
   if (userId) filters.push(eq(manualSubmissions.userId, userId));
-  if (departmentId)
-    filters.push(eq(manualSubmissions.departmentId, departmentId));
-  if (courseId) filters.push(eq(manualSubmissions.courseId, courseId));
-  if (semesterId) filters.push(eq(manualSubmissions.semesterId, semesterId));
-  if (examTypeId) filters.push(eq(manualSubmissions.examTypeId, examTypeId));
+  if (departmentName)
+    filters.push(
+      caseInsensitiveEq(manualSubmissions.departmentName, departmentName),
+    );
+  if (departmentShortName)
+    filters.push(
+      caseInsensitiveEq(
+        manualSubmissions.departmentShortName,
+        departmentShortName,
+      ),
+    );
+  if (courseName)
+    filters.push(caseInsensitiveEq(manualSubmissions.courseName, courseName));
+  if (semesterName)
+    filters.push(
+      caseInsensitiveEq(manualSubmissions.semesterName, semesterName),
+    );
+  if (examTypeName)
+    filters.push(
+      caseInsensitiveEq(manualSubmissions.examTypeName, examTypeName),
+    );
   const where = filters.length ? and(...filters) : undefined;
 
   const [items, [{ value: total }]] = await Promise.all([
@@ -199,8 +283,6 @@ route.patch(
     const [existing] = await db
       .select({
         status: manualSubmissions.status,
-        departmentId: manualSubmissions.departmentId,
-        courseId: manualSubmissions.courseId,
       })
       .from(manualSubmissions)
       .where(eq(manualSubmissions.id, id))
@@ -215,11 +297,6 @@ route.patch(
     }
 
     const update: AdminManualSubmissionUpdateInput = input;
-    await ensureCourseDepartment(
-      db,
-      update.departmentId ?? existing.departmentId,
-      update.courseId ?? existing.courseId,
-    );
 
     await db
       .update(manualSubmissions)
@@ -285,7 +362,7 @@ route.post("/:id/approve", async (c) => {
     });
   }
 
-  await ensureCourseDepartment(db, row.departmentId, row.courseId);
+  const resolved = await resolveLookups(db, row);
   const object = await c.env.BUCKET.get(row.pdfKey);
   if (!object) {
     throw new HTTPException(409, {
@@ -304,7 +381,12 @@ route.post("/:id/approve", async (c) => {
     `INSERT INTO questions (department_id, course_id, semester_id, exam_type_id)
      VALUES (?, ?, ?, ?)
      ON CONFLICT (department_id, course_id, semester_id, exam_type_id) DO NOTHING`,
-  ).bind(row.departmentId, row.courseId, row.semesterId, row.examTypeId);
+  ).bind(
+    resolved.department.id,
+    resolved.course.id,
+    resolved.semester.id,
+    resolved.examType.id,
+  );
 
   const submissionInsert = c.env.DB.prepare(
     `INSERT INTO submissions
@@ -313,16 +395,25 @@ route.post("/:id/approve", async (c) => {
      SELECT q.id, m.user_id, NULL, NULL, ?, ?, NULL, 'awaiting', NULL
      FROM manual_submissions AS m
      JOIN questions AS q
-       ON q.department_id = m.department_id
-      AND q.course_id = m.course_id
-      AND q.semester_id = m.semester_id
-      AND q.exam_type_id = m.exam_type_id
+       ON q.department_id = ?
+      AND q.course_id = ?
+      AND q.semester_id = ?
+      AND q.exam_type_id = ?
      WHERE m.id = ?
        AND m.status <> 'approved'
        AND NOT EXISTS (
          SELECT 1 FROM submissions AS s WHERE s.pdf_key = ?
        )`,
-  ).bind(destinationKey, object.size, id, destinationKey);
+  ).bind(
+    destinationKey,
+    object.size,
+    resolved.department.id,
+    resolved.course.id,
+    resolved.semester.id,
+    resolved.examType.id,
+    id,
+    destinationKey,
+  );
 
   const reviewUpdate = c.env.DB.prepare(
     `UPDATE manual_submissions
@@ -330,12 +421,16 @@ route.post("/:id/approve", async (c) => {
          rejected_reason = NULL,
          reviewed_by = ?,
          pdf_key = ?,
+         department_id = ?,
+         course_id = ?,
+         semester_id = ?,
+         exam_type_id = ?,
          question_id = (
            SELECT q.id FROM questions AS q
-           WHERE q.department_id = manual_submissions.department_id
-             AND q.course_id = manual_submissions.course_id
-             AND q.semester_id = manual_submissions.semester_id
-             AND q.exam_type_id = manual_submissions.exam_type_id
+           WHERE q.department_id = ?
+             AND q.course_id = ?
+             AND q.semester_id = ?
+             AND q.exam_type_id = ?
          ),
          submission_id = (
            SELECT s.id FROM submissions AS s
@@ -345,7 +440,20 @@ route.post("/:id/approve", async (c) => {
            LIMIT 1
          )
      WHERE id = ? AND status <> 'approved'`,
-  ).bind(reviewerId, destinationKey, destinationKey, id);
+  ).bind(
+    reviewerId,
+    destinationKey,
+    resolved.department.id,
+    resolved.course.id,
+    resolved.semester.id,
+    resolved.examType.id,
+    resolved.department.id,
+    resolved.course.id,
+    resolved.semester.id,
+    resolved.examType.id,
+    destinationKey,
+    id,
+  );
 
   try {
     const results = await c.env.DB.batch([
@@ -413,6 +521,10 @@ route.post(
         status: "rejected",
         rejectedReason: reason,
         reviewedBy: c.get("user").sub,
+        departmentId: null,
+        courseId: null,
+        semesterId: null,
+        examTypeId: null,
         questionId: null,
         submissionId: null,
       })

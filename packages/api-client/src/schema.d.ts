@@ -836,7 +836,7 @@ export interface paths {
          * Create a manual submission
          * @description **Access:** `User` — Requires a bearer token. Open to any signed-in user (admins included).
          *
-         *     Uploads a PDF for review. Ownership comes from the bearer token and status starts as `pending_review`.
+         *     Uploads a PDF plus department, course, semester, and exam-type text for review. No lookup IDs are accepted; status starts as `pending_review`.
          */
         post: {
             parameters: {
@@ -3171,7 +3171,7 @@ export interface paths {
          * List manual submissions
          * @description **Access:** `Admin` — Requires a bearer token from an account with `role: "admin"`.
          *
-         *     Paginated review queue. Filter by status, user, department, course, semester, or exam type.
+         *     Paginated review queue. Filter by status, user, or submitted lookup text.
          */
         get: {
             parameters: {
@@ -3184,14 +3184,16 @@ export interface paths {
                     status?: "pending_review" | "approved" | "rejected";
                     /** @description Filter by submitting user id. */
                     userId?: number;
-                    /** @description Filter by departmentId. */
-                    departmentId?: number;
-                    /** @description Filter by courseId. */
-                    courseId?: number;
-                    /** @description Filter by semesterId. */
-                    semesterId?: number;
-                    /** @description Filter by examTypeId. */
-                    examTypeId?: number;
+                    /** @description Case-insensitive exact match on departmentName. */
+                    departmentName?: string;
+                    /** @description Case-insensitive exact match on departmentShortName. */
+                    departmentShortName?: string;
+                    /** @description Case-insensitive exact match on courseName. */
+                    courseName?: string;
+                    /** @description Case-insensitive exact match on semesterName. */
+                    semesterName?: string;
+                    /** @description Case-insensitive exact match on examTypeName. */
+                    examTypeName?: string;
                 };
                 header?: never;
                 path?: never;
@@ -3370,7 +3372,7 @@ export interface paths {
          * Edit a manual submission
          * @description **Access:** `Admin` — Requires a bearer token from an account with `role: "admin"`.
          *
-         *     Edits the department, course, semester, and/or exam type before approval. Approved requests are immutable.
+         *     Edits the five submitted lookup text fields before approval. Approved requests are immutable.
          */
         patch: {
             parameters: {
@@ -3459,7 +3461,7 @@ export interface paths {
          * Approve a manual submission
          * @description **Access:** `Admin` — Requires a bearer token from an account with `role: "admin"`.
          *
-         *     Moves the PDF into the normal `submissions/` storage path, atomically creates or reuses the matching question, creates the real submission, and records the reviewing admin.
+         *     Resolves all submitted lookup text against existing records using case-insensitive full-string matching. If every record exists, moves the PDF into `submissions/`, atomically creates or reuses the question, creates the real submission, and records the reviewing admin. Missing lookup records must be created through their admin APIs first.
          */
         post: {
             parameters: {
@@ -3518,7 +3520,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description Already approved, or the PDF is missing from storage */
+                /** @description Already approved, a lookup record is missing/conflicting, or the PDF is missing */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -4257,21 +4259,21 @@ export interface components {
             id: number;
             userId: number;
             department: {
-                id: number;
+                id: number | null;
                 name: string;
                 shortName: string;
             };
             course: {
-                id: number;
-                departmentId: number;
+                id: number | null;
+                departmentId: number | null;
                 name: string;
             };
             semester: {
-                id: number;
+                id: number | null;
                 name: string;
             };
             examType: {
-                id: number;
+                id: number | null;
                 name: string;
             };
             /** @enum {string} */
@@ -4290,21 +4292,21 @@ export interface components {
                 id: number;
                 userId: number;
                 department: {
-                    id: number;
+                    id: number | null;
                     name: string;
                     shortName: string;
                 };
                 course: {
-                    id: number;
-                    departmentId: number;
+                    id: number | null;
+                    departmentId: number | null;
                     name: string;
                 };
                 semester: {
-                    id: number;
+                    id: number | null;
                     name: string;
                 };
                 examType: {
-                    id: number;
+                    id: number | null;
                     name: string;
                 };
                 /** @enum {string} */
@@ -4331,10 +4333,11 @@ export interface components {
              * @description PDF file (max 20 MB).
              */
             pdf: string;
-            departmentId: number;
-            courseId: number;
-            semesterId: number;
-            examTypeId: number;
+            departmentName: string;
+            departmentShortName: string;
+            courseName: string;
+            semesterName: string;
+            examTypeName: string;
         };
         CreateDepartment: {
             name: string;
@@ -4377,10 +4380,11 @@ export interface components {
             examTypeId?: number;
         };
         UpdateManualSubmission: {
-            departmentId?: number;
-            courseId?: number;
-            semesterId?: number;
-            examTypeId?: number;
+            departmentName?: string;
+            departmentShortName?: string;
+            courseName?: string;
+            semesterName?: string;
+            examTypeName?: string;
         };
         RejectManualSubmission: {
             reason: string;
@@ -4610,21 +4614,21 @@ export interface components {
                 createdAt: number;
             };
             department: {
-                id: number;
+                id: number | null;
                 name: string;
                 shortName: string;
             };
             course: {
-                id: number;
-                departmentId: number;
+                id: number | null;
+                departmentId: number | null;
                 name: string;
             };
             semester: {
-                id: number;
+                id: number | null;
                 name: string;
             };
             examType: {
-                id: number;
+                id: number | null;
                 name: string;
             };
             /** @enum {string} */
@@ -4669,21 +4673,21 @@ export interface components {
                     createdAt: number;
                 };
                 department: {
-                    id: number;
+                    id: number | null;
                     name: string;
                     shortName: string;
                 };
                 course: {
-                    id: number;
-                    departmentId: number;
+                    id: number | null;
+                    departmentId: number | null;
                     name: string;
                 };
                 semester: {
-                    id: number;
+                    id: number | null;
                     name: string;
                 };
                 examType: {
-                    id: number;
+                    id: number | null;
                     name: string;
                 };
                 /** @enum {string} */

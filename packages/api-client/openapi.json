@@ -1763,9 +1763,16 @@
             "type": "object",
             "properties": {
               "id": {
-                "type": "integer",
-                "minimum": -9007199254740991,
-                "maximum": 9007199254740991
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               },
               "name": {
                 "type": "string"
@@ -1785,14 +1792,28 @@
             "type": "object",
             "properties": {
               "id": {
-                "type": "integer",
-                "minimum": -9007199254740991,
-                "maximum": 9007199254740991
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               },
               "departmentId": {
-                "type": "integer",
-                "minimum": -9007199254740991,
-                "maximum": 9007199254740991
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               },
               "name": {
                 "type": "string"
@@ -1809,9 +1830,16 @@
             "type": "object",
             "properties": {
               "id": {
-                "type": "integer",
-                "minimum": -9007199254740991,
-                "maximum": 9007199254740991
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               },
               "name": {
                 "type": "string"
@@ -1827,9 +1855,16 @@
             "type": "object",
             "properties": {
               "id": {
-                "type": "integer",
-                "minimum": -9007199254740991,
-                "maximum": 9007199254740991
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               },
               "name": {
                 "type": "string"
@@ -1953,9 +1988,16 @@
                   "type": "object",
                   "properties": {
                     "id": {
-                      "type": "integer",
-                      "minimum": -9007199254740991,
-                      "maximum": 9007199254740991
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     },
                     "name": {
                       "type": "string"
@@ -1975,14 +2017,28 @@
                   "type": "object",
                   "properties": {
                     "id": {
-                      "type": "integer",
-                      "minimum": -9007199254740991,
-                      "maximum": 9007199254740991
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     },
                     "departmentId": {
-                      "type": "integer",
-                      "minimum": -9007199254740991,
-                      "maximum": 9007199254740991
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     },
                     "name": {
                       "type": "string"
@@ -1999,9 +2055,16 @@
                   "type": "object",
                   "properties": {
                     "id": {
-                      "type": "integer",
-                      "minimum": -9007199254740991,
-                      "maximum": 9007199254740991
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     },
                     "name": {
                       "type": "string"
@@ -2017,9 +2080,16 @@
                   "type": "object",
                   "properties": {
                     "id": {
-                      "type": "integer",
-                      "minimum": -9007199254740991,
-                      "maximum": 9007199254740991
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     },
                     "name": {
                       "type": "string"
@@ -2168,29 +2238,39 @@
             "format": "binary",
             "description": "PDF file (max 20 MB)."
           },
-          "departmentId": {
-            "type": "integer",
-            "minimum": 1
+          "departmentName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
           },
-          "courseId": {
-            "type": "integer",
-            "minimum": 1
+          "departmentShortName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20
           },
-          "semesterId": {
-            "type": "integer",
-            "minimum": 1
+          "courseName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 150
           },
-          "examTypeId": {
-            "type": "integer",
-            "minimum": 1
+          "semesterName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "examTypeName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
           }
         },
         "required": [
           "pdf",
-          "departmentId",
-          "courseId",
-          "semesterId",
-          "examTypeId"
+          "departmentName",
+          "departmentShortName",
+          "courseName",
+          "semesterName",
+          "examTypeName"
         ]
       },
       "CreateDepartment": {
@@ -2387,25 +2467,30 @@
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
         "properties": {
-          "departmentId": {
-            "type": "integer",
-            "exclusiveMinimum": 0,
-            "maximum": 9007199254740991
+          "departmentName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
           },
-          "courseId": {
-            "type": "integer",
-            "exclusiveMinimum": 0,
-            "maximum": 9007199254740991
+          "departmentShortName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20
           },
-          "semesterId": {
-            "type": "integer",
-            "exclusiveMinimum": 0,
-            "maximum": 9007199254740991
+          "courseName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 150
           },
-          "examTypeId": {
-            "type": "integer",
-            "exclusiveMinimum": 0,
-            "maximum": 9007199254740991
+          "semesterName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "examTypeName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
           }
         },
         "additionalProperties": false
@@ -3550,9 +3635,16 @@
             "type": "object",
             "properties": {
               "id": {
-                "type": "integer",
-                "minimum": -9007199254740991,
-                "maximum": 9007199254740991
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               },
               "name": {
                 "type": "string"
@@ -3572,14 +3664,28 @@
             "type": "object",
             "properties": {
               "id": {
-                "type": "integer",
-                "minimum": -9007199254740991,
-                "maximum": 9007199254740991
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               },
               "departmentId": {
-                "type": "integer",
-                "minimum": -9007199254740991,
-                "maximum": 9007199254740991
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               },
               "name": {
                 "type": "string"
@@ -3596,9 +3702,16 @@
             "type": "object",
             "properties": {
               "id": {
-                "type": "integer",
-                "minimum": -9007199254740991,
-                "maximum": 9007199254740991
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               },
               "name": {
                 "type": "string"
@@ -3614,9 +3727,16 @@
             "type": "object",
             "properties": {
               "id": {
-                "type": "integer",
-                "minimum": -9007199254740991,
-                "maximum": 9007199254740991
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               },
               "name": {
                 "type": "string"
@@ -3859,9 +3979,16 @@
                   "type": "object",
                   "properties": {
                     "id": {
-                      "type": "integer",
-                      "minimum": -9007199254740991,
-                      "maximum": 9007199254740991
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     },
                     "name": {
                       "type": "string"
@@ -3881,14 +4008,28 @@
                   "type": "object",
                   "properties": {
                     "id": {
-                      "type": "integer",
-                      "minimum": -9007199254740991,
-                      "maximum": 9007199254740991
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     },
                     "departmentId": {
-                      "type": "integer",
-                      "minimum": -9007199254740991,
-                      "maximum": 9007199254740991
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     },
                     "name": {
                       "type": "string"
@@ -3905,9 +4046,16 @@
                   "type": "object",
                   "properties": {
                     "id": {
-                      "type": "integer",
-                      "minimum": -9007199254740991,
-                      "maximum": 9007199254740991
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     },
                     "name": {
                       "type": "string"
@@ -3923,9 +4071,16 @@
                   "type": "object",
                   "properties": {
                     "id": {
-                      "type": "integer",
-                      "minimum": -9007199254740991,
-                      "maximum": 9007199254740991
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     },
                     "name": {
                       "type": "string"
@@ -5214,7 +5369,7 @@
             "position": "after"
           }
         ],
-        "description": "**Access:** `User` — Requires a bearer token. Open to any signed-in user (admins included).\n\nUploads a PDF for review. Ownership comes from the bearer token and status starts as `pending_review`.",
+        "description": "**Access:** `User` — Requires a bearer token. Open to any signed-in user (admins included).\n\nUploads a PDF plus department, course, semester, and exam-type text for review. No lookup IDs are accepted; status starts as `pending_review`.",
         "requestBody": {
           "required": true,
           "content": {
@@ -8088,7 +8243,7 @@
             "position": "after"
           }
         ],
-        "description": "**Access:** `Admin` — Requires a bearer token from an account with `role: \"admin\"`.\n\nPaginated review queue. Filter by status, user, department, course, semester, or exam type.",
+        "description": "**Access:** `Admin` — Requires a bearer token from an account with `role: \"admin\"`.\n\nPaginated review queue. Filter by status, user, or submitted lookup text.",
         "parameters": [
           {
             "name": "page",
@@ -8138,44 +8293,59 @@
             "description": "Filter by submitting user id."
           },
           {
-            "name": "departmentId",
+            "name": "departmentName",
             "in": "query",
             "required": false,
             "schema": {
-              "type": "integer",
-              "minimum": 1
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
             },
-            "description": "Filter by departmentId."
+            "description": "Case-insensitive exact match on departmentName."
           },
           {
-            "name": "courseId",
+            "name": "departmentShortName",
             "in": "query",
             "required": false,
             "schema": {
-              "type": "integer",
-              "minimum": 1
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 20
             },
-            "description": "Filter by courseId."
+            "description": "Case-insensitive exact match on departmentShortName."
           },
           {
-            "name": "semesterId",
+            "name": "courseName",
             "in": "query",
             "required": false,
             "schema": {
-              "type": "integer",
-              "minimum": 1
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 150
             },
-            "description": "Filter by semesterId."
+            "description": "Case-insensitive exact match on courseName."
           },
           {
-            "name": "examTypeId",
+            "name": "semesterName",
             "in": "query",
             "required": false,
             "schema": {
-              "type": "integer",
-              "minimum": 1
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
             },
-            "description": "Filter by examTypeId."
+            "description": "Case-insensitive exact match on semesterName."
+          },
+          {
+            "name": "examTypeName",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "description": "Case-insensitive exact match on examTypeName."
           }
         ],
         "responses": {
@@ -8312,7 +8482,7 @@
             "position": "after"
           }
         ],
-        "description": "**Access:** `Admin` — Requires a bearer token from an account with `role: \"admin\"`.\n\nEdits the department, course, semester, and/or exam type before approval. Approved requests are immutable.",
+        "description": "**Access:** `Admin` — Requires a bearer token from an account with `role: \"admin\"`.\n\nEdits the five submitted lookup text fields before approval. Approved requests are immutable.",
         "parameters": [
           {
             "name": "id",
@@ -8481,7 +8651,7 @@
             "position": "after"
           }
         ],
-        "description": "**Access:** `Admin` — Requires a bearer token from an account with `role: \"admin\"`.\n\nMoves the PDF into the normal `submissions/` storage path, atomically creates or reuses the matching question, creates the real submission, and records the reviewing admin.",
+        "description": "**Access:** `Admin` — Requires a bearer token from an account with `role: \"admin\"`.\n\nResolves all submitted lookup text against existing records using case-insensitive full-string matching. If every record exists, moves the PDF into `submissions/`, atomically creates or reuses the question, creates the real submission, and records the reviewing admin. Missing lookup records must be created through their admin APIs first.",
         "parameters": [
           {
             "name": "id",
@@ -8545,7 +8715,7 @@
             }
           },
           "409": {
-            "description": "Already approved, or the PDF is missing from storage",
+            "description": "Already approved, a lookup record is missing/conflicting, or the PDF is missing",
             "content": {
               "application/json": {
                 "schema": {

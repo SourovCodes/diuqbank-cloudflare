@@ -5,10 +5,11 @@ import { pageFields } from "../lib/pagination";
 // Multipart text fields. The `pdf` file is parsed and magic-byte validated
 // separately by `parsePdfFile`.
 export const manualSubmissionCreateForm = z.object({
-  departmentId: z.coerce.number().int().positive(),
-  courseId: z.coerce.number().int().positive(),
-  semesterId: z.coerce.number().int().positive(),
-  examTypeId: z.coerce.number().int().positive(),
+  departmentName: z.string().trim().min(1).max(100),
+  departmentShortName: z.string().trim().min(1).max(20),
+  courseName: z.string().trim().min(1).max(150),
+  semesterName: z.string().trim().min(1).max(100),
+  examTypeName: z.string().trim().min(1).max(100),
 });
 
 export const manualSubmissionsListQuery = z.object({

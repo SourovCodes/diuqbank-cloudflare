@@ -134,18 +134,23 @@ export const manualSubmissions = sqliteTable(
     userId: integer("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "restrict" }),
-    departmentId: integer("department_id")
-      .notNull()
-      .references(() => departments.id, { onDelete: "restrict" }),
-    courseId: integer("course_id")
-      .notNull()
-      .references(() => courses.id, { onDelete: "restrict" }),
-    semesterId: integer("semester_id")
-      .notNull()
-      .references(() => semesters.id, { onDelete: "restrict" }),
-    examTypeId: integer("exam_type_id")
-      .notNull()
-      .references(() => examTypes.id, { onDelete: "restrict" }),
+    departmentName: text("department_name").notNull(),
+    departmentShortName: text("department_short_name").notNull(),
+    courseName: text("course_name").notNull(),
+    semesterName: text("semester_name").notNull(),
+    examTypeName: text("exam_type_name").notNull(),
+    departmentId: integer("department_id").references(() => departments.id, {
+      onDelete: "restrict",
+    }),
+    courseId: integer("course_id").references(() => courses.id, {
+      onDelete: "restrict",
+    }),
+    semesterId: integer("semester_id").references(() => semesters.id, {
+      onDelete: "restrict",
+    }),
+    examTypeId: integer("exam_type_id").references(() => examTypes.id, {
+      onDelete: "restrict",
+    }),
     pdfKey: text("pdf_key").notNull(),
     status: text("status", {
       enum: ["pending_review", "approved", "rejected"],
@@ -175,7 +180,7 @@ export const manualSubmissions = sqliteTable(
     ),
     check(
       "manual_submissions_approval_links_check",
-      sql`(${table.status} = 'approved' AND ${table.questionId} IS NOT NULL AND ${table.submissionId} IS NOT NULL) OR (${table.status} <> 'approved' AND ${table.questionId} IS NULL AND ${table.submissionId} IS NULL)`,
+      sql`(${table.status} = 'approved' AND ${table.departmentId} IS NOT NULL AND ${table.courseId} IS NOT NULL AND ${table.semesterId} IS NOT NULL AND ${table.examTypeId} IS NOT NULL AND ${table.questionId} IS NOT NULL AND ${table.submissionId} IS NOT NULL) OR (${table.status} <> 'approved' AND ${table.departmentId} IS NULL AND ${table.courseId} IS NULL AND ${table.semesterId} IS NULL AND ${table.examTypeId} IS NULL AND ${table.questionId} IS NULL AND ${table.submissionId} IS NULL)`,
     ),
   ],
 );

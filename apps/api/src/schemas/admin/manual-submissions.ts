@@ -8,24 +8,24 @@ export const manualSubmissionStatus = z.enum([
   "rejected",
 ]);
 
-const id = z.number().int().positive();
-
 export const adminManualSubmissionsListQuery = z.object({
   ...pageFields,
   status: manualSubmissionStatus.optional(),
   userId: z.coerce.number().int().positive().optional(),
-  departmentId: z.coerce.number().int().positive().optional(),
-  courseId: z.coerce.number().int().positive().optional(),
-  semesterId: z.coerce.number().int().positive().optional(),
-  examTypeId: z.coerce.number().int().positive().optional(),
+  departmentName: z.string().trim().min(1).max(100).optional(),
+  departmentShortName: z.string().trim().min(1).max(20).optional(),
+  courseName: z.string().trim().min(1).max(150).optional(),
+  semesterName: z.string().trim().min(1).max(100).optional(),
+  examTypeName: z.string().trim().min(1).max(100).optional(),
 });
 
 export const adminManualSubmissionUpdateSchema = z
   .object({
-    departmentId: id,
-    courseId: id,
-    semesterId: id,
-    examTypeId: id,
+    departmentName: z.string().trim().min(1).max(100),
+    departmentShortName: z.string().trim().min(1).max(20),
+    courseName: z.string().trim().min(1).max(150),
+    semesterName: z.string().trim().min(1).max(100),
+    examTypeName: z.string().trim().min(1).max(100),
   })
   .partial();
 

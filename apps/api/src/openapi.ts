@@ -197,13 +197,21 @@ const questionSubmissions = z.object({
   data: z.array(publicSubmission),
 });
 
+const manualDepartment = department.extend({ id: z.number().int().nullable() });
+const manualCourse = course.extend({
+  id: z.number().int().nullable(),
+  departmentId: z.number().int().nullable(),
+});
+const manualSemester = semester.extend({ id: z.number().int().nullable() });
+const manualExamType = examType.extend({ id: z.number().int().nullable() });
+
 const manualSubmission = z.object({
   id: z.number().int(),
   userId: z.number().int(),
-  department,
-  course,
-  semester,
-  examType,
+  department: manualDepartment,
+  course: manualCourse,
+  semester: manualSemester,
+  examType: manualExamType,
   status: z.enum(["pending_review", "approved", "rejected"]),
   rejectedReason: z.string().nullable(),
   reviewedBy: z.number().int().nullable(),
@@ -277,10 +285,10 @@ const adminManualSubmission = z.object({
   id: z.number().int(),
   userId: z.number().int(),
   contributor: user,
-  department,
-  course,
-  semester,
-  examType,
+  department: manualDepartment,
+  course: manualCourse,
+  semester: manualSemester,
+  examType: manualExamType,
   status: z.enum(["pending_review", "approved", "rejected"]),
   rejectedReason: z.string().nullable(),
   reviewedBy: z.number().int().nullable(),
@@ -358,12 +366,20 @@ const componentSchemas = {
         format: "binary",
         description: "PDF file (max 20 MB).",
       },
-      departmentId: { type: "integer", minimum: 1 },
-      courseId: { type: "integer", minimum: 1 },
-      semesterId: { type: "integer", minimum: 1 },
-      examTypeId: { type: "integer", minimum: 1 },
+      departmentName: { type: "string", minLength: 1, maxLength: 100 },
+      departmentShortName: { type: "string", minLength: 1, maxLength: 20 },
+      courseName: { type: "string", minLength: 1, maxLength: 150 },
+      semesterName: { type: "string", minLength: 1, maxLength: 100 },
+      examTypeName: { type: "string", minLength: 1, maxLength: 100 },
     },
-    required: ["pdf", "departmentId", "courseId", "semesterId", "examTypeId"],
+    required: [
+      "pdf",
+      "departmentName",
+      "departmentShortName",
+      "courseName",
+      "semesterName",
+      "examTypeName",
+    ],
   },
 
   // Admin request bodies (derived from the route validation schemas).
@@ -680,7 +696,21 @@ const manualSubmissionFilterParams = [
     schema: { type: "integer", minimum: 1 },
     description: "Filter by submitting user id.",
   },
-  ...questionFilterParams,
+  ...(
+    [
+      ["departmentName", 100],
+      ["departmentShortName", 20],
+      ["courseName", 150],
+      ["semesterName", 100],
+      ["examTypeName", 100],
+    ] as const
+  ).map(([name, maxLength]) => ({
+    name,
+    in: "query",
+    required: false,
+    schema: { type: "string", minLength: 1, maxLength },
+    description: `Case-insensitive exact match on ${name}.`,
+  })),
 ];
 
 const userFilterParams = [
@@ -930,7 +960,7 @@ const adminPaths = {
       summary: "List manual submissions",
       ...authFields(
         "Admin",
-        "Paginated review queue. Filter by status, user, department, course, semester, or exam type.",
+        "Paginated review queue. Filter by status, user, or submitted lookup text.",
       ),
       parameters: [...pageParams, ...manualSubmissionFilterParams],
       responses: {
@@ -962,7 +992,7 @@ const adminPaths = {
       summary: "Edit a manual submission",
       ...authFields(
         "Admin",
-        "Edits the department, course, semester, and/or exam type before approval. Approved requests are immutable.",
+        "Edits the five submitted lookup text fields before approval. Approved requests are immutable.",
       ),
       parameters: [idPathParam("Manual submission")],
       requestBody: {
@@ -1000,7 +1030,7 @@ const adminPaths = {
       summary: "Approve a manual submission",
       ...authFields(
         "Admin",
-        "Moves the PDF into the normal `submissions/` storage path, atomically creates or reuses the matching question, creates the real submission, and records the reviewing admin.",
+        "Resolves all submitted lookup text against existing records using case-insensitive full-string matching. If every record exists, moves the PDF into `submissions/`, atomically creates or reuses the question, creates the real submission, and records the reviewing admin. Missing lookup records must be created through their admin APIs first.",
       ),
       parameters: [idPathParam("Manual submission")],
       responses: {
@@ -1009,7 +1039,9 @@ const adminPaths = {
         "401": commonErrors["401"],
         "403": commonErrors["403"],
         "404": commonErrors["404"],
-        "409": errResp("Already approved, or the PDF is missing from storage"),
+        "409": errResp(
+          "Already approved, a lookup record is missing/conflicting, or the PDF is missing",
+        ),
       },
     },
   },
@@ -1485,7 +1517,7 @@ export const buildOpenApiDoc = () => ({
         summary: "Create a manual submission",
         ...authFields(
           "User",
-          "Uploads a PDF for review. Ownership comes from the bearer token and status starts as `pending_review`.",
+          "Uploads a PDF plus department, course, semester, and exam-type text for review. No lookup IDs are accepted; status starts as `pending_review`.",
         ),
         requestBody: {
           required: true,
