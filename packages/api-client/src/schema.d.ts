@@ -948,6 +948,15 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
+                /** @description Approved manual submissions cannot be deleted by users */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
             };
         };
         options?: never;
@@ -3151,6 +3160,474 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/manual-submissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List manual submissions
+         * @description **Access:** `Admin` — Requires a bearer token from an account with `role: "admin"`.
+         *
+         *     Paginated review queue. Filter by status, user, department, course, semester, or exam type.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description 1-based page number. */
+                    page?: number;
+                    /** @description Items per page (max 100). */
+                    perPage?: number;
+                    /** @description Filter by review status. */
+                    status?: "pending_review" | "approved" | "rejected";
+                    /** @description Filter by submitting user id. */
+                    userId?: number;
+                    /** @description Filter by departmentId. */
+                    departmentId?: number;
+                    /** @description Filter by courseId. */
+                    courseId?: number;
+                    /** @description Filter by semesterId. */
+                    semesterId?: number;
+                    /** @description Filter by examTypeId. */
+                    examTypeId?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AdminManualSubmissionList"];
+                    };
+                };
+                /** @description Validation failed or bad request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Missing or invalid bearer token */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Admin access required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/manual-submissions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a manual submission
+         * @description **Access:** `Admin` — Requires a bearer token from an account with `role: "admin"`.
+         *
+         *     Returns the review request, submitter, reviewer, lookup entities, PDF URL, and approval links.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Manual submission id. */
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AdminManualSubmission"];
+                    };
+                };
+                /** @description Missing or invalid bearer token */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Admin access required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Resource not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        /**
+         * Delete a manual submission
+         * @description **Access:** `Admin` — Requires a bearer token from an account with `role: "admin"`.
+         *
+         *     Deletes the review record. Pending/rejected PDFs are removed; an approved submission and its PDF are preserved.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Manual submission id. */
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Deleted — no content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Missing or invalid bearer token */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Admin access required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Resource not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        /**
+         * Edit a manual submission
+         * @description **Access:** `Admin` — Requires a bearer token from an account with `role: "admin"`.
+         *
+         *     Edits the department, course, semester, and/or exam type before approval. Approved requests are immutable.
+         */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Manual submission id. */
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UpdateManualSubmission"];
+                };
+            };
+            responses: {
+                /** @description Updated */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AdminManualSubmission"];
+                    };
+                };
+                /** @description Validation failed or bad request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Missing or invalid bearer token */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Admin access required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Resource not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Approved manual submissions cannot be edited */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/admin/manual-submissions/{id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve a manual submission
+         * @description **Access:** `Admin` — Requires a bearer token from an account with `role: "admin"`.
+         *
+         *     Atomically creates or reuses the matching question, creates the real submission from the uploaded PDF, and records the reviewing admin.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Manual submission id. */
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Approved */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AdminManualSubmission"];
+                    };
+                };
+                /** @description Validation failed or bad request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Missing or invalid bearer token */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Admin access required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Resource not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Already approved, or the PDF is missing from storage */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/manual-submissions/{id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reject a manual submission
+         * @description **Access:** `Admin` — Requires a bearer token from an account with `role: "admin"`.
+         *
+         *     Rejects an unapproved request with a required reason and records the reviewing admin.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Manual submission id. */
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["RejectManualSubmission"];
+                };
+            };
+            responses: {
+                /** @description Rejected */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AdminManualSubmission"];
+                    };
+                };
+                /** @description Validation failed or bad request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Missing or invalid bearer token */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Admin access required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Resource not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Approved manual submissions cannot be rejected */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/users": {
         parameters: {
             query?: never;
@@ -3899,6 +4376,15 @@ export interface components {
             semesterId?: number;
             examTypeId?: number;
         };
+        UpdateManualSubmission: {
+            departmentId?: number;
+            courseId?: number;
+            semesterId?: number;
+            examTypeId?: number;
+        };
+        RejectManualSubmission: {
+            reason: string;
+        };
         UpdateSubmission: {
             questionId?: number;
             userId?: number;
@@ -4097,6 +4583,130 @@ export interface components {
                 pdfUrl: string | null;
                 /** @description Absolute URL to the watermarked PDF, if one has been generated. */
                 watermarkedPdfUrl: string | null;
+                /** @description Unix epoch seconds (UTC) */
+                createdAt: number;
+            }[];
+            meta: {
+                page: number;
+                perPage: number;
+                total: number;
+                totalPages: number;
+            };
+        };
+        AdminManualSubmission: {
+            id: number;
+            userId: number;
+            contributor: {
+                id: number;
+                name: string;
+                /** Format: email */
+                email: string;
+                username: string;
+                /** @enum {string} */
+                role: "admin" | "user";
+                /** @description Absolute URL to the profile image, or null if none is set. */
+                image: string | null;
+                /** @description Unix epoch seconds (UTC) */
+                createdAt: number;
+            };
+            department: {
+                id: number;
+                name: string;
+                shortName: string;
+            };
+            course: {
+                id: number;
+                departmentId: number;
+                name: string;
+            };
+            semester: {
+                id: number;
+                name: string;
+            };
+            examType: {
+                id: number;
+                name: string;
+            };
+            /** @enum {string} */
+            status: "pending_review" | "approved" | "rejected";
+            rejectedReason: string | null;
+            reviewedBy: number | null;
+            reviewer: {
+                id: number;
+                name: string;
+                /** Format: email */
+                email: string;
+                username: string;
+                /** @enum {string} */
+                role: "admin" | "user";
+                /** @description Absolute URL to the profile image, or null if none is set. */
+                image: string | null;
+                /** @description Unix epoch seconds (UTC) */
+                createdAt: number;
+            } | null;
+            questionId: number | null;
+            submissionId: number | null;
+            /** @description Absolute URL to the uploaded PDF, served by `GET /files/:key`. */
+            pdfUrl: string | null;
+            /** @description Unix epoch seconds (UTC) */
+            createdAt: number;
+        };
+        AdminManualSubmissionList: {
+            data: {
+                id: number;
+                userId: number;
+                contributor: {
+                    id: number;
+                    name: string;
+                    /** Format: email */
+                    email: string;
+                    username: string;
+                    /** @enum {string} */
+                    role: "admin" | "user";
+                    /** @description Absolute URL to the profile image, or null if none is set. */
+                    image: string | null;
+                    /** @description Unix epoch seconds (UTC) */
+                    createdAt: number;
+                };
+                department: {
+                    id: number;
+                    name: string;
+                    shortName: string;
+                };
+                course: {
+                    id: number;
+                    departmentId: number;
+                    name: string;
+                };
+                semester: {
+                    id: number;
+                    name: string;
+                };
+                examType: {
+                    id: number;
+                    name: string;
+                };
+                /** @enum {string} */
+                status: "pending_review" | "approved" | "rejected";
+                rejectedReason: string | null;
+                reviewedBy: number | null;
+                reviewer: {
+                    id: number;
+                    name: string;
+                    /** Format: email */
+                    email: string;
+                    username: string;
+                    /** @enum {string} */
+                    role: "admin" | "user";
+                    /** @description Absolute URL to the profile image, or null if none is set. */
+                    image: string | null;
+                    /** @description Unix epoch seconds (UTC) */
+                    createdAt: number;
+                } | null;
+                questionId: number | null;
+                submissionId: number | null;
+                /** @description Absolute URL to the uploaded PDF, served by `GET /files/:key`. */
+                pdfUrl: string | null;
                 /** @description Unix epoch seconds (UTC) */
                 createdAt: number;
             }[];

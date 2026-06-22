@@ -10,6 +10,10 @@ import {
   examTypeUpdateSchema,
 } from "./schemas/admin/exam-types";
 import {
+  adminManualSubmissionRejectSchema,
+  adminManualSubmissionUpdateSchema,
+} from "./schemas/admin/manual-submissions";
+import {
   questionCreateSchema,
   questionUpdateSchema,
 } from "./schemas/admin/questions";
@@ -269,6 +273,32 @@ const adminSubmissionList = z.object({
   meta: paginationMeta,
 });
 
+const adminManualSubmission = z.object({
+  id: z.number().int(),
+  userId: z.number().int(),
+  contributor: user,
+  department,
+  course,
+  semester,
+  examType,
+  status: z.enum(["pending_review", "approved", "rejected"]),
+  rejectedReason: z.string().nullable(),
+  reviewedBy: z.number().int().nullable(),
+  reviewer: user.nullable(),
+  questionId: z.number().int().nullable(),
+  submissionId: z.number().int().nullable(),
+  pdfUrl: z
+    .string()
+    .nullable()
+    .describe("Absolute URL to the uploaded PDF, served by `GET /files/:key`."),
+  createdAt: z.number().int().describe("Unix epoch seconds (UTC)"),
+});
+
+const adminManualSubmissionList = z.object({
+  data: z.array(adminManualSubmission),
+  meta: paginationMeta,
+});
+
 const adminUser = z.object({
   id: z.number().int(),
   name: z.string(),
@@ -347,6 +377,8 @@ const componentSchemas = {
   UpdateExamType: toSchema(examTypeUpdateSchema),
   CreateQuestion: toSchema(questionCreateSchema),
   UpdateQuestion: toSchema(questionUpdateSchema),
+  UpdateManualSubmission: toSchema(adminManualSubmissionUpdateSchema),
+  RejectManualSubmission: toSchema(adminManualSubmissionRejectSchema),
   UpdateSubmission: toSchema(submissionUpdateSchema),
   UpdateUser: toSchema(userUpdateSchema),
   SubmissionCreateForm: {
@@ -388,6 +420,8 @@ const componentSchemas = {
   AdminQuestionList: toSchema(adminQuestionList),
   AdminSubmission: toSchema(adminSubmission),
   AdminSubmissionList: toSchema(adminSubmissionList),
+  AdminManualSubmission: toSchema(adminManualSubmission),
+  AdminManualSubmissionList: toSchema(adminManualSubmissionList),
   AdminUser: toSchema(adminUser),
   AdminUserList: toSchema(adminUserList),
 };
@@ -626,6 +660,27 @@ const submissionFilterParams = [
     schema: { type: "string", enum: ["awaiting", "completed", "failed"] },
     description: "Filter by watermark status.",
   },
+];
+
+const manualSubmissionFilterParams = [
+  {
+    name: "status",
+    in: "query",
+    required: false,
+    schema: {
+      type: "string",
+      enum: ["pending_review", "approved", "rejected"],
+    },
+    description: "Filter by review status.",
+  },
+  {
+    name: "userId",
+    in: "query",
+    required: false,
+    schema: { type: "integer", minimum: 1 },
+    description: "Filter by submitting user id.",
+  },
+  ...questionFilterParams,
 ];
 
 const userFilterParams = [
@@ -869,6 +924,118 @@ const adminPaths = {
       },
     },
   },
+  "/admin/manual-submissions": {
+    get: {
+      tags: ["admin-manual-submissions"],
+      summary: "List manual submissions",
+      ...authFields(
+        "Admin",
+        "Paginated review queue. Filter by status, user, department, course, semester, or exam type.",
+      ),
+      parameters: [...pageParams, ...manualSubmissionFilterParams],
+      responses: {
+        "200": okJson("OK", ref("AdminManualSubmissionList")),
+        "400": commonErrors["400"],
+        "401": commonErrors["401"],
+        "403": commonErrors["403"],
+      },
+    },
+  },
+  "/admin/manual-submissions/{id}": {
+    get: {
+      tags: ["admin-manual-submissions"],
+      summary: "Get a manual submission",
+      ...authFields(
+        "Admin",
+        "Returns the review request, submitter, reviewer, lookup entities, PDF URL, and approval links.",
+      ),
+      parameters: [idPathParam("Manual submission")],
+      responses: {
+        "200": okJson("OK", ref("AdminManualSubmission")),
+        "401": commonErrors["401"],
+        "403": commonErrors["403"],
+        "404": commonErrors["404"],
+      },
+    },
+    patch: {
+      tags: ["admin-manual-submissions"],
+      summary: "Edit a manual submission",
+      ...authFields(
+        "Admin",
+        "Edits the department, course, semester, and/or exam type before approval. Approved requests are immutable.",
+      ),
+      parameters: [idPathParam("Manual submission")],
+      requestBody: {
+        required: true,
+        content: json(ref("UpdateManualSubmission")),
+      },
+      responses: {
+        "200": okJson("Updated", ref("AdminManualSubmission")),
+        "400": commonErrors["400"],
+        "401": commonErrors["401"],
+        "403": commonErrors["403"],
+        "404": commonErrors["404"],
+        "409": errResp("Approved manual submissions cannot be edited"),
+      },
+    },
+    delete: {
+      tags: ["admin-manual-submissions"],
+      summary: "Delete a manual submission",
+      ...authFields(
+        "Admin",
+        "Deletes the review record. Pending/rejected PDFs are removed; an approved submission and its PDF are preserved.",
+      ),
+      parameters: [idPathParam("Manual submission")],
+      responses: {
+        "204": noContent,
+        "401": commonErrors["401"],
+        "403": commonErrors["403"],
+        "404": commonErrors["404"],
+      },
+    },
+  },
+  "/admin/manual-submissions/{id}/approve": {
+    post: {
+      tags: ["admin-manual-submissions"],
+      summary: "Approve a manual submission",
+      ...authFields(
+        "Admin",
+        "Atomically creates or reuses the matching question, creates the real submission from the uploaded PDF, and records the reviewing admin.",
+      ),
+      parameters: [idPathParam("Manual submission")],
+      responses: {
+        "200": okJson("Approved", ref("AdminManualSubmission")),
+        "400": commonErrors["400"],
+        "401": commonErrors["401"],
+        "403": commonErrors["403"],
+        "404": commonErrors["404"],
+        "409": errResp("Already approved, or the PDF is missing from storage"),
+      },
+    },
+  },
+  "/admin/manual-submissions/{id}/reject": {
+    post: {
+      tags: ["admin-manual-submissions"],
+      summary: "Reject a manual submission",
+      ...authFields(
+        "Admin",
+        "Rejects an unapproved request with a required reason and records the reviewing admin.",
+      ),
+      parameters: [idPathParam("Manual submission")],
+      requestBody: {
+        required: true,
+        content: json(ref("RejectManualSubmission")),
+      },
+      responses: {
+        "200": okJson("Rejected", ref("AdminManualSubmission")),
+        "400": commonErrors["400"],
+        "401": commonErrors["401"],
+        "403": commonErrors["403"],
+        "404": commonErrors["404"],
+        "409": errResp("Approved manual submissions cannot be rejected"),
+      },
+    },
+  },
   "/admin/users": {
     get: {
       tags: ["admin-users"],
@@ -1011,6 +1178,10 @@ export const buildOpenApiDoc = () => ({
     { name: "admin-exam-types", description: "Admin: manage exam types." },
     { name: "admin-questions", description: "Admin: manage questions." },
     { name: "admin-submissions", description: "Admin: manage submissions." },
+    {
+      name: "admin-manual-submissions",
+      description: "Admin: review and manage manual submissions.",
+    },
     { name: "admin-users", description: "Admin: manage users." },
   ],
   "x-tagGroups": [
@@ -1034,6 +1205,7 @@ export const buildOpenApiDoc = () => ({
         "admin-exam-types",
         "admin-questions",
         "admin-submissions",
+        "admin-manual-submissions",
         "admin-users",
       ],
     },
@@ -1340,6 +1512,7 @@ export const buildOpenApiDoc = () => ({
           "204": noContent,
           "401": commonErrors["401"],
           "404": commonErrors["404"],
+          "409": errResp("Approved manual submissions cannot be deleted by users"),
         },
       },
     },

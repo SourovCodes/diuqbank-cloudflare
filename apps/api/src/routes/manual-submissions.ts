@@ -153,12 +153,20 @@ route.delete("/:id", async (c) => {
   const userId = c.get("user").sub;
   const db = getDb(c.env.DB);
   const [row] = await db
-    .select({ pdfKey: manualSubmissions.pdfKey })
+    .select({
+      pdfKey: manualSubmissions.pdfKey,
+      status: manualSubmissions.status,
+    })
     .from(manualSubmissions)
     .where(and(eq(manualSubmissions.id, id), eq(manualSubmissions.userId, userId)))
     .limit(1);
   if (!row) {
     throw new HTTPException(404, { message: "Manual submission not found" });
+  }
+  if (row.status === "approved") {
+    throw new HTTPException(409, {
+      message: "Approved manual submissions cannot be deleted by users",
+    });
   }
 
   await db
