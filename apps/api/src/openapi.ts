@@ -289,12 +289,12 @@ const componentSchemas = {
       questionId: { type: "integer", description: "Parent question id." },
       userId: {
         type: "integer",
-        description: "Optional contributor (user) id.",
+        description: "Contributor (user) id.",
       },
       section: { type: "string", description: "Optional section label." },
       batch: { type: "string", description: "Optional batch label." },
     },
-    required: ["pdf", "questionId"],
+    required: ["pdf", "questionId", "userId"],
   },
   PdfUploadForm: {
     type: "object",
@@ -719,7 +719,7 @@ const adminPaths = {
       summary: "Create a submission",
       ...authFields(
         "Admin",
-        "Uploads a PDF (multipart field `pdf`, max 20 MB) and creates a submission for the given `questionId`, optionally attributed to a `userId`.",
+        "Uploads a PDF (multipart field `pdf`, max 20 MB) and creates a submission for the given `questionId`, attributed to a `userId` (contributor, required).",
       ),
       requestBody: { required: true, content: multipart("SubmissionCreateForm") },
       responses: {
@@ -749,7 +749,7 @@ const adminPaths = {
       summary: "Update submission metadata",
       ...authFields(
         "Admin",
-        "Updates submission metadata (`questionId`, `userId`, `section`, `batch`, `watermarkStatus`). `userId`/`section`/`batch` accept `null` to clear them. Use `PUT /admin/submissions/{id}/pdf` to replace the file.",
+        "Updates submission metadata (`questionId`, `userId`, `section`, `batch`, `watermarkStatus`). `section`/`batch` accept `null` to clear them. Use `PUT /admin/submissions/{id}/pdf` to replace the file.",
       ),
       parameters: [idPathParam("Submission")],
       requestBody: { required: true, content: json(ref("UpdateSubmission")) },

@@ -2542,7 +2542,7 @@ export interface paths {
          * Create a submission
          * @description **Access:** `Admin` — Requires a bearer token from an account with `role: "admin"`.
          *
-         *     Uploads a PDF (multipart field `pdf`, max 20 MB) and creates a submission for the given `questionId`, optionally attributed to a `userId`.
+         *     Uploads a PDF (multipart field `pdf`, max 20 MB) and creates a submission for the given `questionId`, attributed to a `userId` (contributor, required).
          */
         post: {
             parameters: {
@@ -2735,7 +2735,7 @@ export interface paths {
          * Update submission metadata
          * @description **Access:** `Admin` — Requires a bearer token from an account with `role: "admin"`.
          *
-         *     Updates submission metadata (`questionId`, `userId`, `section`, `batch`, `watermarkStatus`). `userId`/`section`/`batch` accept `null` to clear them. Use `PUT /admin/submissions/{id}/pdf` to replace the file.
+         *     Updates submission metadata (`questionId`, `userId`, `section`, `batch`, `watermarkStatus`). `section`/`batch` accept `null` to clear them. Use `PUT /admin/submissions/{id}/pdf` to replace the file.
          */
         patch: {
             parameters: {
@@ -3482,7 +3482,7 @@ export interface components {
         };
         UpdateSubmission: {
             questionId?: number;
-            userId?: number | null;
+            userId?: number;
             section?: string | null;
             batch?: string | null;
             /** @enum {string} */
@@ -3502,8 +3502,8 @@ export interface components {
             pdf: string;
             /** @description Parent question id. */
             questionId: number;
-            /** @description Optional contributor (user) id. */
-            userId?: number;
+            /** @description Contributor (user) id. */
+            userId: number;
             /** @description Optional section label. */
             section?: string;
             /** @description Optional batch label. */

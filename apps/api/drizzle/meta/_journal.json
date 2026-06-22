@@ -15,6 +15,20 @@
       "when": 1781932901333,
       "tag": "0001_many_thunderbolt_ross",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1782101126075,
+      "tag": "0002_busy_nighthawk",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1782101140447,
+      "tag": "0003_submission_count_triggers",
+      "breakpoints": true
     }
   ]
 }

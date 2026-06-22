@@ -99,9 +99,9 @@ export const submissions = sqliteTable(
     questionId: integer("question_id")
       .notNull()
       .references(() => questions.id, { onDelete: "restrict" }),
-    userId: integer("user_id").references(() => users.id, {
-      onDelete: "set null",
-    }),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
     section: text("section"),
     batch: text("batch"),
     pdfKey: text("pdf_key").notNull(),

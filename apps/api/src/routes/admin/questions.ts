@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
-import { and, count, desc, eq, inArray, type SQL } from "drizzle-orm";
+import { and, count, desc, eq, type SQL } from "drizzle-orm";
 
 import { getDb, type Db } from "../../db/client";
 import { questions, submissions } from "../../db/schema";
@@ -23,6 +23,7 @@ const questionColumns = {
   courseId: true,
   semesterId: true,
   examTypeId: true,
+  submissionCount: true,
 } as const;
 
 const entityColumns = {
@@ -32,8 +33,8 @@ const entityColumns = {
   examType: { columns: { id: true, name: true } },
 } as const;
 
-// Load a single question with its entities + dynamic submission count, in the
-// admin detail shape (raw FK ids alongside the nested entities). Null if absent.
+// Load a single question with its entities + submission count, in the admin
+// detail shape (raw FK ids alongside the nested entities). Null if absent.
 const loadQuestion = async (db: Db, id: number) => {
   const q = await db.query.questions.findFirst({
     where: eq(questions.id, id),
@@ -42,11 +43,6 @@ const loadQuestion = async (db: Db, id: number) => {
   });
   if (!q) return null;
 
-  const [{ value: submissionCount }] = await db
-    .select({ value: count() })
-    .from(submissions)
-    .where(eq(submissions.questionId, id));
-
   return {
     id: q.id,
     title: buildQuestionTitle(q),
@@ -54,7 +50,7 @@ const loadQuestion = async (db: Db, id: number) => {
     courseId: q.courseId,
     semesterId: q.semesterId,
     examTypeId: q.examTypeId,
-    submissionCount,
+    submissionCount: q.submissionCount,
     department: q.department,
     course: q.course,
     semester: q.semester,
@@ -84,18 +80,6 @@ route.get("/", validate("query", questionsListQuery), async (c) => {
     offset: (page - 1) * perPage,
   });
 
-  // submissionCount per question, computed dynamically (one grouped query).
-  const ids = items.map((q) => q.id);
-  const countMap = new Map<number, number>();
-  if (ids.length) {
-    const counts = await db
-      .select({ questionId: submissions.questionId, value: count() })
-      .from(submissions)
-      .where(inArray(submissions.questionId, ids))
-      .groupBy(submissions.questionId);
-    for (const row of counts) countMap.set(row.questionId, row.value);
-  }
-
   const [{ value: total }] = await db
     .select({ value: count() })
     .from(questions)
@@ -109,7 +93,7 @@ route.get("/", validate("query", questionsListQuery), async (c) => {
       courseId: q.courseId,
       semesterId: q.semesterId,
       examTypeId: q.examTypeId,
-      submissionCount: countMap.get(q.id) ?? 0,
+      submissionCount: q.submissionCount,
       department: q.department,
       course: q.course,
       semester: q.semester,

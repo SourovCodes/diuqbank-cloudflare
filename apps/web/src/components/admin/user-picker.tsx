@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ChevronsUpDown, UserRound } from "lucide-react";
+import { Check, ChevronsUpDown } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { useAuth } from "@/components/auth-provider";
@@ -106,7 +106,7 @@ export function UserPicker({
               <span className="truncate">{selected.name}</span>
             </span>
           ) : (
-            <span className="text-muted-foreground">Anonymous</span>
+            <span className="text-muted-foreground">Select a contributor…</span>
           )}
           <ChevronsUpDown className="size-4 shrink-0 opacity-50" />
         </Button>
@@ -119,13 +119,6 @@ export function UserPicker({
             placeholder="Search users…"
           />
           <CommandList>
-            <CommandGroup>
-              <CommandItem value="__anonymous" onSelect={() => pick(null)}>
-                <UserRound />
-                <span>Anonymous (no contributor)</span>
-                {selected === null ? <Check className="ml-auto size-4" /> : null}
-              </CommandItem>
-            </CommandGroup>
             {loading ? (
               <p className="py-4 text-center text-sm text-muted-foreground">
                 Searching…

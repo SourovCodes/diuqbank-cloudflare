@@ -23,6 +23,15 @@ export class ApiError extends Error {
   }
 }
 
+// A 401 means the bearer token is missing/expired. The AuthProvider registers a
+// handler here so an expired session is signed out + redirected from anywhere,
+// rather than surfacing a cryptic error mid-action. See `auth-provider.tsx`.
+let onUnauthorized: (() => void) | null = null;
+
+export const setUnauthorizedHandler = (handler: (() => void) | null) => {
+  onUnauthorized = handler;
+};
+
 export async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_ORIGIN}${path}`, init);
   const payload = (await response.json().catch(() => null)) as
@@ -31,6 +40,7 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
     | null;
 
   if (!response.ok) {
+    if (response.status === 401) onUnauthorized?.();
     const error = payload as ErrorResponse | null;
     const issue = error?.issues?.[0]?.message;
     throw new ApiError(issue ?? error?.error ?? "Something went wrong", response.status);

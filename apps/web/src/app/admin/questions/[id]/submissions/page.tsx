@@ -331,11 +331,15 @@ function SubmissionForm({
       toast.error("PDFs must be 20 MB or smaller");
       return;
     }
+    if (!contributor) {
+      toast.error("Choose a contributor");
+      return;
+    }
     setBusy(true);
     try {
       if (submission) {
         await submissionsClient.update(token, submission.id, {
-          userId: contributor?.id ?? null,
+          userId: contributor.id,
           section: section.trim() || null,
           batch: batch.trim() || null,
           watermarkStatus,
@@ -345,7 +349,7 @@ function SubmissionForm({
         await submissionsClient.create(token, {
           pdf: pdf!,
           questionId,
-          userId: contributor?.id,
+          userId: contributor.id,
           section: section.trim() || undefined,
           batch: batch.trim() || undefined,
         });

@@ -35,8 +35,10 @@ wrangler.jsonc         Worker config: D1 binding DB, R2 binding BUCKET, vars, et
   Update it when you add/change endpoints — then run `pnpm api:generate` from the root to
   refresh `packages/api-client`.
 - **DB:** Drizzle + D1. `schema.ts` is the source of truth. **Timestamps are Unix epoch
-  seconds** (integer `unixepoch()`, returned as numbers). `submissionCount` columns are
-  not trigger-maintained yet, so read endpoints compute counts dynamically.
+  seconds** (integer `unixepoch()`, returned as numbers). `submissionCount` on `users`/
+  `questions` is maintained by SQLite triggers on `submissions` insert/delete/update (see
+  `drizzle/0003_submission_count_triggers.sql`) — never write it from app code; read
+  endpoints select the stored column.
 - **Errors:** throw `HTTPException`; the global `onError` in `index.ts` maps D1 constraint
   failures (UNIQUE → 409 "<col> already exists", FK → 400, NOT NULL → 400).
 - **Delete-safety:** admin DELETEs pre-count dependents and return **409 with a count**

@@ -1,9 +1,9 @@
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
-import { count, countDistinct, desc, eq, isNotNull } from "drizzle-orm";
+import { count, desc, eq, gt } from "drizzle-orm";
 
 import { getDb } from "../db/client";
-import { submissions, users } from "../db/schema";
+import { users } from "../db/schema";
 import { buildMeta } from "../lib/pagination";
 import { toContributor } from "../lib/user-shape";
 import { validate } from "../lib/validator";
@@ -25,19 +25,18 @@ contributors.get("/", validate("query", contributorsListQuery), async (c) => {
       username: users.username,
       imageKey: users.imageKey,
       createdAt: users.createdAt,
-      submissionCount: count(submissions.id),
+      submissionCount: users.submissionCount,
     })
     .from(users)
-    .innerJoin(submissions, eq(submissions.userId, users.id))
-    .groupBy(users.id)
-    .orderBy(desc(count(submissions.id)), desc(users.id))
+    .where(gt(users.submissionCount, 0))
+    .orderBy(desc(users.submissionCount), desc(users.id))
     .limit(perPage)
     .offset((page - 1) * perPage);
 
   const [{ value: total }] = await db
-    .select({ value: countDistinct(submissions.userId) })
-    .from(submissions)
-    .where(isNotNull(submissions.userId));
+    .select({ value: count() })
+    .from(users)
+    .where(gt(users.submissionCount, 0));
 
   return c.json({
     data: rows.map((row) => toContributor(row, origin)),
@@ -57,6 +56,7 @@ contributors.get("/:username", async (c) => {
       username: users.username,
       imageKey: users.imageKey,
       createdAt: users.createdAt,
+      submissionCount: users.submissionCount,
     })
     .from(users)
     .where(eq(users.username, username))
@@ -66,12 +66,7 @@ contributors.get("/:username", async (c) => {
     throw new HTTPException(404, { message: "Contributor not found" });
   }
 
-  const [{ value: submissionCount }] = await db
-    .select({ value: count() })
-    .from(submissions)
-    .where(eq(submissions.userId, user.id));
-
-  return c.json(toContributor({ ...user, submissionCount }, origin));
+  return c.json(toContributor(user, origin));
 });
 
 export default contributors;

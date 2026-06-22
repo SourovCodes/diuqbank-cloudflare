@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
-import { and, count, desc, eq, inArray, like, or, type SQL } from "drizzle-orm";
+import { and, count, desc, eq, like, or, type SQL } from "drizzle-orm";
 
 import { getDb } from "../../db/client";
 import { submissions, users } from "../../db/schema";
@@ -20,6 +20,7 @@ const adminUserColumns = {
   username: users.username,
   role: users.role,
   imageKey: users.imageKey,
+  submissionCount: users.submissionCount,
   createdAt: users.createdAt,
 };
 
@@ -52,24 +53,8 @@ route.get("/", validate("query", usersListQuery), async (c) => {
     db.select({ value: count() }).from(users).where(where),
   ]);
 
-  // submissionCount per user, computed dynamically (one grouped query).
-  const ids = rows.map((u) => u.id);
-  const countMap = new Map<number, number>();
-  if (ids.length) {
-    const counts = await db
-      .select({ userId: submissions.userId, value: count() })
-      .from(submissions)
-      .where(inArray(submissions.userId, ids))
-      .groupBy(submissions.userId);
-    for (const r of counts) {
-      if (r.userId !== null) countMap.set(r.userId, r.value);
-    }
-  }
-
   return c.json({
-    data: rows.map((u) =>
-      toAdminUser({ ...u, submissionCount: countMap.get(u.id) ?? 0 }, origin),
-    ),
+    data: rows.map((u) => toAdminUser(u, origin)),
     meta: buildMeta(page, perPage, total),
   });
 });
@@ -88,12 +73,7 @@ route.get("/:id", async (c) => {
     .limit(1);
   if (!row) throw new HTTPException(404, { message: "User not found" });
 
-  const [{ value: submissionCount }] = await db
-    .select({ value: count() })
-    .from(submissions)
-    .where(eq(submissions.userId, id));
-
-  return c.json(toAdminUser({ ...row, submissionCount }, origin));
+  return c.json(toAdminUser(row, origin));
 });
 
 route.patch("/:id", validate("json", userUpdateSchema), async (c) => {
@@ -124,12 +104,7 @@ route.patch("/:id", validate("json", userUpdateSchema), async (c) => {
     .returning(adminUserColumns);
   if (!updated) throw new HTTPException(404, { message: "User not found" });
 
-  const [{ value: submissionCount }] = await db
-    .select({ value: count() })
-    .from(submissions)
-    .where(eq(submissions.userId, id));
-
-  return c.json(toAdminUser({ ...updated, submissionCount }, origin));
+  return c.json(toAdminUser(updated, origin));
 });
 
 route.delete("/:id", async (c) => {
@@ -150,8 +125,18 @@ route.delete("/:id", async (c) => {
     .limit(1);
   if (!row) throw new HTTPException(404, { message: "User not found" });
 
-  // `submissions.userId` is `onDelete: set null`, so their submissions are kept
-  // (and become anonymous) — no FK block here.
+  // Delete safety: the FK from submissions is `restrict` (every submission must
+  // keep a contributor), so pre-count and return a 409 instead of a raw FK-400.
+  const [{ value: submissionCount }] = await db
+    .select({ value: count() })
+    .from(submissions)
+    .where(eq(submissions.userId, id));
+  if (submissionCount > 0) {
+    throw new HTTPException(409, {
+      message: `Cannot delete: ${submissionCount} submission(s) reference this user`,
+    });
+  }
+
   await db.delete(users).where(eq(users.id, id));
 
   if (row.imageKey) {

@@ -114,7 +114,7 @@ route.post("/", validate("form", submissionCreateForm), async (c) => {
       .insert(submissions)
       .values({
         questionId,
-        userId: userId ?? null,
+        userId,
         section: section ?? null,
         batch: batch ?? null,
         pdfKey: key,

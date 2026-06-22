@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
-import { and, count, desc, eq, inArray, type SQL } from "drizzle-orm";
+import { and, count, desc, eq, type SQL } from "drizzle-orm";
 
 import { getDb } from "../db/client";
 import { questions, submissions } from "../db/schema";
@@ -36,25 +36,12 @@ questionRoutes.get("/", validate("query", questionsListQuery), async (c) => {
 
   const items = await db.query.questions.findMany({
     where,
-    columns: { id: true },
+    columns: { id: true, submissionCount: true },
     with: entityColumns,
     orderBy: desc(questions.id),
     limit: perPage,
     offset: (page - 1) * perPage,
   });
-
-  // submissionCount per question is computed dynamically (the denormalized
-  // column isn't trigger-maintained). One grouped query covers the page.
-  const ids = items.map((q) => q.id);
-  const countMap = new Map<number, number>();
-  if (ids.length) {
-    const counts = await db
-      .select({ questionId: submissions.questionId, value: count() })
-      .from(submissions)
-      .where(inArray(submissions.questionId, ids))
-      .groupBy(submissions.questionId);
-    for (const row of counts) countMap.set(row.questionId, row.value);
-  }
 
   const [{ value: total }] = await db
     .select({ value: count() })
@@ -65,7 +52,7 @@ questionRoutes.get("/", validate("query", questionsListQuery), async (c) => {
     data: items.map((q) => ({
       id: q.id,
       title: buildQuestionTitle(q),
-      submissionCount: countMap.get(q.id) ?? 0,
+      submissionCount: q.submissionCount,
       department: q.department,
       course: q.course,
       semester: q.semester,
@@ -85,7 +72,7 @@ questionRoutes.get("/:id", async (c) => {
 
   const question = await db.query.questions.findFirst({
     where: eq(questions.id, id),
-    columns: { id: true },
+    columns: { id: true, submissionCount: true },
     with: entityColumns,
   });
 
@@ -93,15 +80,10 @@ questionRoutes.get("/:id", async (c) => {
     throw new HTTPException(404, { message: "Question not found" });
   }
 
-  const [{ value: submissionCount }] = await db
-    .select({ value: count() })
-    .from(submissions)
-    .where(eq(submissions.questionId, id));
-
   return c.json({
     id: question.id,
     title: buildQuestionTitle(question),
-    submissionCount,
+    submissionCount: question.submissionCount,
     department: question.department,
     course: question.course,
     semester: question.semester,

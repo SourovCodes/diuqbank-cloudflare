@@ -107,7 +107,7 @@ export const usersClient = createResourceClient<
 export type SubmissionCreateInput = {
   pdf: File;
   questionId: number;
-  userId?: number;
+  userId: number;
   section?: string;
   batch?: string;
 };
@@ -131,7 +131,7 @@ export const submissionsClient = {
     const body = new FormData();
     body.set("pdf", input.pdf);
     body.set("questionId", String(input.questionId));
-    if (input.userId != null) body.set("userId", String(input.userId));
+    body.set("userId", String(input.userId));
     if (input.section) body.set("section", input.section);
     if (input.batch) body.set("batch", input.batch);
     return request<Schemas["AdminSubmission"]>("/admin/submissions", {

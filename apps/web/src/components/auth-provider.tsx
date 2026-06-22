@@ -18,6 +18,7 @@ import {
   ApiError,
   getAuthConfig,
   getMe,
+  setUnauthorizedHandler,
   signInWithGoogle,
   updateMe,
   uploadProfileImage,
@@ -92,10 +93,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const googleInitializedRef = useRef(false);
   const oneTapPromptedRef = useRef(false);
   const pathnameRef = useRef(pathname);
+  const tokenRef = useRef(token);
 
   useEffect(() => {
     pathnameRef.current = pathname;
   }, [pathname]);
+
+  useEffect(() => {
+    tokenRef.current = token;
+  }, [token]);
 
   const signOut = useCallback(() => {
     window.google?.accounts.id.cancel();
@@ -106,6 +112,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(null);
     setUser(null);
   }, []);
+
+  // Sign out + redirect when any request hits a 401 — but only if a session is
+  // actually active. The bootstrap `getMe` 401 (stale token, `token` state still
+  // null) and 401s on public requests are ignored so visitors aren't redirected.
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      if (!tokenRef.current) return;
+      tokenRef.current = null; // dedupe concurrent 401s
+      signOut();
+      toast.error("Your session expired — please sign in again");
+      router.replace("/sign-in");
+    });
+    return () => setUnauthorizedHandler(null);
+  }, [router, signOut]);
 
   useEffect(() => {
     let active = true;

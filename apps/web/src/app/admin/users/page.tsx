@@ -123,7 +123,7 @@ export default function UsersPage() {
             onDelete={() => usersClient.remove(token!, item.id)}
             onDeleted={refetch}
             deleteTitle={`Delete "${item.name}"?`}
-            deleteDescription="Their submissions are kept but become anonymous."
+            deleteDescription="Only users with no submissions can be deleted. Reassign or remove their submissions first."
           />
         )}
         emptyIcon={Users}
