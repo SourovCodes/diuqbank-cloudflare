@@ -16,7 +16,6 @@ import { toast } from "sonner";
 
 import {
   ApiError,
-  getAuthConfig,
   getMe,
   setUnauthorizedHandler,
   signInWithGoogle,
@@ -78,17 +77,26 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({
+  children,
+  googleClientId,
+}: {
+  children: ReactNode;
+  // Resolved on the server (see `app/layout.tsx`); null when `/auth/config`
+  // couldn't be reached, in which case sign-in is shown as unavailable.
+  googleClientId: string | null;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [googleClientId, setGoogleClientId] = useState<string | null>(null);
   const [googleScriptReady, setGoogleScriptReady] = useState(false);
   const [googleReady, setGoogleReady] = useState(false);
   const [googleSigningIn, setGoogleSigningIn] = useState(false);
-  const [googleError, setGoogleError] = useState<string | null>(null);
+  const [googleError, setGoogleError] = useState<string | null>(
+    googleClientId ? null : "Google sign-in is temporarily unavailable",
+  );
   const [suppressOneTap, setSuppressOneTap] = useState(false);
   const googleInitializedRef = useRef(false);
   const oneTapPromptedRef = useRef(false);
@@ -126,22 +134,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     return () => setUnauthorizedHandler(null);
   }, [router, signOut]);
-
-  useEffect(() => {
-    let active = true;
-
-    getAuthConfig()
-      .then(({ googleClientId: clientId }) => {
-        if (active) setGoogleClientId(clientId);
-      })
-      .catch(() => {
-        if (active) setGoogleError("Google sign-in is temporarily unavailable");
-      });
-
-    return () => {
-      active = false;
-    };
-  }, []);
 
   useEffect(() => {
     let active = true;

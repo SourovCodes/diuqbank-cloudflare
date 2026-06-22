@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { ThemeScript } from "@/components/theme-script";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { getAuthConfig } from "@/lib/api/server";
 import "./globals.css";
 
 const instrumentSans = Instrument_Sans({
@@ -28,9 +29,15 @@ export const metadata: Metadata = {
     "Browse previous exam questions from Daffodil International University.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  // The Google OAuth client id is static, public config. Fetch it once on the
+  // server (over the API service binding) instead of making every visitor do a
+  // browser round trip to `/auth/config` before sign-in can initialize. A null
+  // here just means sign-in shows as unavailable — browsing still works.
+  const googleClientId = await getAuthConfig().catch(() => null);
+
   return (
     <html
       lang="en"
@@ -44,7 +51,7 @@ export default function RootLayout({
       <body className="flex min-h-full flex-col">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <TooltipProvider>
-            <AuthProvider>
+            <AuthProvider googleClientId={googleClientId}>
               <NextTopLoader showSpinner={false} />
               {children}
               <Toaster position="top-right" richColors />
