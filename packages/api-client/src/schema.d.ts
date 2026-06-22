@@ -498,6 +498,73 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/contributors/{username}/submissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a contributor's submissions
+         * @description **Access:** `Public` — No authentication required.
+         *
+         *     A contributor's own submissions, newest first. Paginated. Each row carries its parent question (`id` + `title`) instead of the contributor, and links to its PDF via `pdfUrl` (served by `GET /files/:key`).
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description 1-based page number. */
+                    page?: number;
+                    /** @description Items per page (max 100). */
+                    perPage?: number;
+                };
+                header?: never;
+                path: {
+                    /** @description The contributor's username. */
+                    username: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ContributorSubmissionList"];
+                    };
+                };
+                /** @description Validation failed or bad request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Resource not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/filter-options": {
         parameters: {
             query?: never;
@@ -3312,6 +3379,86 @@ export interface components {
                 submissionCount: number;
                 /** @description Unix epoch seconds (UTC) */
                 createdAt: number;
+            }[];
+            meta: {
+                page: number;
+                perPage: number;
+                total: number;
+                totalPages: number;
+            };
+        };
+        ContributorSubmission: {
+            id: number;
+            question: {
+                id: number;
+                /** @description Human-readable label of the parent question. */
+                title: string;
+                department: {
+                    id: number;
+                    name: string;
+                    shortName: string;
+                };
+                course: {
+                    id: number;
+                    departmentId: number;
+                    name: string;
+                };
+                semester: {
+                    id: number;
+                    name: string;
+                };
+                examType: {
+                    id: number;
+                    name: string;
+                };
+            };
+            section: string | null;
+            batch: string | null;
+            /** @description Size of the PDF in bytes. */
+            fileSize: number;
+            /** @enum {string} */
+            watermarkStatus: "awaiting" | "completed" | "failed";
+            /** @description Unix epoch seconds (UTC) */
+            createdAt: number;
+            /** @description Absolute URL to the submission PDF, served by `GET /files/:key`. */
+            pdfUrl: string | null;
+        };
+        ContributorSubmissionList: {
+            data: {
+                id: number;
+                question: {
+                    id: number;
+                    /** @description Human-readable label of the parent question. */
+                    title: string;
+                    department: {
+                        id: number;
+                        name: string;
+                        shortName: string;
+                    };
+                    course: {
+                        id: number;
+                        departmentId: number;
+                        name: string;
+                    };
+                    semester: {
+                        id: number;
+                        name: string;
+                    };
+                    examType: {
+                        id: number;
+                        name: string;
+                    };
+                };
+                section: string | null;
+                batch: string | null;
+                /** @description Size of the PDF in bytes. */
+                fileSize: number;
+                /** @enum {string} */
+                watermarkStatus: "awaiting" | "completed" | "failed";
+                /** @description Unix epoch seconds (UTC) */
+                createdAt: number;
+                /** @description Absolute URL to the submission PDF, served by `GET /files/:key`. */
+                pdfUrl: string | null;
             }[];
             meta: {
                 page: number;

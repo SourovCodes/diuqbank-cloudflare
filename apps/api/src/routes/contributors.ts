@@ -3,14 +3,33 @@ import { HTTPException } from "hono/http-exception";
 import { count, desc, eq, gt } from "drizzle-orm";
 
 import { getDb } from "../db/client";
-import { users } from "../db/schema";
+import { submissions, users } from "../db/schema";
 import { buildMeta } from "../lib/pagination";
-import { toContributor } from "../lib/user-shape";
+import { buildQuestionTitle } from "../lib/question-title";
+import { fileUrlFor, toContributor } from "../lib/user-shape";
 import { validate } from "../lib/validator";
-import { contributorsListQuery } from "../schemas/contributors";
+import {
+  contributorSubmissionsQuery,
+  contributorsListQuery,
+} from "../schemas/contributors";
 import type { AppEnv } from "../types";
 
 const contributors = new Hono<AppEnv>();
+
+// Eager-load shape for a contributor's submissions: the parent question (id +
+// its lookup entities, which both build the title and are returned in full). No
+// contributor — the list is already scoped to one.
+const submissionWith = {
+  question: {
+    columns: { id: true },
+    with: {
+      department: { columns: { id: true, name: true, shortName: true } },
+      course: { columns: { id: true, departmentId: true, name: true } },
+      semester: { columns: { id: true, name: true } },
+      examType: { columns: { id: true, name: true } },
+    },
+  },
+} as const;
 
 // Contributors = users with at least one submission, most prolific first.
 contributors.get("/", validate("query", contributorsListQuery), async (c) => {
@@ -68,5 +87,74 @@ contributors.get("/:username", async (c) => {
 
   return c.json(toContributor(user, origin));
 });
+
+// A contributor's own submissions, newest first. Unlike the question-scoped
+// public submissions, each row carries its parent question (id + title) instead
+// of the contributor.
+contributors.get(
+  "/:username/submissions",
+  validate("query", contributorSubmissionsQuery),
+  async (c) => {
+    const username = c.req.param("username");
+    const { page, perPage } = c.req.valid("query");
+    const db = getDb(c.env.DB);
+    const origin = new URL(c.req.url).origin;
+
+    // Confirm the contributor exists so a bad username is a clear 404, not an
+    // empty list.
+    const [user] = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.username, username))
+      .limit(1);
+    if (!user) {
+      throw new HTTPException(404, { message: "Contributor not found" });
+    }
+
+    const [rows, [{ value: total }]] = await Promise.all([
+      db.query.submissions.findMany({
+        where: eq(submissions.userId, user.id),
+        columns: {
+          id: true,
+          section: true,
+          batch: true,
+          fileSize: true,
+          watermarkStatus: true,
+          createdAt: true,
+          pdfKey: true,
+        },
+        with: submissionWith,
+        orderBy: desc(submissions.createdAt),
+        limit: perPage,
+        offset: (page - 1) * perPage,
+      }),
+      db
+        .select({ value: count() })
+        .from(submissions)
+        .where(eq(submissions.userId, user.id)),
+    ]);
+
+    return c.json({
+      data: rows.map((s) => ({
+        id: s.id,
+        question: {
+          id: s.question.id,
+          title: buildQuestionTitle(s.question),
+          department: s.question.department,
+          course: s.question.course,
+          semester: s.question.semester,
+          examType: s.question.examType,
+        },
+        section: s.section,
+        batch: s.batch,
+        fileSize: s.fileSize,
+        watermarkStatus: s.watermarkStatus,
+        createdAt: s.createdAt,
+        pdfUrl: fileUrlFor(origin, s.pdfKey),
+      })),
+      meta: buildMeta(page, perPage, total),
+    });
+  },
+);
 
 export default contributors;

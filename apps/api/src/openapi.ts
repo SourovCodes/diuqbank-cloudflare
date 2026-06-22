@@ -149,6 +149,34 @@ const publicSubmission = z.object({
   contributor: contributorSummary.nullable(),
 });
 
+const contributorSubmission = z.object({
+  id: z.number().int(),
+  question: z.object({
+    id: z.number().int(),
+    title: z
+      .string()
+      .describe("Human-readable label of the parent question."),
+    department,
+    course,
+    semester,
+    examType,
+  }),
+  section: z.string().nullable(),
+  batch: z.string().nullable(),
+  fileSize: z.number().int().describe("Size of the PDF in bytes."),
+  watermarkStatus: z.enum(["awaiting", "completed", "failed"]),
+  createdAt: z.number().int().describe("Unix epoch seconds (UTC)"),
+  pdfUrl: z
+    .string()
+    .nullable()
+    .describe("Absolute URL to the submission PDF, served by `GET /files/:key`."),
+});
+
+const contributorSubmissionList = z.object({
+  data: z.array(contributorSubmission),
+  meta: paginationMeta,
+});
+
 const questionDetail = z.object({
   id: z.number().int(),
   title: z
@@ -259,6 +287,8 @@ const componentSchemas = {
   Contributor: toSchema(contributor),
   ContributorSummary: toSchema(contributorSummary),
   ContributorList: toSchema(contributorList),
+  ContributorSubmission: toSchema(contributorSubmission),
+  ContributorSubmissionList: toSchema(contributorSubmissionList),
   QuestionListItem: toSchema(questionListItem),
   QuestionList: toSchema(questionList),
   PublicSubmission: toSchema(publicSubmission),
@@ -1106,6 +1136,31 @@ export const buildOpenApiDoc = () => ({
         ],
         responses: {
           "200": okJson("OK", ref("Contributor")),
+          "404": commonErrors["404"],
+        },
+      },
+    },
+    "/contributors/{username}/submissions": {
+      get: {
+        tags: ["contributors"],
+        summary: "List a contributor's submissions",
+        ...authFields(
+          "Public",
+          "A contributor's own submissions, newest first. Paginated. Each row carries its parent question (`id` + `title`) instead of the contributor, and links to its PDF via `pdfUrl` (served by `GET /files/:key`).",
+        ),
+        parameters: [
+          {
+            name: "username",
+            in: "path",
+            required: true,
+            schema: { type: "string" },
+            description: "The contributor's username.",
+          },
+          ...pageParams,
+        ],
+        responses: {
+          "200": okJson("OK", ref("ContributorSubmissionList")),
+          "400": commonErrors["400"],
           "404": commonErrors["404"],
         },
       },

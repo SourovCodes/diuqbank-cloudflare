@@ -11,6 +11,9 @@ export type FilterOptions = components["schemas"]["FilterOptions"];
 export type QuestionListItem = components["schemas"]["QuestionListItem"];
 export type QuestionDetail = components["schemas"]["QuestionDetail"];
 export type PublicSubmission = components["schemas"]["PublicSubmission"];
+export type Contributor = components["schemas"]["Contributor"];
+export type ContributorList = components["schemas"]["ContributorList"];
+export type ContributorSubmission = components["schemas"]["ContributorSubmission"];
 export type PaginationMeta = components["schemas"]["PaginationMeta"];
 
 export type ApiClientOptions = {

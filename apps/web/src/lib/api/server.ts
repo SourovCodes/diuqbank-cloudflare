@@ -4,6 +4,8 @@ import { cache } from "react";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import {
   createApiClient,
+  type Contributor,
+  type ContributorSubmission,
   type FilterOptions,
   type PublicSubmission,
   type QuestionDetail,
@@ -22,6 +24,18 @@ export type QuestionListParams = {
 
 export type QuestionListResponse = {
   data: QuestionListItem[];
+  meta: PaginationMeta;
+};
+
+export type PageParams = { page?: number; perPage?: number };
+
+export type ContributorListResponse = {
+  data: Contributor[];
+  meta: PaginationMeta;
+};
+
+export type ContributorSubmissionsResponse = {
+  data: ContributorSubmission[];
   meta: PaginationMeta;
 };
 
@@ -108,5 +122,47 @@ export const getQuestionSubmissions = cache(
     if (response.status === 404) return null;
     if (!data) throw apiError("Loading question submissions", response);
     return data.data;
+  },
+);
+
+export const getContributors = async (
+  params: PageParams,
+): Promise<ContributorListResponse> => {
+  const client = await getClient();
+  const { data, response } = await client.GET("/contributors", {
+    params: { query: params },
+  });
+
+  if (!data) throw apiError("Loading contributors", response);
+  return data;
+};
+
+export const getContributor = cache(
+  async (username: string): Promise<Contributor | null> => {
+    const client = await getClient();
+    const { data, response } = await client.GET("/contributors/{username}", {
+      params: { path: { username } },
+    });
+
+    if (response.status === 404) return null;
+    if (!data) throw apiError("Loading contributor", response);
+    return data;
+  },
+);
+
+export const getContributorSubmissions = cache(
+  async (
+    username: string,
+    params: PageParams,
+  ): Promise<ContributorSubmissionsResponse | null> => {
+    const client = await getClient();
+    const { data, response } = await client.GET(
+      "/contributors/{username}/submissions",
+      { params: { path: { username }, query: params } },
+    );
+
+    if (response.status === 404) return null;
+    if (!data) throw apiError("Loading contributor submissions", response);
+    return data;
   },
 );

@@ -20,6 +20,7 @@ import {
 const navigation = [
   { href: "/", label: "Home" },
   { href: "/questions", label: "Questions" },
+  { href: "/contributors", label: "Contributors" },
 ];
 
 export function SiteHeader() {
