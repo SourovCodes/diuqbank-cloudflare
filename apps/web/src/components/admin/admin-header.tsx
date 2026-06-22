@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
+import { Fragment } from "react";
 
 import {
   Breadcrumb,
@@ -24,51 +25,66 @@ const labels: Record<string, string> = {
   semesters: "Semesters",
   "exam-types": "Exam Types",
   users: "Users",
+  submissions: "Submissions",
+  new: "New",
+  edit: "Edit",
 };
+
+/**
+ * Builds a breadcrumb trail from the path: starts at the dashboard, labels each known
+ * segment, and skips numeric id segments (folding them into the href of the next
+ * segment) so e.g. /admin/questions/5/submissions/new reads
+ * Dashboard › Questions › Submissions › New.
+ */
+function buildCrumbs(pathname: string) {
+  const parts = pathname.split("/").filter(Boolean); // ["admin", ...]
+  const crumbs: { label: string; href: string }[] = [
+    { label: "Dashboard", href: "/admin" },
+  ];
+  let href = "/admin";
+  for (let i = 1; i < parts.length; i++) {
+    const segment = parts[i];
+    href += `/${segment}`;
+    if (/^\d+$/.test(segment)) continue; // id segment — keep in href, no crumb
+    crumbs.push({ label: labels[segment] ?? segment, href });
+  }
+  return crumbs;
+}
 
 export function AdminHeader() {
   const pathname = usePathname();
   const { resolvedTheme, setTheme } = useTheme();
 
-  const parts = pathname.split("/").filter(Boolean); // e.g. ["admin","questions","5","submissions"]
-  const segment = parts[1];
-  const current = segment ? (labels[segment] ?? segment) : null;
-  // Nested submissions live under a question: /admin/questions/[id]/submissions.
-  const nestedSubmissions = segment === "questions" && parts[3] === "submissions";
+  const crumbs = buildCrumbs(pathname);
 
   return (
     <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
       <SidebarTrigger className="-ml-1" />
-      <Separator orientation="vertical" className="mr-1 data-[orientation=vertical]:h-4" />
+      <Separator
+        orientation="vertical"
+        className="mr-1 data-[orientation=vertical]:h-4"
+      />
       <Breadcrumb>
         <BreadcrumbList>
-          <BreadcrumbItem className="hidden sm:block">
-            <BreadcrumbLink asChild>
-              <Link href="/admin">Admin</Link>
-            </BreadcrumbLink>
-          </BreadcrumbItem>
-          {current ? (
-            <>
-              <BreadcrumbSeparator className="hidden sm:block" />
-              <BreadcrumbItem>
-                {nestedSubmissions ? (
-                  <BreadcrumbLink asChild>
-                    <Link href="/admin/questions">{current}</Link>
-                  </BreadcrumbLink>
-                ) : (
-                  <BreadcrumbPage>{current}</BreadcrumbPage>
-                )}
-              </BreadcrumbItem>
-            </>
-          ) : null}
-          {nestedSubmissions ? (
-            <>
-              <BreadcrumbSeparator className="hidden sm:block" />
-              <BreadcrumbItem>
-                <BreadcrumbPage>Submissions</BreadcrumbPage>
-              </BreadcrumbItem>
-            </>
-          ) : null}
+          {crumbs.map((crumb, index) => {
+            const isLast = index === crumbs.length - 1;
+            return (
+              <Fragment key={crumb.href}>
+                {index > 0 ? (
+                  <BreadcrumbSeparator className="hidden sm:block" />
+                ) : null}
+                <BreadcrumbItem className={isLast ? undefined : "hidden sm:block"}>
+                  {isLast ? (
+                    <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
+                  ) : (
+                    <BreadcrumbLink asChild>
+                      <Link href={crumb.href}>{crumb.label}</Link>
+                    </BreadcrumbLink>
+                  )}
+                </BreadcrumbItem>
+              </Fragment>
+            );
+          })}
         </BreadcrumbList>
       </Breadcrumb>
 

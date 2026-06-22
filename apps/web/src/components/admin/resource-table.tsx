@@ -27,19 +27,26 @@ export type Column<Item> = {
   className?: string;
 };
 
-/** Page title + optional description, shared across admin resource pages. */
+/** Page title + optional description and right-aligned actions, shared across pages. */
 export function PageHeader({
   title,
   description,
+  actions,
 }: {
   title: string;
   description?: string;
+  actions?: React.ReactNode;
 }) {
   return (
-    <div className="space-y-1">
-      <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-      {description ? (
-        <p className="text-sm text-muted-foreground">{description}</p>
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <div className="space-y-1">
+        <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
+        {description ? (
+          <p className="text-sm text-muted-foreground">{description}</p>
+        ) : null}
+      </div>
+      {actions ? (
+        <div className="flex shrink-0 items-center gap-2">{actions}</div>
       ) : null}
     </div>
   );
@@ -99,6 +106,7 @@ export function ResourceTable<Item>({
   currentPage,
   rowKey,
   actions,
+  onRowClick,
   emptyIcon,
   emptyTitle,
   emptyDescription,
@@ -107,10 +115,12 @@ export function ResourceTable<Item>({
   items: Item[];
   loading: boolean;
   error: string | null;
-  meta: { totalPages: number } | null;
+  meta: { page: number; perPage: number; total: number; totalPages: number } | null;
   currentPage: number;
   rowKey: (item: Item) => string | number;
   actions?: (item: Item) => React.ReactNode;
+  /** Click anywhere on a row (except on a link/button/control) to act on it. */
+  onRowClick?: (item: Item) => void;
   emptyIcon: LucideIcon;
   emptyTitle: string;
   emptyDescription: string;
@@ -185,7 +195,29 @@ export function ResourceTable<Item>({
                       </TableRow>
                     ))
                   : items.map((item) => (
-                      <TableRow key={rowKey(item)}>
+                      <TableRow
+                        key={rowKey(item)}
+                        className={cn(
+                          "group",
+                          onRowClick && "cursor-pointer",
+                        )}
+                        onClick={
+                          onRowClick
+                            ? (event) => {
+                                // Don't hijack clicks meant for a link, button or
+                                // control inside the row.
+                                if (
+                                  (event.target as HTMLElement).closest(
+                                    "a, button, input, select, label, [role='button']",
+                                  )
+                                ) {
+                                  return;
+                                }
+                                onRowClick(item);
+                              }
+                            : undefined
+                        }
+                      >
                         {columns.map((column, index) => (
                           <TableCell key={index} className={column.className}>
                             {column.cell(item)}
@@ -193,7 +225,9 @@ export function ResourceTable<Item>({
                         ))}
                         {actions ? (
                           <TableCell className="text-right">
-                            {actions(item)}
+                            <div className="flex justify-end opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
+                              {actions(item)}
+                            </div>
                           </TableCell>
                         ) : null}
                       </TableRow>
@@ -204,11 +238,19 @@ export function ResourceTable<Item>({
         </Card>
       )}
 
-      {meta ? (
-        <CustomPagination
-          currentPage={currentPage}
-          totalPages={meta.totalPages}
-        />
+      {meta && !showEmpty ? (
+        <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
+          <p className="text-sm text-muted-foreground">
+            Showing {(meta.page - 1) * meta.perPage + 1}–
+            {Math.min(meta.page * meta.perPage, meta.total)} of {meta.total}
+          </p>
+          {meta.totalPages > 1 ? (
+            <CustomPagination
+              currentPage={currentPage}
+              totalPages={meta.totalPages}
+            />
+          ) : null}
+        </div>
       ) : null}
     </div>
   );

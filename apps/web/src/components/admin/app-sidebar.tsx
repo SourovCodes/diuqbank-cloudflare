@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { LucideIcon } from "lucide-react";
 import {
   BookOpen,
   Building2,
@@ -10,6 +11,7 @@ import {
   FileQuestion,
   FileText,
   GraduationCap,
+  LayoutDashboard,
   LogOut,
   Users,
 } from "lucide-react";
@@ -32,13 +34,37 @@ import {
   SidebarSeparator,
 } from "@/components/ui/sidebar";
 
-const catalog = [
-  { href: "/admin/questions", label: "Questions", icon: FileQuestion },
-  { href: "/admin/departments", label: "Departments", icon: Building2 },
-  { href: "/admin/courses", label: "Courses", icon: GraduationCap },
-  { href: "/admin/semesters", label: "Semesters", icon: CalendarDays },
-  { href: "/admin/exam-types", label: "Exam Types", icon: FileText },
-  { href: "/admin/users", label: "Users", icon: Users },
+type NavItem = {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  /** Match only the exact path (used for the dashboard, which is a prefix of all). */
+  exact?: boolean;
+};
+
+const navGroups: { label?: string; items: NavItem[] }[] = [
+  {
+    items: [
+      { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
+    ],
+  },
+  {
+    label: "Content",
+    items: [{ href: "/admin/questions", label: "Questions", icon: FileQuestion }],
+  },
+  {
+    label: "Catalog",
+    items: [
+      { href: "/admin/departments", label: "Departments", icon: Building2 },
+      { href: "/admin/courses", label: "Courses", icon: GraduationCap },
+      { href: "/admin/semesters", label: "Semesters", icon: CalendarDays },
+      { href: "/admin/exam-types", label: "Exam Types", icon: FileText },
+    ],
+  },
+  {
+    label: "People",
+    items: [{ href: "/admin/users", label: "Users", icon: Users }],
+  },
 ];
 
 export function AppSidebar() {
@@ -77,32 +103,37 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Catalog</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {catalog.map((item) => {
-                const active =
-                  pathname === item.href ||
-                  pathname.startsWith(`${item.href}/`);
-                return (
-                  <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={active}
-                      tooltip={item.label}
-                    >
-                      <Link href={item.href}>
-                        <item.icon />
-                        <span>{item.label}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {navGroups.map((group, groupIndex) => (
+          <SidebarGroup key={group.label ?? groupIndex}>
+            {group.label ? (
+              <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+            ) : null}
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {group.items.map((item) => {
+                  const active = item.exact
+                    ? pathname === item.href
+                    : pathname === item.href ||
+                      pathname.startsWith(`${item.href}/`);
+                  return (
+                    <SidebarMenuItem key={item.href}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={active}
+                        tooltip={item.label}
+                      >
+                        <Link href={item.href}>
+                          <item.icon />
+                          <span>{item.label}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
       </SidebarContent>
 
       <SidebarFooter>

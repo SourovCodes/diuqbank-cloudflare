@@ -5,7 +5,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { AdminToolbar } from "@/components/admin/admin-toolbar";
-import { FormDialog } from "@/components/admin/form-dialog";
+import { FormSheet } from "@/components/admin/form-sheet";
 import {
   PageHeader,
   ResourceTable,
@@ -71,6 +71,10 @@ export default function UsersPage() {
         meta={meta}
         currentPage={page}
         rowKey={(item) => item.id}
+        onRowClick={(item) => {
+          setEditing(item);
+          setOpen(true);
+        }}
         columns={[
           {
             header: "User",
@@ -130,7 +134,7 @@ export default function UsersPage() {
         emptyTitle="No users"
         emptyDescription="No one matches these filters."
       />
-      <FormDialog open={open} onOpenChange={setOpen} title="Edit user">
+      <FormSheet open={open} onOpenChange={setOpen} title="Edit user">
         <UserForm
           user={editing}
           onDone={() => {
@@ -138,7 +142,7 @@ export default function UsersPage() {
             refetch();
           }}
         />
-      </FormDialog>
+      </FormSheet>
     </>
   );
 }

@@ -6,7 +6,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { AdminToolbar } from "@/components/admin/admin-toolbar";
-import { FormDialog } from "@/components/admin/form-dialog";
+import { FormSheet } from "@/components/admin/form-sheet";
 import {
   PageHeader,
   ResourceTable,
@@ -54,6 +54,10 @@ export default function DepartmentsPage() {
         meta={meta}
         currentPage={page}
         rowKey={(item) => item.id}
+        onRowClick={(item) => {
+          setEditing(item);
+          setOpen(true);
+        }}
         columns={[
           {
             header: "Name",
@@ -77,7 +81,7 @@ export default function DepartmentsPage() {
         emptyTitle="No departments"
         emptyDescription="Create your first department to get started."
       />
-      <FormDialog
+      <FormSheet
         open={open}
         onOpenChange={setOpen}
         title={editing ? "Edit department" : "New department"}
@@ -89,7 +93,7 @@ export default function DepartmentsPage() {
             refetch();
           }}
         />
-      </FormDialog>
+      </FormSheet>
     </>
   );
 }

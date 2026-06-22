@@ -5,7 +5,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { AdminToolbar } from "@/components/admin/admin-toolbar";
-import { FormDialog } from "@/components/admin/form-dialog";
+import { FormSheet } from "@/components/admin/form-sheet";
 import {
   PageHeader,
   ResourceTable,
@@ -72,6 +72,10 @@ export function NameResourcePage<Item extends NameItem>({
         meta={meta}
         currentPage={page}
         rowKey={(item) => item.id}
+        onRowClick={(item) => {
+          setEditing(item);
+          setOpen(true);
+        }}
         columns={[
           {
             header: "Name",
@@ -94,7 +98,7 @@ export function NameResourcePage<Item extends NameItem>({
         emptyTitle={`No ${title.toLowerCase()}`}
         emptyDescription={`Create your first ${singular} to get started.`}
       />
-      <FormDialog
+      <FormSheet
         open={open}
         onOpenChange={setOpen}
         title={editing ? `Edit ${singular}` : `New ${singular}`}
@@ -113,7 +117,7 @@ export function NameResourcePage<Item extends NameItem>({
             refetch();
           }}
         />
-      </FormDialog>
+      </FormSheet>
     </>
   );
 }

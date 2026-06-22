@@ -6,7 +6,8 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { AdminToolbar } from "@/components/admin/admin-toolbar";
-import { FormDialog } from "@/components/admin/form-dialog";
+import { EntityPicker } from "@/components/admin/entity-picker";
+import { FormSheet } from "@/components/admin/form-sheet";
 import {
   PageHeader,
   ResourceTable,
@@ -19,7 +20,6 @@ import { useAuth } from "@/components/auth-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { NativeSelect } from "@/components/ui/native-select";
 import { coursesClient } from "@/lib/api/admin-client";
 
 type DepartmentOption = FilterOptions["departments"][number];
@@ -62,21 +62,21 @@ export default function CoursesPage() {
           setOpen(true);
         }}
         newLabel="New course"
+        activeFilterCount={departmentId ? 1 : 0}
+        onClearFilters={() => setFilter("departmentId", null)}
       >
-        <NativeSelect
+        <EntityPicker
+          items={departments}
           value={departmentId}
-          onChange={(event) =>
-            setFilter("departmentId", event.target.value || null)
-          }
+          onChange={(next) => setFilter("departmentId", next || null)}
+          getId={(item) => item.id}
+          getLabel={(item) => item.shortName}
+          placeholder="All departments"
+          clearLabel="All departments"
+          searchPlaceholder="Search departments…"
           aria-label="Filter by department"
-        >
-          <option value="">All departments</option>
-          {departments.map((dept) => (
-            <option key={dept.id} value={dept.id}>
-              {dept.shortName}
-            </option>
-          ))}
-        </NativeSelect>
+          className="w-full sm:w-48"
+        />
       </AdminToolbar>
       <ResourceTable<Course>
         items={items}
@@ -85,6 +85,10 @@ export default function CoursesPage() {
         meta={meta}
         currentPage={page}
         rowKey={(item) => item.id}
+        onRowClick={(item) => {
+          setEditing(item);
+          setOpen(true);
+        }}
         columns={[
           {
             header: "Course",
@@ -111,7 +115,7 @@ export default function CoursesPage() {
         emptyTitle="No courses"
         emptyDescription="Create your first course to get started."
       />
-      <FormDialog
+      <FormSheet
         open={open}
         onOpenChange={setOpen}
         title={editing ? "Edit course" : "New course"}
@@ -124,7 +128,7 @@ export default function CoursesPage() {
             refetch();
           }}
         />
-      </FormDialog>
+      </FormSheet>
     </>
   );
 }
@@ -174,22 +178,16 @@ function CourseForm({
     <form onSubmit={submit} className="grid gap-4">
       <div className="grid gap-2">
         <Label htmlFor="department">Department</Label>
-        <NativeSelect
+        <EntityPicker
           id="department"
+          items={departments}
           value={departmentId}
-          onChange={(event) => setDepartmentId(event.target.value)}
-          className="w-full"
-          required
-        >
-          <option value="" disabled>
-            Select a department
-          </option>
-          {departments.map((dept) => (
-            <option key={dept.id} value={dept.id}>
-              {dept.name}
-            </option>
-          ))}
-        </NativeSelect>
+          onChange={setDepartmentId}
+          getId={(item) => item.id}
+          getLabel={(item) => item.name}
+          placeholder="Select a department"
+          searchPlaceholder="Search departments…"
+        />
       </div>
       <div className="grid gap-2">
         <Label htmlFor="name">Course name</Label>
