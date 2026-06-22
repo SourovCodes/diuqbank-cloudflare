@@ -67,18 +67,13 @@
   ],
   "x-tagGroups": [
     {
-      "name": "Public",
+      "name": "Non-admin",
       "tags": [
         "auth",
         "files",
         "contributors",
         "questions",
-        "filter-options"
-      ]
-    },
-    {
-      "name": "User",
-      "tags": [
+        "filter-options",
         "manual-submissions"
       ]
     },

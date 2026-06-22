@@ -1015,12 +1015,15 @@ export const buildOpenApiDoc = () => ({
   ],
   "x-tagGroups": [
     {
-      name: "Public",
-      tags: ["auth", "files", "contributors", "questions", "filter-options"],
-    },
-    {
-      name: "User",
-      tags: ["manual-submissions"],
+      name: "Non-admin",
+      tags: [
+        "auth",
+        "files",
+        "contributors",
+        "questions",
+        "filter-options",
+        "manual-submissions",
+      ],
     },
     {
       name: "Admin",
