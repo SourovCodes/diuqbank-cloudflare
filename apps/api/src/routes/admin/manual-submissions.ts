@@ -286,7 +286,7 @@ route.post("/:id/approve", async (c) => {
   }
 
   await ensureCourseDepartment(db, row.departmentId, row.courseId);
-  const object = await c.env.BUCKET.head(row.pdfKey);
+  const object = await c.env.BUCKET.get(row.pdfKey);
   if (!object) {
     throw new HTTPException(409, {
       message: "Manual submission PDF is missing from storage",
@@ -294,6 +294,12 @@ route.post("/:id/approve", async (c) => {
   }
 
   const reviewerId = c.get("user").sub;
+  const destinationKey = `submissions/${crypto.randomUUID()}.pdf`;
+  await c.env.BUCKET.put(destinationKey, object.body, {
+    httpMetadata: object.httpMetadata,
+    customMetadata: object.customMetadata,
+  });
+
   const questionInsert = c.env.DB.prepare(
     `INSERT INTO questions (department_id, course_id, semester_id, exam_type_id)
      VALUES (?, ?, ?, ?)
@@ -304,7 +310,7 @@ route.post("/:id/approve", async (c) => {
     `INSERT INTO submissions
        (question_id, user_id, section, batch, pdf_key, file_size,
         watermarked_pdf_key, watermark_status, watermark_error)
-     SELECT q.id, m.user_id, NULL, NULL, m.pdf_key, ?, NULL, 'awaiting', NULL
+     SELECT q.id, m.user_id, NULL, NULL, ?, ?, NULL, 'awaiting', NULL
      FROM manual_submissions AS m
      JOIN questions AS q
        ON q.department_id = m.department_id
@@ -314,15 +320,16 @@ route.post("/:id/approve", async (c) => {
      WHERE m.id = ?
        AND m.status <> 'approved'
        AND NOT EXISTS (
-         SELECT 1 FROM submissions AS s WHERE s.pdf_key = m.pdf_key
+         SELECT 1 FROM submissions AS s WHERE s.pdf_key = ?
        )`,
-  ).bind(object.size, id);
+  ).bind(destinationKey, object.size, id, destinationKey);
 
   const reviewUpdate = c.env.DB.prepare(
     `UPDATE manual_submissions
      SET status = 'approved',
          rejected_reason = NULL,
          reviewed_by = ?,
+         pdf_key = ?,
          question_id = (
            SELECT q.id FROM questions AS q
            WHERE q.department_id = manual_submissions.department_id
@@ -332,24 +339,35 @@ route.post("/:id/approve", async (c) => {
          ),
          submission_id = (
            SELECT s.id FROM submissions AS s
-           WHERE s.pdf_key = manual_submissions.pdf_key
+           WHERE s.pdf_key = ?
              AND s.user_id = manual_submissions.user_id
            ORDER BY s.id DESC
            LIMIT 1
          )
      WHERE id = ? AND status <> 'approved'`,
-  ).bind(reviewerId, id);
+  ).bind(reviewerId, destinationKey, destinationKey, id);
 
-  const results = await c.env.DB.batch([
-    questionInsert,
-    submissionInsert,
-    reviewUpdate,
-  ]);
-  if ((results[2]?.meta.changes ?? 0) === 0) {
-    throw new HTTPException(409, {
-      message: "Manual submission could not be approved",
-    });
+  try {
+    const results = await c.env.DB.batch([
+      questionInsert,
+      submissionInsert,
+      reviewUpdate,
+    ]);
+    if ((results[2]?.meta.changes ?? 0) === 0) {
+      throw new HTTPException(409, {
+        message: "Manual submission could not be approved",
+      });
+    }
+  } catch (err) {
+    // The database did not adopt the copied object. Keep the original manual
+    // upload and remove the orphaned destination copy.
+    await deletePdf(c.env.BUCKET, destinationKey);
+    throw err;
   }
+
+  // D1 now points both records at the normal submission key. Removing the old
+  // object completes the move; a cleanup failure only leaves a harmless copy.
+  await deletePdf(c.env.BUCKET, row.pdfKey);
 
   const detail = await loadManualSubmission(
     db,

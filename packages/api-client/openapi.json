@@ -8481,7 +8481,7 @@
             "position": "after"
           }
         ],
-        "description": "**Access:** `Admin` — Requires a bearer token from an account with `role: \"admin\"`.\n\nAtomically creates or reuses the matching question, creates the real submission from the uploaded PDF, and records the reviewing admin.",
+        "description": "**Access:** `Admin` — Requires a bearer token from an account with `role: \"admin\"`.\n\nMoves the PDF into the normal `submissions/` storage path, atomically creates or reuses the matching question, creates the real submission, and records the reviewing admin.",
         "parameters": [
           {
             "name": "id",

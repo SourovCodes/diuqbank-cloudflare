@@ -3459,7 +3459,7 @@ export interface paths {
          * Approve a manual submission
          * @description **Access:** `Admin` — Requires a bearer token from an account with `role: "admin"`.
          *
-         *     Atomically creates or reuses the matching question, creates the real submission from the uploaded PDF, and records the reviewing admin.
+         *     Moves the PDF into the normal `submissions/` storage path, atomically creates or reuses the matching question, creates the real submission, and records the reviewing admin.
          */
         post: {
             parameters: {

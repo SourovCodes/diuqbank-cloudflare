@@ -1000,7 +1000,7 @@ const adminPaths = {
       summary: "Approve a manual submission",
       ...authFields(
         "Admin",
-        "Atomically creates or reuses the matching question, creates the real submission from the uploaded PDF, and records the reviewing admin.",
+        "Moves the PDF into the normal `submissions/` storage path, atomically creates or reuses the matching question, creates the real submission, and records the reviewing admin.",
       ),
       parameters: [idPathParam("Manual submission")],
       responses: {
