@@ -919,8 +919,9 @@ Authorization: Bearer <token>
 \`\`\`
 
 If the verified DIU email already exists, the existing user is signed in (\`200\`). If not, a new
-user is created with an opaque generated username and \`role: "user"\` (\`201\`). Google accounts
-outside the \`diu.edu.bd\` domain are rejected (\`403\`).
+user is created with an opaque generated username (\`201\`). Its role is \`"admin"\` when the
+email matches the configured \`ADMIN_EMAIL\`; otherwise it is \`"user"\`. Google accounts outside
+the \`diu.edu.bd\` domain are rejected (\`403\`).
 
 ## Conventions
 

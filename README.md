@@ -37,12 +37,16 @@ pnpm deploy:web
 ```
 
 Deploy the API before the web Worker when the API contract changes. Runtime
-secrets such as `JWT_SECRET` remain API Worker secrets and are not shared with
-the web app or committed to the repository:
+secrets such as `JWT_SECRET` and `ADMIN_EMAIL` remain API Worker secrets and are
+not shared with the web app or committed to the repository. `ADMIN_EMAIL`
+determines which newly created Google account receives the admin role:
 
 ```bash
 pnpm --filter @diuqbank/api exec wrangler secret put JWT_SECRET
+pnpm --filter @diuqbank/api exec wrangler secret put ADMIN_EMAIL
 ```
+
+For local development, add both values to `apps/api/.dev.vars`.
 
 The API and website remain separate Workers, so the Android API deployment and
 contract are preserved.

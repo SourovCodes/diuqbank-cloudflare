@@ -74,12 +74,14 @@ auth.post("/google", validate("json", googleSignInSchema), async (c) => {
 
   if (!user) {
     const name = claims.name?.trim() || email.split("@")[0];
+    const role =
+      email === c.env.ADMIN_EMAIL.trim().toLowerCase() ? "admin" : "user";
     let lastErr: unknown;
     for (let attempt = 0; attempt < MAX_USERNAME_ATTEMPTS; attempt++) {
       try {
         [user] = await db
           .insert(users)
-          .values({ name, email, username: generateOpaqueUsername(), role: "user" })
+          .values({ name, email, username: generateOpaqueUsername(), role })
           .returning(authUserColumns);
         createdNow = true;
         break;
