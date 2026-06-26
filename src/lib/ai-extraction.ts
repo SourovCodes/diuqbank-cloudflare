@@ -192,16 +192,17 @@ export const extractQuestionMetadata = async (args: {
 }): Promise<AiExtraction> => {
   const { env, pdfBuffer, vocab, extraContext } = args;
 
-  // Route through Cloudflare AI Gateway when configured (adds caching, retries,
-  // and cost analytics); otherwise call the Google Generative Language API
-  // directly. Both accept the same body and `x-goog-api-key` header. Widen to
-  // `string` so an empty value (gateway off) is a plain runtime check.
+  // Always route through Cloudflare AI Gateway (caching, retries, cost
+  // analytics). Widen to `string` so the empty-config guard is a plain runtime
+  // check rather than a literal-type condition.
   const accountId: string = env.CF_ACCOUNT_ID;
   const gatewayName: string = env.AI_GATEWAY_NAME;
-  const useGateway = gatewayName !== "" && accountId !== "";
-  const url = useGateway
-    ? `https://gateway.ai.cloudflare.com/v1/${accountId}/${gatewayName}/google-ai-studio/v1beta/models/${GEMINI_MODEL}:generateContent`
-    : `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+  if (!accountId || !gatewayName) {
+    throw new Error(
+      "AI Gateway is not configured (CF_ACCOUNT_ID and AI_GATEWAY_NAME are required)",
+    );
+  }
+  const url = `https://gateway.ai.cloudflare.com/v1/${accountId}/${gatewayName}/google-ai-studio/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
   const requestBody = {
     contents: [
@@ -229,11 +230,11 @@ export const extractQuestionMetadata = async (args: {
     "content-type": "application/json",
     "x-goog-api-key": env.GEMINI_API_KEY,
   };
-  // An *authenticated* AI Gateway additionally requires a `cf-aig-authorization`
-  // token. Optional secret — only sent when set and when routing via the gateway.
+  // An authenticated AI Gateway additionally requires a `cf-aig-authorization`
+  // token. Optional secret — only sent when set.
   const gatewayToken = (env as unknown as { AI_GATEWAY_TOKEN?: string })
     .AI_GATEWAY_TOKEN;
-  if (useGateway && gatewayToken) {
+  if (gatewayToken) {
     headers["cf-aig-authorization"] = `Bearer ${gatewayToken}`;
   }
 
