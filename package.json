@@ -1,17 +1,36 @@
 {
-  "name": "diuqbank-monorepo",
+  "name": "diuqbank-api",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "packageManager": "pnpm@10.33.2",
   "scripts": {
-    "dev": "pnpm --parallel --filter @diuqbank/api --filter @diuqbank/web dev",
-    "dev:api": "pnpm --filter @diuqbank/api dev",
-    "dev:web": "pnpm --filter @diuqbank/web dev",
-    "build": "pnpm -r --if-present build",
-    "api:generate": "pnpm --filter @diuqbank/api-client generate",
-    "typecheck": "pnpm -r --if-present typecheck",
-    "lint": "pnpm -r --if-present lint",
-    "deploy:api": "pnpm --filter @diuqbank/api run deploy",
-    "deploy:web": "pnpm --filter @diuqbank/web run deploy"
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy --minify",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate:local": "wrangler d1 migrations apply diuqbank-db --local",
+    "db:migrate:remote": "wrangler d1 migrations apply diuqbank-db --remote",
+    "db:import:build": "tsx scripts/import.ts",
+    "db:import:local": "tsx scripts/import.ts && wrangler d1 execute diuqbank-db --local --file=scripts/import.sql",
+    "db:import:remote": "tsx scripts/import.ts && wrangler d1 execute diuqbank-db --remote --file=scripts/import.sql",
+    "cf-typegen": "wrangler types",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@hono/zod-validator": "^0.8.0",
+    "drizzle-orm": "^0.45.2",
+    "hono": "^4.12.26",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.4",
+    "@types/node": "^20.19.43",
+    "drizzle-kit": "^0.31.10",
+    "eslint": "^9.39.4",
+    "tsx": "^4.19.2",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.61.1",
+    "wrangler": "^4.103.0"
   }
 }

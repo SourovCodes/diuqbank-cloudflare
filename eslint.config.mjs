@@ -1,9 +1,10 @@
 import { defineConfig, globalIgnores } from "eslint/config";
 
-import { baseTypeScriptConfig } from "@diuqbank/config/eslint/base";
-import { generatedIgnores } from "@diuqbank/config/eslint/ignores";
+import eslint from "@eslint/js";
+import tseslint from "typescript-eslint";
 
 export default defineConfig([
-  ...baseTypeScriptConfig,
-  globalIgnores(generatedIgnores),
+  eslint.configs.recommended,
+  ...tseslint.configs.recommended,
+  globalIgnores([".wrangler/**", "dist/**", "worker-configuration.d.ts"]),
 ]);
