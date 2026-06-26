@@ -5,50 +5,15 @@
     {
       "idx": 0,
       "version": "6",
-      "when": 1781930599683,
-      "tag": "0000_icy_slapstick",
+      "when": 1782494512559,
+      "tag": "0000_secret_mach_iv",
       "breakpoints": true
     },
     {
       "idx": 1,
       "version": "6",
-      "when": 1781932901333,
-      "tag": "0001_many_thunderbolt_ross",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "6",
-      "when": 1782101126075,
-      "tag": "0002_busy_nighthawk",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "6",
-      "when": 1782101140447,
-      "tag": "0003_submission_count_triggers",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "6",
-      "when": 1782135457488,
-      "tag": "0004_amused_magdalene",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "6",
-      "when": 1782153091388,
-      "tag": "0005_blue_black_knight",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "6",
-      "when": 1782462517025,
-      "tag": "0006_famous_darkstar",
+      "when": 1782494519375,
+      "tag": "0001_submission_count_triggers",
       "breakpoints": true
     }
   ]

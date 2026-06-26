@@ -1,8 +1,8 @@
 -- Custom SQL migration file, put your code below! --
 
--- `submission_count` on `users` and `questions` was previously never maintained
--- (read endpoints recomputed it), so the stored values are all 0. Backfill them
--- from the real submission rows, then keep them in sync with triggers.
+-- `submission_count` on `users` and `questions` is maintained by triggers on
+-- `submissions`. The two UPDATEs backfill the stored counts from real submission
+-- rows (no-ops on a freshly migrated DB) before the triggers take over.
 --
 -- NOTE: each CREATE TRIGGER is on a single line on purpose. Some SQLite runners
 -- split a SQL blob on ";\n", which would chop a multi-line BEGIN…END body apart.
