@@ -145,7 +145,6 @@ const publicSubmission = z.object({
   section: z.string().nullable(),
   batch: z.string().nullable(),
   fileSize: z.number().int().describe("Size of the PDF in bytes."),
-  watermarkStatus: z.enum(["awaiting", "completed", "failed"]),
   createdAt: z.number().int().describe("Unix epoch seconds (UTC)"),
   pdfUrl: z
     .string()
