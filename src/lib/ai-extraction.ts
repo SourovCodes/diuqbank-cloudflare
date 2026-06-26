@@ -198,10 +198,10 @@ export const extractQuestionMetadata = async (args: {
   // `string` so an empty value (gateway off) is a plain runtime check.
   const accountId: string = env.CF_ACCOUNT_ID;
   const gatewayName: string = env.AI_GATEWAY_NAME;
-  const url =
-    gatewayName && accountId
-      ? `https://gateway.ai.cloudflare.com/v1/${accountId}/${gatewayName}/google-ai-studio/v1beta/models/${GEMINI_MODEL}:generateContent`
-      : `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+  const useGateway = gatewayName !== "" && accountId !== "";
+  const url = useGateway
+    ? `https://gateway.ai.cloudflare.com/v1/${accountId}/${gatewayName}/google-ai-studio/v1beta/models/${GEMINI_MODEL}:generateContent`
+    : `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
   const requestBody = {
     contents: [
@@ -225,12 +225,21 @@ export const extractQuestionMetadata = async (args: {
     },
   };
 
+  const headers: Record<string, string> = {
+    "content-type": "application/json",
+    "x-goog-api-key": env.GEMINI_API_KEY,
+  };
+  // An *authenticated* AI Gateway additionally requires a `cf-aig-authorization`
+  // token. Optional secret — only sent when set and when routing via the gateway.
+  const gatewayToken = (env as unknown as { AI_GATEWAY_TOKEN?: string })
+    .AI_GATEWAY_TOKEN;
+  if (useGateway && gatewayToken) {
+    headers["cf-aig-authorization"] = `Bearer ${gatewayToken}`;
+  }
+
   const res = await fetch(url, {
     method: "POST",
-    headers: {
-      "content-type": "application/json",
-      "x-goog-api-key": env.GEMINI_API_KEY,
-    },
+    headers,
     body: JSON.stringify(requestBody),
   });
 

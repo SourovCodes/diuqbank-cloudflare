@@ -39,10 +39,11 @@
     "GOOGLE_CLIENT_ID": "85673828423-q1upghugo5oehip02358e6tjvqi1pln2.apps.googleusercontent.com",
     // Cloudflare account id. Used to build the AI Gateway URL when one is set.
     "CF_ACCOUNT_ID": "f270c3ed6636c3aa31b1393dc34ee95c",
-    // AI Gateway slug. Empty = call the Google Gemini API directly. Set this to
-    // an existing gateway slug (with authenticated-gateway OFF) to route Gemini
-    // through Cloudflare AI Gateway for caching / analytics (see ai-extraction.ts).
-    "AI_GATEWAY_NAME": "",
+    // AI Gateway slug — routes Gemini through Cloudflare AI Gateway (caching /
+    // analytics). The gateway must exist in the dashboard. If it has
+    // authenticated-gateway ON, also set the AI_GATEWAY_TOKEN secret. Empty =
+    // call the Google Gemini API directly (see src/lib/ai-extraction.ts).
+    "AI_GATEWAY_NAME": "diuqbank",
     // Base URL of the external PDF Processor service (compression/watermarking).
     "PDF_PROCESSOR_URL": "https://pdf-processor.diuqbank.com"
   },
