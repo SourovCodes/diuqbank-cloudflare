@@ -1622,6 +1622,20 @@ export const buildOpenApiDoc = () => ({
       },
     },
     "/manual-submissions/{id}": {
+      get: {
+        tags: ["manual-submissions"],
+        summary: "Get one of your manual submissions",
+        ...authFields(
+          "User",
+          "A single manual submission you own, including its review status and linked records once approved.",
+        ),
+        parameters: [idPathParam("Manual submission")],
+        responses: {
+          "200": okJson("OK", ref("ManualSubmission")),
+          "401": commonErrors["401"],
+          "404": commonErrors["404"],
+        },
+      },
       delete: {
         tags: ["manual-submissions"],
         summary: "Delete your manual submission",

@@ -132,6 +132,26 @@ route.post(
   },
 );
 
+route.get("/:id", async (c) => {
+  const id = parseId(c.req.param("id"));
+  if (id === null) {
+    throw new HTTPException(404, { message: "Manual submission not found" });
+  }
+
+  const userId = c.get("user").sub;
+  const db = getDb(c.env.DB);
+  const row = await db.query.manualSubmissions.findFirst({
+    where: and(
+      eq(manualSubmissions.id, id),
+      eq(manualSubmissions.userId, userId),
+    ),
+  });
+  if (!row) {
+    throw new HTTPException(404, { message: "Manual submission not found" });
+  }
+  return c.json(toManualSubmission(row, new URL(c.req.url).origin));
+});
+
 route.delete("/:id", async (c) => {
   const id = parseId(c.req.param("id"));
   if (id === null) {
