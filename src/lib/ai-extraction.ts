@@ -192,9 +192,16 @@ export const extractQuestionMetadata = async (args: {
 }): Promise<AiExtraction> => {
   const { env, pdfBuffer, vocab, extraContext } = args;
 
+  // Route through Cloudflare AI Gateway when configured (adds caching, retries,
+  // and cost analytics); otherwise call the Google Generative Language API
+  // directly. Both accept the same body and `x-goog-api-key` header. Widen to
+  // `string` so an empty value (gateway off) is a plain runtime check.
+  const accountId: string = env.CF_ACCOUNT_ID;
+  const gatewayName: string = env.AI_GATEWAY_NAME;
   const url =
-    `https://gateway.ai.cloudflare.com/v1/${env.CF_ACCOUNT_ID}/${env.AI_GATEWAY_NAME}` +
-    `/google-ai-studio/v1beta/models/${GEMINI_MODEL}:generateContent`;
+    gatewayName && accountId
+      ? `https://gateway.ai.cloudflare.com/v1/${accountId}/${gatewayName}/google-ai-studio/v1beta/models/${GEMINI_MODEL}:generateContent`
+      : `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
   const requestBody = {
     contents: [
