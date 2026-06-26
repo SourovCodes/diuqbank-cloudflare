@@ -1,35 +1,56 @@
-# DIU Question Bank API — agent guide
+# DIU Question Bank — monorepo agent guide
 
 Onboarding notes for AI coding agents (Claude Code, Codex, etc.). See [README.md](README.md)
 for the human-facing overview.
 
 ## What this is
 
-A single **Hono API on Cloudflare Workers**: D1 + Drizzle, R2 for files, stateless JWT auth,
-hand-written OpenAPI. Used by the Android app (directly) and any future web clients. This pattern
-mirrors the production reference repo `github.com/SourovCodes/diuqbank-backend-api`.
+A **pnpm-workspace monorepo** with three packages, all deployed to Cloudflare:
 
-Package manager: **pnpm 10.33.2** (pinned via `packageManager`). Run `pnpm install` once.
+- **`api/`** — a Hono API on Cloudflare **Workers**: D1 + Drizzle, R2 for files, stateless JWT
+  auth, hand-written OpenAPI. Worker name `diuqbank`. Mirrors the production reference repo
+  `github.com/SourovCodes/diuqbank-backend-api`.
+- **`web/`** — a Vite + React 19 SPA (React Router 7, TanStack Query, Tailwind 4) deployed as a
+  Cloudflare **Workers static-assets** site (worker name `diuqbank-web`, SPA fallback). Calls the
+  API over `fetch`; base URL from `import.meta.env.VITE_API_URL` (defaults to the deployed Worker).
+- **`shared/`** — `@diuqbank/shared`: the API↔web contract. Response DTO **types**
+  (`shared/src/types.ts`), Zod request **schemas** (`shared/src/schemas/**`), and pure **utils**
+  (`pagination`, `question-title`). Ships raw TS (no build); both bundlers transpile it. The API's
+  shape helpers are annotated to return these DTO types, so `tsc` fails on contract drift.
+
+Package manager: **pnpm 10.33.2** (pinned at the root `packageManager`). Run `pnpm install` once
+at the repo root. The detailed API conventions below describe files **under `api/`**.
 
 ## Layout
 
 ```
-src/
-  index.ts             App entry: builds Hono<AppEnv>, mounts routes, global onError
-  types.ts             AppEnv / Bindings (DB, BUCKET, GOOGLE_CLIENT_ID, JWT_SECRET, API_PUBLIC_ORIGIN…)
-  openapi.ts           Hand-written OpenAPI 3 doc (NOT generated from code)
-  db/
-    schema.ts          Drizzle schema — source of truth for the DB (7 tables + relations)
-    client.ts          getDb(c.env.DB)
-  middleware/auth.ts   requireAuth (sets c.var.user) / requireAdmin
-  routes/              One file per domain: auth, questions, contributors, filter-options, files
-    admin/             One file per admin resource + index.ts (auth applied once)
-  schemas/             Zod request schemas (admin/ mirrors routes/admin/)
-  lib/                 validator, jwt, google-oauth, image-upload, pdf-upload, pagination,
-                       parse-id, question-title, user-shape, admin-shape
-drizzle/               Generated SQL migrations (applied via wrangler, not the Drizzle client)
-wrangler.jsonc         Worker config: D1 binding DB, R2 binding BUCKET, vars, etc.
+api/
+  src/
+    index.ts             App entry: builds Hono<AppEnv>, mounts routes, global onError, CORS
+    types.ts             AppEnv / Bindings (DB, BUCKET, GOOGLE_CLIENT_ID, JWT_SECRET…)
+    openapi.ts           Hand-written OpenAPI 3 doc (imports Zod schemas from @diuqbank/shared)
+    db/
+      schema.ts          Drizzle schema — source of truth for the DB (tables + relations)
+      client.ts          getDb(c.env.DB)
+    middleware/auth.ts   requireAuth (sets c.var.user) / requireAdmin
+    routes/              One file per domain: auth, questions, contributors, filter-options, files
+      admin/             One file per admin resource + index.ts (auth applied once)
+    lib/                 validator, jwt, google-oauth, image-upload, pdf-upload, parse-id,
+                         user-shape, admin-shape (pagination + question-title now in shared/)
+  drizzle/               Generated SQL migrations (applied via wrangler, not the Drizzle client)
+  wrangler.jsonc         Worker config: D1 binding DB, R2 binding BUCKET, vars, etc.
+web/
+  src/                   React SPA; lib/api.ts is the API client (imports types from @diuqbank/shared)
+  wrangler.jsonc         Static-assets Worker (assets dir ./dist, SPA not_found_handling)
+shared/
+  src/types.ts           Canonical response DTOs (single source of truth)
+  src/schemas/           Zod request schemas (admin/ mirrors api routes/admin/)
+  src/utils/             pagination (pageFields, buildMeta), question-title (buildQuestionTitle)
 ```
+
+**Imports from shared:** types via `@diuqbank/shared/types`, schemas via
+`@diuqbank/shared/schemas/<name>` (e.g. `.../schemas/admin/courses`), utils via
+`@diuqbank/shared/utils/pagination`. The barrel `@diuqbank/shared` re-exports types + utils.
 
 ## Conventions
 
@@ -58,19 +79,27 @@ wrangler.jsonc         Worker config: D1 binding DB, R2 binding BUCKET, vars, et
   (immutable cache); there is no public bucket. Uploads are magic-byte validated
   (`image-upload.ts` for images ≤5MB, `pdf-upload.ts` `%PDF` ≤20MB).
 
-## Common commands (run from the repo root)
+## Common commands
 
 ```bash
-pnpm dev                 # wrangler dev (port 8787, or 8788 if taken)
-pnpm typecheck           # tsc --noEmit
-pnpm lint                # eslint .
-pnpm deploy              # wrangler deploy --minify
+# From the repo root (workspace-wide):
+pnpm install             # install all packages (one lockfile)
+pnpm dev:api             # wrangler dev (port 8787) — the API
+pnpm dev:web             # vite dev server — the web SPA
+pnpm typecheck           # tsc --noEmit across api, web, shared
+pnpm lint                # eslint (api)
+pnpm build               # production build (web)
+pnpm deploy:api          # wrangler deploy --minify (the API Worker)
+pnpm deploy:web          # vite build && wrangler deploy (the static-assets Worker)
 
+# API-only tasks — run from api/ (or `pnpm --filter @diuqbank/api <script>`):
 pnpm db:generate         # generate a Drizzle migration after editing schema.ts
 pnpm db:migrate:local    # apply migrations to local D1
 pnpm db:migrate:remote   # apply migrations to remote D1
 pnpm cf-typegen          # regenerate worker-configuration.d.ts after wrangler.jsonc changes
 ```
+
+For local web→API dev, set `VITE_API_URL=http://localhost:8787` (see `web/.env.example`).
 
 ## Gotchas
 

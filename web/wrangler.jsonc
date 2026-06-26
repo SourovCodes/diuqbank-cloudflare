@@ -1,0 +1,12 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "diuqbank-web",
+  "compatibility_date": "2026-06-20",
+  // Asset-only Worker: no `main`. Wrangler serves the built SPA from ./dist.
+  // `single-page-application` rewrites unmatched paths to index.html so React
+  // Router deep links (e.g. /questions/:id, /admin/...) resolve on hard refresh.
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
+  }
+}

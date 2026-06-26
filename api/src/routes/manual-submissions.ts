@@ -4,7 +4,7 @@ import { and, count, desc, eq } from "drizzle-orm";
 
 import { getDb } from "../db/client";
 import { manualSubmissions, type ManualSubmission } from "../db/schema";
-import { buildMeta } from "../lib/pagination";
+import { buildMeta } from "@diuqbank/shared/utils/pagination";
 import { parseId } from "../lib/parse-id";
 import { parsePdfFile } from "../lib/pdf-upload";
 import { fileUrlFor } from "../lib/user-shape";
@@ -13,7 +13,7 @@ import { requireAuth } from "../middleware/auth";
 import {
   manualSubmissionCreateForm,
   manualSubmissionsListQuery,
-} from "../schemas/manual-submissions";
+} from "@diuqbank/shared/schemas/manual-submissions";
 import type { AppEnv } from "../types";
 
 const route = new Hono<AppEnv>();

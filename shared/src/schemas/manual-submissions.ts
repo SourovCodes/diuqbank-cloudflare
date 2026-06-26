@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { pageFields } from "../lib/pagination";
+import { pageFields } from "../utils/pagination";
 
 // Multipart text fields. The `pdf` file is parsed and magic-byte validated
 // separately by `parsePdfFile`.

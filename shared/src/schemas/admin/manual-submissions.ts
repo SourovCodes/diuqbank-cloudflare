@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { pageFields } from "../../lib/pagination";
+import { pageFields } from "../../utils/pagination";
 
 export const manualSubmissionStatus = z.enum([
   "pending_review",

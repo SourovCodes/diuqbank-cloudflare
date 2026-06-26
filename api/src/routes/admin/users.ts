@@ -5,10 +5,10 @@ import { and, count, desc, eq, like, or, type SQL } from "drizzle-orm";
 import { getDb } from "../../db/client";
 import { manualSubmissions, submissions, users } from "../../db/schema";
 import { toAdminUser } from "../../lib/admin-shape";
-import { buildMeta } from "../../lib/pagination";
+import { buildMeta } from "@diuqbank/shared/utils/pagination";
 import { parseId } from "../../lib/parse-id";
 import { validate } from "../../lib/validator";
-import { userUpdateSchema, usersListQuery } from "../../schemas/admin/users";
+import { userUpdateSchema, usersListQuery } from "@diuqbank/shared/schemas/admin/users";
 import type { AppEnv } from "../../types";
 
 const route = new Hono<AppEnv>();

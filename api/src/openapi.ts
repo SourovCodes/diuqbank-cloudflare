@@ -1,31 +1,31 @@
 import { z } from "zod";
 
-import { courseCreateSchema, courseUpdateSchema } from "./schemas/admin/courses";
+import { courseCreateSchema, courseUpdateSchema } from "@diuqbank/shared/schemas/admin/courses";
 import {
   departmentCreateSchema,
   departmentUpdateSchema,
-} from "./schemas/admin/departments";
+} from "@diuqbank/shared/schemas/admin/departments";
 import {
   examTypeCreateSchema,
   examTypeUpdateSchema,
-} from "./schemas/admin/exam-types";
+} from "@diuqbank/shared/schemas/admin/exam-types";
 import {
   adminManualSubmissionRejectSchema,
   adminManualSubmissionUpdateSchema,
-} from "./schemas/admin/manual-submissions";
+} from "@diuqbank/shared/schemas/admin/manual-submissions";
 import {
   questionCreateSchema,
   questionUpdateSchema,
-} from "./schemas/admin/questions";
+} from "@diuqbank/shared/schemas/admin/questions";
 import {
   semesterCreateSchema,
   semesterUpdateSchema,
-} from "./schemas/admin/semesters";
-import { submissionUpdateSchema } from "./schemas/admin/submissions";
-import { userUpdateSchema } from "./schemas/admin/users";
-import { autoSubmissionReprocessSchema } from "./schemas/auto-submissions";
-import { googleSignInSchema } from "./schemas/auth";
-import { profileUpdateSchema } from "./schemas/profile";
+} from "@diuqbank/shared/schemas/admin/semesters";
+import { submissionUpdateSchema } from "@diuqbank/shared/schemas/admin/submissions";
+import { userUpdateSchema } from "@diuqbank/shared/schemas/admin/users";
+import { autoSubmissionReprocessSchema } from "@diuqbank/shared/schemas/auto-submissions";
+import { googleSignInSchema } from "@diuqbank/shared/schemas/auth";
+import { profileUpdateSchema } from "@diuqbank/shared/schemas/profile";
 
 // ---------------------------------------------------------------------------
 // Component schemas

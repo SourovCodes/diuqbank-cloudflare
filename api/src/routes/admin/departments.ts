@@ -9,14 +9,14 @@ import {
   manualSubmissions,
   questions,
 } from "../../db/schema";
-import { buildMeta } from "../../lib/pagination";
+import { buildMeta } from "@diuqbank/shared/utils/pagination";
 import { parseId } from "../../lib/parse-id";
 import { validate } from "../../lib/validator";
 import {
   departmentCreateSchema,
   departmentsListQuery,
   departmentUpdateSchema,
-} from "../../schemas/admin/departments";
+} from "@diuqbank/shared/schemas/admin/departments";
 import type { AppEnv } from "../../types";
 
 const route = new Hono<AppEnv>();

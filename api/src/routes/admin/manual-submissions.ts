@@ -13,7 +13,7 @@ import {
   type ManualSubmission,
   type User,
 } from "../../db/schema";
-import { buildMeta } from "../../lib/pagination";
+import { buildMeta } from "@diuqbank/shared/utils/pagination";
 import { parseId } from "../../lib/parse-id";
 import { fileUrlFor, toAuthUser } from "../../lib/user-shape";
 import { validate } from "../../lib/validator";
@@ -22,7 +22,7 @@ import {
   adminManualSubmissionsListQuery,
   adminManualSubmissionUpdateSchema,
   type AdminManualSubmissionUpdateInput,
-} from "../../schemas/admin/manual-submissions";
+} from "@diuqbank/shared/schemas/admin/manual-submissions";
 import type { AppEnv } from "../../types";
 
 const route = new Hono<AppEnv>();

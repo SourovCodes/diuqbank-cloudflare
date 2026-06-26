@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { pageFields } from "../../lib/pagination";
+import { pageFields } from "../../utils/pagination";
 
 const watermarkStatus = z.enum(["awaiting", "completed", "failed"]);
 

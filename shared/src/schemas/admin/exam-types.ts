@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { pageFields } from "../../lib/pagination";
+import { pageFields } from "../../utils/pagination";
 
 export const examTypeCreateSchema = z.object({
   name: z.string().trim().min(1).max(100),

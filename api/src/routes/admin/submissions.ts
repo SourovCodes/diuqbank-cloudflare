@@ -5,7 +5,7 @@ import { and, count, desc, eq, type SQL } from "drizzle-orm";
 import { getDb } from "../../db/client";
 import { manualSubmissions, submissions } from "../../db/schema";
 import { toAdminSubmission } from "../../lib/admin-shape";
-import { buildMeta } from "../../lib/pagination";
+import { buildMeta } from "@diuqbank/shared/utils/pagination";
 import { parseId } from "../../lib/parse-id";
 import { parsePdfFile } from "../../lib/pdf-upload";
 import { validate } from "../../lib/validator";
@@ -13,7 +13,7 @@ import {
   submissionCreateForm,
   submissionsListQuery,
   submissionUpdateSchema,
-} from "../../schemas/admin/submissions";
+} from "@diuqbank/shared/schemas/admin/submissions";
 import type { AppEnv } from "../../types";
 
 const route = new Hono<AppEnv>();

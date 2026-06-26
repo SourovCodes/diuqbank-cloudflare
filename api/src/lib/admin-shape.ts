@@ -1,5 +1,9 @@
+import type {
+  AdminSubmission as AdminSubmissionDTO,
+  AdminUser as AdminUserDTO,
+} from "@diuqbank/shared/types";
 import type { Submission, User } from "../db/schema";
-import { buildQuestionTitle } from "./question-title";
+import { buildQuestionTitle } from "@diuqbank/shared/utils/question-title";
 import { fileUrlFor, toAuthUser, toContributorSummary } from "./user-shape";
 
 type AdminUserRow = Pick<
@@ -11,7 +15,7 @@ type AdminUserRow = Pick<
  * Admin-facing user shape: the full auth-user fields (incl. `email` and `role`)
  * plus a dynamically-computed `submissionCount`.
  */
-export const toAdminUser = (row: AdminUserRow, origin: string) => ({
+export const toAdminUser = (row: AdminUserRow, origin: string): AdminUserDTO => ({
   ...toAuthUser(row, origin),
   submissionCount: row.submissionCount,
 });
@@ -44,7 +48,7 @@ type AdminSubmissionRow = Pick<
  * Admin-facing submission shape: the full row plus the parent question (id +
  * human-readable title), the contributor summary, and absolute file URLs.
  */
-export const toAdminSubmission = (row: AdminSubmissionRow, origin: string) => ({
+export const toAdminSubmission = (row: AdminSubmissionRow, origin: string): AdminSubmissionDTO => ({
   id: row.id,
   question: {
     id: row.question.id,

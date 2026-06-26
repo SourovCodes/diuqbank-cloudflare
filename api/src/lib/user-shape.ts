@@ -1,3 +1,8 @@
+import type {
+  Contributor as ContributorDTO,
+  ContributorSummary as ContributorSummaryDTO,
+  User as UserDTO,
+} from "@diuqbank/shared/types";
 import type { User } from "../db/schema";
 
 type UserRow = Pick<
@@ -18,7 +23,7 @@ export const imageUrlFor = (origin: string, imageKey: string | null): string | n
  * endpoint that exposes a user stays in sync. `origin` is the request origin
  * (e.g. `https://api.example.com`) used to build absolute image URLs.
  */
-export const toAuthUser = (row: UserRow, origin: string) => ({
+export const toAuthUser = (row: UserRow, origin: string): UserDTO => ({
   id: row.id,
   name: row.name,
   email: row.email,
@@ -40,7 +45,7 @@ type ContributorRow = Pick<
  * `/contributors` list and detail endpoints. `submissionCount` is computed
  * dynamically by the caller (the denormalized column is not trigger-maintained).
  */
-export const toContributor = (row: ContributorRow, origin: string) => ({
+export const toContributor = (row: ContributorRow, origin: string): ContributorDTO => ({
   id: row.id,
   name: row.name,
   username: row.username,
@@ -55,7 +60,7 @@ export type Contributor = ReturnType<typeof toContributor>;
 export const toContributorSummary = (
   row: Pick<User, "id" | "name" | "username" | "imageKey">,
   origin: string,
-) => ({
+): ContributorSummaryDTO => ({
   id: row.id,
   name: row.name,
   username: row.username,

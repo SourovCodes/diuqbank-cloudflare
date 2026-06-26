@@ -10,8 +10,8 @@ import { signAuthToken } from "../lib/jwt";
 import { toAuthUser } from "../lib/user-shape";
 import { validate } from "../lib/validator";
 import { requireAuth } from "../middleware/auth";
-import { googleSignInSchema } from "../schemas/auth";
-import { profileUpdateSchema } from "../schemas/profile";
+import { googleSignInSchema } from "@diuqbank/shared/schemas/auth";
+import { profileUpdateSchema } from "@diuqbank/shared/schemas/profile";
 import type { AppEnv } from "../types";
 
 const authUserColumns = {

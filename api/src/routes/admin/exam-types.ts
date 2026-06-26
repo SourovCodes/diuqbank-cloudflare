@@ -4,14 +4,14 @@ import { asc, count, eq, like } from "drizzle-orm";
 
 import { getDb } from "../../db/client";
 import { examTypes, manualSubmissions, questions } from "../../db/schema";
-import { buildMeta } from "../../lib/pagination";
+import { buildMeta } from "@diuqbank/shared/utils/pagination";
 import { parseId } from "../../lib/parse-id";
 import { validate } from "../../lib/validator";
 import {
   examTypeCreateSchema,
   examTypesListQuery,
   examTypeUpdateSchema,
-} from "../../schemas/admin/exam-types";
+} from "@diuqbank/shared/schemas/admin/exam-types";
 import type { AppEnv } from "../../types";
 
 const route = new Hono<AppEnv>();

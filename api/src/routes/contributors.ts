@@ -4,14 +4,14 @@ import { count, desc, eq, gt } from "drizzle-orm";
 
 import { getDb } from "../db/client";
 import { submissions, users } from "../db/schema";
-import { buildMeta } from "../lib/pagination";
-import { buildQuestionTitle } from "../lib/question-title";
+import { buildMeta } from "@diuqbank/shared/utils/pagination";
+import { buildQuestionTitle } from "@diuqbank/shared/utils/question-title";
 import { fileUrlFor, toContributor } from "../lib/user-shape";
 import { validate } from "../lib/validator";
 import {
   contributorSubmissionsQuery,
   contributorsListQuery,
-} from "../schemas/contributors";
+} from "@diuqbank/shared/schemas/contributors";
 import type { AppEnv } from "../types";
 
 const contributors = new Hono<AppEnv>();

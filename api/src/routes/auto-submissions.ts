@@ -5,7 +5,7 @@ import { and, count, desc, eq, sql } from "drizzle-orm";
 import { getDb } from "../db/client";
 import { autoSubmissions, submissions, type AutoSubmission } from "../db/schema";
 import type { AiExtraction } from "../lib/ai-extraction";
-import { buildMeta } from "../lib/pagination";
+import { buildMeta } from "@diuqbank/shared/utils/pagination";
 import { parseId } from "../lib/parse-id";
 import { parsePdfFile } from "../lib/pdf-upload";
 import {
@@ -21,7 +21,7 @@ import { requireAuth } from "../middleware/auth";
 import {
   autoSubmissionReprocessSchema,
   autoSubmissionsListQuery,
-} from "../schemas/auto-submissions";
+} from "@diuqbank/shared/schemas/auto-submissions";
 import type { AppEnv } from "../types";
 
 const route = new Hono<AppEnv>();

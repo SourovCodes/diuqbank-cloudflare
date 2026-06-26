@@ -1,0 +1,19 @@
+{
+  "name": "diuqbank-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.33.2",
+  "scripts": {
+    "dev:api": "pnpm --filter @diuqbank/api dev",
+    "dev:web": "pnpm --filter @diuqbank/web dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "pnpm -r lint",
+    "deploy:api": "pnpm --filter @diuqbank/api deploy",
+    "deploy:web": "pnpm --filter @diuqbank/web deploy"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild", "workerd", "sharp"]
+  }
+}

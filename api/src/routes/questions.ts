@@ -4,12 +4,12 @@ import { and, count, desc, eq, type SQL } from "drizzle-orm";
 
 import { getDb } from "../db/client";
 import { questions, submissions } from "../db/schema";
-import { buildMeta } from "../lib/pagination";
+import { buildMeta } from "@diuqbank/shared/utils/pagination";
 import { parseId } from "../lib/parse-id";
-import { buildQuestionTitle } from "../lib/question-title";
+import { buildQuestionTitle } from "@diuqbank/shared/utils/question-title";
 import { fileUrlFor, toContributorSummary } from "../lib/user-shape";
 import { validate } from "../lib/validator";
-import { questionsListQuery } from "../schemas/questions";
+import { questionsListQuery } from "@diuqbank/shared/schemas/questions";
 import type { AppEnv } from "../types";
 
 const questionRoutes = new Hono<AppEnv>();
