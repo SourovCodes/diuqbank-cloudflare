@@ -3,7 +3,7 @@ import { HTTPException } from "hono/http-exception";
 import { and, count, desc, eq, sql } from "drizzle-orm";
 
 import { getDb } from "../db/client";
-import { autoUploads, submissions, type AutoUpload } from "../db/schema";
+import { autoSubmissions, submissions, type AutoSubmission } from "../db/schema";
 import type { AiExtraction } from "../lib/ai-extraction";
 import { buildMeta } from "../lib/pagination";
 import { parseId } from "../lib/parse-id";
@@ -19,9 +19,9 @@ import { fileUrlFor } from "../lib/user-shape";
 import { validate } from "../lib/validator";
 import { requireAuth } from "../middleware/auth";
 import {
-  autoUploadReprocessSchema,
-  autoUploadsListQuery,
-} from "../schemas/auto-uploads";
+  autoSubmissionReprocessSchema,
+  autoSubmissionsListQuery,
+} from "../schemas/auto-submissions";
 import type { AppEnv } from "../types";
 
 const route = new Hono<AppEnv>();
@@ -37,7 +37,7 @@ const parseAiResult = (raw: string | null): AiExtraction | null => {
   }
 };
 
-const serializeAutoUpload = (row: AutoUpload, origin: string) => ({
+const serializeAutoSubmission = (row: AutoSubmission, origin: string) => ({
   id: row.id,
   userId: row.userId,
   status: row.status,
@@ -59,7 +59,7 @@ const deletePdf = async (
   try {
     await bucket.delete(key);
   } catch (err) {
-    console.error("R2 delete failed for auto upload PDF", key, err);
+    console.error("R2 delete failed for auto submission PDF", key, err);
   }
 };
 
@@ -106,26 +106,26 @@ const validateForConfirm = (
   return result as ConfirmableExtraction;
 };
 
-route.get("/", validate("query", autoUploadsListQuery), async (c) => {
+route.get("/", validate("query", autoSubmissionsListQuery), async (c) => {
   const { page, perPage } = c.req.valid("query");
   const userId = c.get("user").sub;
   const db = getDb(c.env.DB);
   const origin = new URL(c.req.url).origin;
-  const where = eq(autoUploads.userId, userId);
+  const where = eq(autoSubmissions.userId, userId);
 
   const [items, [{ value: total }]] = await Promise.all([
     db
       .select()
-      .from(autoUploads)
+      .from(autoSubmissions)
       .where(where)
-      .orderBy(desc(autoUploads.createdAt), desc(autoUploads.id))
+      .orderBy(desc(autoSubmissions.createdAt), desc(autoSubmissions.id))
       .limit(perPage)
       .offset((page - 1) * perPage),
-    db.select({ value: count() }).from(autoUploads).where(where),
+    db.select({ value: count() }).from(autoSubmissions).where(where),
   ]);
 
   return c.json({
-    data: items.map((item) => serializeAutoUpload(item, origin)),
+    data: items.map((item) => serializeAutoSubmission(item, origin)),
     meta: buildMeta(page, perPage, total),
   });
 });
@@ -137,7 +137,7 @@ route.post("/", async (c) => {
   const db = getDb(c.env.DB);
   const origin = new URL(c.req.url).origin;
 
-  const key = `auto-uploads/${crypto.randomUUID()}.pdf`;
+  const key = `auto-submissions/${crypto.randomUUID()}.pdf`;
   await c.env.BUCKET.put(key, pdf.buffer, {
     httpMetadata: { contentType: pdf.contentType },
   });
@@ -145,13 +145,13 @@ route.post("/", async (c) => {
   let created: { id: number } | undefined;
   try {
     [created] = await db
-      .insert(autoUploads)
+      .insert(autoSubmissions)
       .values({
         userId,
         pdfKey: key,
         fileSize: pdf.buffer.byteLength,
       })
-      .returning({ id: autoUploads.id });
+      .returning({ id: autoSubmissions.id });
   } catch (err) {
     await deletePdf(c.env.BUCKET, key);
     throw err;
@@ -160,56 +160,56 @@ route.post("/", async (c) => {
   // Kick off the durable compress -> extract -> persist pipeline. If it can't be
   // scheduled, mark the row failed so the user can retry rather than be stuck.
   try {
-    await c.env.AUTO_UPLOAD_WORKFLOW.create({
-      params: { uploadId: created.id },
+    await c.env.AUTO_SUBMISSION_WORKFLOW.create({
+      params: { autoSubmissionId: created.id },
     });
   } catch (err) {
-    console.error("AUTO_UPLOAD_WORKFLOW.create failed", created.id, err);
+    console.error("AUTO_SUBMISSION_WORKFLOW.create failed", created.id, err);
     await db
-      .update(autoUploads)
+      .update(autoSubmissions)
       .set({
         status: "failed",
         errorMessage: "Failed to start processing. Please reprocess.",
         updatedAt: sql`(unixepoch())`,
       })
-      .where(eq(autoUploads.id, created.id));
+      .where(eq(autoSubmissions.id, created.id));
   }
 
-  const row = await db.query.autoUploads.findFirst({
-    where: eq(autoUploads.id, created.id),
+  const row = await db.query.autoSubmissions.findFirst({
+    where: eq(autoSubmissions.id, created.id),
   });
   if (!row) {
     throw new HTTPException(500, {
-      message: "Failed to load created auto upload",
+      message: "Failed to load created auto submission",
     });
   }
-  return c.json(serializeAutoUpload(row, origin), 201);
+  return c.json(serializeAutoSubmission(row, origin), 201);
 });
 
 route.get("/:id", async (c) => {
   const id = parseId(c.req.param("id"));
   if (id === null) {
-    throw new HTTPException(404, { message: "Auto upload not found" });
+    throw new HTTPException(404, { message: "Auto submission not found" });
   }
 
   const userId = c.get("user").sub;
   const db = getDb(c.env.DB);
-  const row = await db.query.autoUploads.findFirst({
-    where: and(eq(autoUploads.id, id), eq(autoUploads.userId, userId)),
+  const row = await db.query.autoSubmissions.findFirst({
+    where: and(eq(autoSubmissions.id, id), eq(autoSubmissions.userId, userId)),
   });
   if (!row) {
-    throw new HTTPException(404, { message: "Auto upload not found" });
+    throw new HTTPException(404, { message: "Auto submission not found" });
   }
-  return c.json(serializeAutoUpload(row, new URL(c.req.url).origin));
+  return c.json(serializeAutoSubmission(row, new URL(c.req.url).origin));
 });
 
 route.post(
   "/:id/reprocess",
-  validate("json", autoUploadReprocessSchema),
+  validate("json", autoSubmissionReprocessSchema),
   async (c) => {
     const id = parseId(c.req.param("id"));
     if (id === null) {
-      throw new HTTPException(404, { message: "Auto upload not found" });
+      throw new HTTPException(404, { message: "Auto submission not found" });
     }
 
     const { extraContext } = c.req.valid("json");
@@ -218,60 +218,60 @@ route.post(
     const origin = new URL(c.req.url).origin;
 
     const [row] = await db
-      .select({ status: autoUploads.status })
-      .from(autoUploads)
-      .where(and(eq(autoUploads.id, id), eq(autoUploads.userId, userId)))
+      .select({ status: autoSubmissions.status })
+      .from(autoSubmissions)
+      .where(and(eq(autoSubmissions.id, id), eq(autoSubmissions.userId, userId)))
       .limit(1);
     if (!row) {
-      throw new HTTPException(404, { message: "Auto upload not found" });
+      throw new HTTPException(404, { message: "Auto submission not found" });
     }
     if (row.status !== "awaiting_confirmation" && row.status !== "failed") {
       throw new HTTPException(409, {
-        message: `Cannot reprocess an auto upload with status "${row.status}"`,
+        message: `Cannot reprocess an auto submission with status "${row.status}"`,
       });
     }
 
     await db
-      .update(autoUploads)
+      .update(autoSubmissions)
       .set({
         status: "processing",
         extraContext: extraContext ?? null,
         errorMessage: null,
         updatedAt: sql`(unixepoch())`,
       })
-      .where(and(eq(autoUploads.id, id), eq(autoUploads.userId, userId)));
+      .where(and(eq(autoSubmissions.id, id), eq(autoSubmissions.userId, userId)));
 
     try {
-      await c.env.AUTO_UPLOAD_WORKFLOW.create({ params: { uploadId: id } });
+      await c.env.AUTO_SUBMISSION_WORKFLOW.create({ params: { autoSubmissionId: id } });
     } catch (err) {
-      console.error("AUTO_UPLOAD_WORKFLOW.create failed (reprocess)", id, err);
+      console.error("AUTO_SUBMISSION_WORKFLOW.create failed (reprocess)", id, err);
       await db
-        .update(autoUploads)
+        .update(autoSubmissions)
         .set({
           status: "failed",
           errorMessage: "Failed to start processing. Please reprocess.",
           updatedAt: sql`(unixepoch())`,
         })
-        .where(eq(autoUploads.id, id));
+        .where(eq(autoSubmissions.id, id));
       throw new HTTPException(502, {
         message: "Failed to start reprocessing",
       });
     }
 
-    const updated = await db.query.autoUploads.findFirst({
-      where: eq(autoUploads.id, id),
+    const updated = await db.query.autoSubmissions.findFirst({
+      where: eq(autoSubmissions.id, id),
     });
     if (!updated) {
-      throw new HTTPException(500, { message: "Failed to load auto upload" });
+      throw new HTTPException(500, { message: "Failed to load auto submission" });
     }
-    return c.json(serializeAutoUpload(updated, origin));
+    return c.json(serializeAutoSubmission(updated, origin));
   },
 );
 
 route.post("/:id/confirm", async (c) => {
   const id = parseId(c.req.param("id"));
   if (id === null) {
-    throw new HTTPException(404, { message: "Auto upload not found" });
+    throw new HTTPException(404, { message: "Auto submission not found" });
   }
 
   const userId = c.get("user").sub;
@@ -280,20 +280,20 @@ route.post("/:id/confirm", async (c) => {
 
   const [row] = await db
     .select()
-    .from(autoUploads)
-    .where(and(eq(autoUploads.id, id), eq(autoUploads.userId, userId)))
+    .from(autoSubmissions)
+    .where(and(eq(autoSubmissions.id, id), eq(autoSubmissions.userId, userId)))
     .limit(1);
   if (!row) {
-    throw new HTTPException(404, { message: "Auto upload not found" });
+    throw new HTTPException(404, { message: "Auto submission not found" });
   }
   if (row.status === "confirmed") {
     throw new HTTPException(409, {
-      message: "Auto upload is already confirmed",
+      message: "Auto submission is already confirmed",
     });
   }
   if (row.status !== "awaiting_confirmation") {
     throw new HTTPException(409, {
-      message: `Cannot confirm an auto upload with status "${row.status}"`,
+      message: `Cannot confirm an auto submission with status "${row.status}"`,
     });
   }
 
@@ -321,7 +321,7 @@ route.post("/:id/confirm", async (c) => {
   const original = await c.env.BUCKET.get(row.pdfKey);
   if (!original) {
     throw new HTTPException(409, {
-      message: "Auto upload PDF is missing from storage",
+      message: "Auto submission PDF is missing from storage",
     });
   }
   const submissionKey = `submissions/${crypto.randomUUID()}.pdf`;
@@ -352,7 +352,7 @@ route.post("/:id/confirm", async (c) => {
   // Point the upload at the moved object, finalize, and clean up the original +
   // compressed scratch copies (mirrors the manual approve "move").
   await db
-    .update(autoUploads)
+    .update(autoSubmissions)
     .set({
       status: "confirmed",
       submissionId,
@@ -361,16 +361,16 @@ route.post("/:id/confirm", async (c) => {
       errorMessage: null,
       updatedAt: sql`(unixepoch())`,
     })
-    .where(eq(autoUploads.id, id));
+    .where(eq(autoSubmissions.id, id));
 
   await deletePdf(c.env.BUCKET, row.pdfKey);
   await deletePdf(c.env.BUCKET, row.compressedPdfKey);
 
-  const updated = await db.query.autoUploads.findFirst({
-    where: eq(autoUploads.id, id),
+  const updated = await db.query.autoSubmissions.findFirst({
+    where: eq(autoSubmissions.id, id),
   });
   return c.json({
-    autoUpload: updated ? serializeAutoUpload(updated, origin) : null,
+    autoSubmission: updated ? serializeAutoSubmission(updated, origin) : null,
     submission: {
       id: submissionId,
       questionId,
@@ -383,33 +383,33 @@ route.post("/:id/confirm", async (c) => {
 route.delete("/:id", async (c) => {
   const id = parseId(c.req.param("id"));
   if (id === null) {
-    throw new HTTPException(404, { message: "Auto upload not found" });
+    throw new HTTPException(404, { message: "Auto submission not found" });
   }
 
   const userId = c.get("user").sub;
   const db = getDb(c.env.DB);
   const [row] = await db
     .select({
-      status: autoUploads.status,
-      pdfKey: autoUploads.pdfKey,
-      compressedPdfKey: autoUploads.compressedPdfKey,
+      status: autoSubmissions.status,
+      pdfKey: autoSubmissions.pdfKey,
+      compressedPdfKey: autoSubmissions.compressedPdfKey,
     })
-    .from(autoUploads)
-    .where(and(eq(autoUploads.id, id), eq(autoUploads.userId, userId)))
+    .from(autoSubmissions)
+    .where(and(eq(autoSubmissions.id, id), eq(autoSubmissions.userId, userId)))
     .limit(1);
   if (!row) {
-    throw new HTTPException(404, { message: "Auto upload not found" });
+    throw new HTTPException(404, { message: "Auto submission not found" });
   }
   if (row.status === "confirmed") {
     throw new HTTPException(409, {
       message:
-        "Confirmed auto uploads cannot be deleted (the submission is the canonical record)",
+        "Confirmed auto submissions cannot be deleted (the submission is the canonical record)",
     });
   }
 
   await db
-    .delete(autoUploads)
-    .where(and(eq(autoUploads.id, id), eq(autoUploads.userId, userId)));
+    .delete(autoSubmissions)
+    .where(and(eq(autoSubmissions.id, id), eq(autoSubmissions.userId, userId)));
   await deletePdf(c.env.BUCKET, row.pdfKey);
   await deletePdf(c.env.BUCKET, row.compressedPdfKey);
 

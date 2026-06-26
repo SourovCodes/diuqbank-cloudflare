@@ -1,4 +1,4 @@
-CREATE TABLE `auto_uploads` (
+CREATE TABLE `auto_submissions` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`user_id` integer NOT NULL,
 	`pdf_key` text NOT NULL,
@@ -15,5 +15,5 @@ CREATE TABLE `auto_uploads` (
 	FOREIGN KEY (`submission_id`) REFERENCES `submissions`(`id`) ON UPDATE no action ON DELETE set null
 );
 --> statement-breakpoint
-CREATE INDEX `auto_uploads_user_id_idx` ON `auto_uploads` (`user_id`);--> statement-breakpoint
-CREATE INDEX `auto_uploads_status_idx` ON `auto_uploads` (`status`);
+CREATE INDEX `auto_submissions_user_id_idx` ON `auto_submissions` (`user_id`);--> statement-breakpoint
+CREATE INDEX `auto_submissions_status_idx` ON `auto_submissions` (`status`);

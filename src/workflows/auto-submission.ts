@@ -6,12 +6,12 @@ import {
 import { and, eq, sql } from "drizzle-orm";
 
 import { getDb } from "../db/client";
-import { autoUploads } from "../db/schema";
+import { autoSubmissions } from "../db/schema";
 import { buildVocab, extractQuestionMetadata } from "../lib/ai-extraction";
 import { compressPdf } from "../lib/pdf-processor";
 import type { Bindings } from "../types";
 
-type Params = { uploadId: number };
+type Params = { autoSubmissionId: number };
 
 // Each step retries independently; results are memoized, so a failure in a
 // later step never re-runs an earlier (paid) one.
@@ -20,14 +20,14 @@ const STEP_RETRIES = {
 } as const;
 
 /**
- * Durable extraction pipeline for an auto upload: compress -> extract -> persist.
- * Started from the route with `env.AUTO_UPLOAD_WORKFLOW.create({ params: { uploadId } })`.
- * The `auto_uploads` row is the source of truth the client polls.
+ * Durable extraction pipeline for an auto submission: compress -> extract -> persist.
+ * Started from the route with `env.AUTO_SUBMISSION_WORKFLOW.create({ params: { autoSubmissionId } })`.
+ * The `auto_submissions` row is the source of truth the client polls.
  */
-export class AutoUploadWorkflow extends WorkflowEntrypoint<Bindings, Params> {
+export class AutoSubmissionWorkflow extends WorkflowEntrypoint<Bindings, Params> {
   async run(event: WorkflowEvent<Params>, step: WorkflowStep): Promise<void> {
     const env = this.env;
-    const { uploadId } = event.payload;
+    const { autoSubmissionId } = event.payload;
     const db = getDb(env.DB);
 
     try {
@@ -39,27 +39,27 @@ export class AutoUploadWorkflow extends WorkflowEntrypoint<Bindings, Params> {
         async () => {
           const [row] = await db
             .select({
-              pdfKey: autoUploads.pdfKey,
-              compressedPdfKey: autoUploads.compressedPdfKey,
+              pdfKey: autoSubmissions.pdfKey,
+              compressedPdfKey: autoSubmissions.compressedPdfKey,
             })
-            .from(autoUploads)
-            .where(eq(autoUploads.id, uploadId))
+            .from(autoSubmissions)
+            .where(eq(autoSubmissions.id, autoSubmissionId))
             .limit(1);
-          if (!row) throw new Error(`auto_upload ${uploadId} not found`);
+          if (!row) throw new Error(`auto_submission ${autoSubmissionId} not found`);
           if (row.compressedPdfKey) return row.compressedPdfKey;
 
           const original = await env.BUCKET.get(row.pdfKey);
           if (!original) throw new Error("Original PDF missing from storage");
 
           const compressed = await compressPdf(env, await original.arrayBuffer());
-          const key = `auto-uploads/${crypto.randomUUID()}-compressed.pdf`;
+          const key = `auto-submissions/${crypto.randomUUID()}-compressed.pdf`;
           await env.BUCKET.put(key, compressed, {
             httpMetadata: { contentType: "application/pdf" },
           });
           await db
-            .update(autoUploads)
+            .update(autoSubmissions)
             .set({ compressedPdfKey: key, updatedAt: sql`(unixepoch())` })
-            .where(eq(autoUploads.id, uploadId));
+            .where(eq(autoSubmissions.id, autoSubmissionId));
           return key;
         },
       );
@@ -68,11 +68,11 @@ export class AutoUploadWorkflow extends WorkflowEntrypoint<Bindings, Params> {
       //    re-call (and re-bill) the model.
       const extraction = await step.do("extract", STEP_RETRIES, async () => {
         const [row] = await db
-          .select({ extraContext: autoUploads.extraContext })
-          .from(autoUploads)
-          .where(eq(autoUploads.id, uploadId))
+          .select({ extraContext: autoSubmissions.extraContext })
+          .from(autoSubmissions)
+          .where(eq(autoSubmissions.id, autoSubmissionId))
           .limit(1);
-        if (!row) throw new Error(`auto_upload ${uploadId} not found`);
+        if (!row) throw new Error(`auto_submission ${autoSubmissionId} not found`);
 
         const compressed = await env.BUCKET.get(compressedKey);
         if (!compressed) throw new Error("Compressed PDF missing from storage");
@@ -89,7 +89,7 @@ export class AutoUploadWorkflow extends WorkflowEntrypoint<Bindings, Params> {
       // 3. Hand the result to the user for review.
       await step.do("persist", async () => {
         await db
-          .update(autoUploads)
+          .update(autoSubmissions)
           .set({
             aiResult: JSON.stringify(extraction),
             status: "awaiting_confirmation",
@@ -98,8 +98,8 @@ export class AutoUploadWorkflow extends WorkflowEntrypoint<Bindings, Params> {
           })
           .where(
             and(
-              eq(autoUploads.id, uploadId),
-              eq(autoUploads.status, "processing"),
+              eq(autoSubmissions.id, autoSubmissionId),
+              eq(autoSubmissions.status, "processing"),
             ),
           );
       });
@@ -108,13 +108,13 @@ export class AutoUploadWorkflow extends WorkflowEntrypoint<Bindings, Params> {
       const message = err instanceof Error ? err.message : "Extraction failed";
       await step.do("mark-failed", async () => {
         await db
-          .update(autoUploads)
+          .update(autoSubmissions)
           .set({
             status: "failed",
             errorMessage: message,
             updatedAt: sql`(unixepoch())`,
           })
-          .where(eq(autoUploads.id, uploadId));
+          .where(eq(autoSubmissions.id, autoSubmissionId));
       });
       throw err;
     }

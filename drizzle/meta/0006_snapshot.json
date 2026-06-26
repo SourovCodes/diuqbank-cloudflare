@@ -4,8 +4,8 @@
   "id": "03a0f907-5268-4776-a68f-ce531f38e7e9",
   "prevId": "054897d9-5dd2-45b7-996a-f1bb80883463",
   "tables": {
-    "auto_uploads": {
-      "name": "auto_uploads",
+    "auto_submissions": {
+      "name": "auto_submissions",
       "columns": {
         "id": {
           "name": "id",
@@ -96,15 +96,15 @@
         }
       },
       "indexes": {
-        "auto_uploads_user_id_idx": {
-          "name": "auto_uploads_user_id_idx",
+        "auto_submissions_user_id_idx": {
+          "name": "auto_submissions_user_id_idx",
           "columns": [
             "user_id"
           ],
           "isUnique": false
         },
-        "auto_uploads_status_idx": {
-          "name": "auto_uploads_status_idx",
+        "auto_submissions_status_idx": {
+          "name": "auto_submissions_status_idx",
           "columns": [
             "status"
           ],
@@ -112,9 +112,9 @@
         }
       },
       "foreignKeys": {
-        "auto_uploads_user_id_users_id_fk": {
-          "name": "auto_uploads_user_id_users_id_fk",
-          "tableFrom": "auto_uploads",
+        "auto_submissions_user_id_users_id_fk": {
+          "name": "auto_submissions_user_id_users_id_fk",
+          "tableFrom": "auto_submissions",
           "tableTo": "users",
           "columnsFrom": [
             "user_id"
@@ -125,9 +125,9 @@
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
-        "auto_uploads_submission_id_submissions_id_fk": {
-          "name": "auto_uploads_submission_id_submissions_id_fk",
-          "tableFrom": "auto_uploads",
+        "auto_submissions_submission_id_submissions_id_fk": {
+          "name": "auto_submissions_submission_id_submissions_id_fk",
+          "tableFrom": "auto_submissions",
           "tableTo": "submissions",
           "columnsFrom": [
             "submission_id"

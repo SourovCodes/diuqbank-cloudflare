@@ -23,7 +23,7 @@ import {
 } from "./schemas/admin/semesters";
 import { submissionUpdateSchema } from "./schemas/admin/submissions";
 import { userUpdateSchema } from "./schemas/admin/users";
-import { autoUploadReprocessSchema } from "./schemas/auto-uploads";
+import { autoSubmissionReprocessSchema } from "./schemas/auto-submissions";
 import { googleSignInSchema } from "./schemas/auth";
 import { profileUpdateSchema } from "./schemas/profile";
 
@@ -230,7 +230,7 @@ const manualSubmissionList = z.object({
   meta: paginationMeta,
 });
 
-// --- Auto upload read models ----------------------------------------------
+// --- Auto submission read models ----------------------------------------------
 
 const aiExtraction = z.object({
   isAcceptable: z
@@ -250,7 +250,7 @@ const aiExtraction = z.object({
   reasoning: z.string(),
 });
 
-const autoUpload = z.object({
+const autoSubmission = z.object({
   id: z.number().int(),
   userId: z.number().int(),
   status: z.enum(["processing", "awaiting_confirmation", "failed", "confirmed"]),
@@ -276,13 +276,13 @@ const autoUpload = z.object({
   updatedAt: z.number().int().describe("Unix epoch seconds (UTC)"),
 });
 
-const autoUploadList = z.object({
-  data: z.array(autoUpload),
+const autoSubmissionList = z.object({
+  data: z.array(autoSubmission),
   meta: paginationMeta,
 });
 
-const autoUploadConfirmResult = z.object({
-  autoUpload: autoUpload.nullable(),
+const autoSubmissionConfirmResult = z.object({
+  autoSubmission: autoSubmission.nullable(),
   submission: z.object({
     id: z.number().int(),
     questionId: z.number().int(),
@@ -450,12 +450,12 @@ const componentSchemas = {
     ],
   },
 
-  // Auto uploads.
-  AutoUpload: toSchema(autoUpload),
-  AutoUploadList: toSchema(autoUploadList),
-  AutoUploadConfirmResult: toSchema(autoUploadConfirmResult),
-  AutoUploadReprocess: toSchema(autoUploadReprocessSchema),
-  AutoUploadCreateForm: {
+  // Auto submissions.
+  AutoSubmission: toSchema(autoSubmission),
+  AutoSubmissionList: toSchema(autoSubmissionList),
+  AutoSubmissionConfirmResult: toSchema(autoSubmissionConfirmResult),
+  AutoSubmissionReprocess: toSchema(autoSubmissionReprocessSchema),
+  AutoSubmissionCreateForm: {
     type: "object",
     properties: {
       pdf: {
@@ -1290,7 +1290,7 @@ export const buildOpenApiDoc = () => ({
       description: "Signed-in users: upload and manage PDFs submitted for review.",
     },
     {
-      name: "auto-uploads",
+      name: "auto-submissions",
       description:
         "Signed-in users: upload a PDF, let AI extract the metadata, then self-confirm into a submission.",
     },
@@ -1316,7 +1316,7 @@ export const buildOpenApiDoc = () => ({
         "questions",
         "filter-options",
         "manual-submissions",
-        "auto-uploads",
+        "auto-submissions",
       ],
     },
     {
@@ -1639,83 +1639,83 @@ export const buildOpenApiDoc = () => ({
         },
       },
     },
-    "/auto-uploads": {
+    "/auto-submissions": {
       get: {
-        tags: ["auto-uploads"],
-        summary: "List your auto uploads",
+        tags: ["auto-submissions"],
+        summary: "List your auto submissions",
         ...authFields(
           "User",
-          "Returns only auto uploads owned by the authenticated user, newest first.",
+          "Returns only auto submissions owned by the authenticated user, newest first.",
         ),
         parameters: pageParams,
         responses: {
-          "200": okJson("OK", ref("AutoUploadList")),
+          "200": okJson("OK", ref("AutoSubmissionList")),
           "400": commonErrors["400"],
           "401": commonErrors["401"],
         },
       },
       post: {
-        tags: ["auto-uploads"],
-        summary: "Create an auto upload",
+        tags: ["auto-submissions"],
+        summary: "Create an auto submission",
         ...authFields(
           "User",
-          "Uploads only a PDF. A background workflow compresses it, extracts the metadata with AI, then moves the row to `awaiting_confirmation`. Poll `GET /auto-uploads/{id}` for the result.",
+          "Uploads only a PDF. A background workflow compresses it, extracts the metadata with AI, then moves the row to `awaiting_confirmation`. Poll `GET /auto-submissions/{id}` for the result.",
         ),
         requestBody: {
           required: true,
-          content: multipart("AutoUploadCreateForm"),
+          content: multipart("AutoSubmissionCreateForm"),
         },
         responses: {
-          "201": okJson("Created — processing started", ref("AutoUpload")),
+          "201": okJson("Created — processing started", ref("AutoSubmission")),
           "400": commonErrors["400"],
           "401": commonErrors["401"],
           "413": errResp("PDF exceeds the 20 MB size limit"),
         },
       },
     },
-    "/auto-uploads/{id}": {
+    "/auto-submissions/{id}": {
       get: {
-        tags: ["auto-uploads"],
-        summary: "Get one of your auto uploads",
+        tags: ["auto-submissions"],
+        summary: "Get one of your auto submissions",
         ...authFields(
           "User",
-          "A single auto upload you own, including the AI result once processing finishes.",
+          "A single auto submission you own, including the AI result once processing finishes.",
         ),
-        parameters: [idPathParam("Auto upload")],
+        parameters: [idPathParam("Auto submission")],
         responses: {
-          "200": okJson("OK", ref("AutoUpload")),
+          "200": okJson("OK", ref("AutoSubmission")),
           "401": commonErrors["401"],
           "404": commonErrors["404"],
         },
       },
       delete: {
-        tags: ["auto-uploads"],
-        summary: "Delete one of your auto uploads",
+        tags: ["auto-submissions"],
+        summary: "Delete one of your auto submissions",
         ...authFields(
           "User",
-          "Deletes an auto upload you own (unless already confirmed) and removes its PDFs from storage.",
+          "Deletes an auto submission you own (unless already confirmed) and removes its PDFs from storage.",
         ),
-        parameters: [idPathParam("Auto upload")],
+        parameters: [idPathParam("Auto submission")],
         responses: {
           "204": noContent,
           "401": commonErrors["401"],
           "404": commonErrors["404"],
-          "409": errResp("Confirmed auto uploads cannot be deleted"),
+          "409": errResp("Confirmed auto submissions cannot be deleted"),
         },
       },
     },
-    "/auto-uploads/{id}/reprocess": {
+    "/auto-submissions/{id}/reprocess": {
       post: {
-        tags: ["auto-uploads"],
-        summary: "Reprocess an auto upload",
+        tags: ["auto-submissions"],
+        summary: "Reprocess an auto submission",
         ...authFields(
           "User",
           "Re-runs AI extraction, optionally with an `extraContext` hint. Allowed when status is `awaiting_confirmation` or `failed`. Reuses the already-compressed copy, so it does not re-compress.",
         ),
-        parameters: [idPathParam("Auto upload")],
-        requestBody: { required: false, content: json(ref("AutoUploadReprocess")) },
+        parameters: [idPathParam("Auto submission")],
+        requestBody: { required: false, content: json(ref("AutoSubmissionReprocess")) },
         responses: {
-          "200": okJson("Reprocessing started", ref("AutoUpload")),
+          "200": okJson("Reprocessing started", ref("AutoSubmission")),
           "400": commonErrors["400"],
           "401": commonErrors["401"],
           "404": commonErrors["404"],
@@ -1724,19 +1724,19 @@ export const buildOpenApiDoc = () => ({
         },
       },
     },
-    "/auto-uploads/{id}/confirm": {
+    "/auto-submissions/{id}/confirm": {
       post: {
-        tags: ["auto-uploads"],
-        summary: "Confirm an auto upload",
+        tags: ["auto-submissions"],
+        summary: "Confirm an auto submission",
         ...authFields(
           "User",
           "Accepts the AI result and creates the real question + submission, find-or-creating the department, course, semester, and exam type as needed. No admin review. Requires `isAcceptable` and all metadata fields.",
         ),
-        parameters: [idPathParam("Auto upload")],
+        parameters: [idPathParam("Auto submission")],
         responses: {
           "200": okJson(
             "Confirmed — submission created",
-            ref("AutoUploadConfirmResult"),
+            ref("AutoSubmissionConfirmResult"),
           ),
           "400": errResp(
             "AI result missing/unacceptable, or required metadata fields absent",

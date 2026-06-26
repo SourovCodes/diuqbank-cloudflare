@@ -188,18 +188,18 @@ export const manualSubmissions = sqliteTable(
 // AI-assisted self-service uploads. A user uploads only a PDF; a Cloudflare
 // Workflow compresses it, sends it to Gemini to extract the metadata, and
 // stores the result here for the user to review and confirm. On confirm the
-// row's PDF is promoted into a real `submissions` row (see routes/auto-uploads).
-export const autoUploads = sqliteTable(
-  "auto_uploads",
+// row's PDF is promoted into a real `submissions` row (see routes/auto-submissions).
+export const autoSubmissions = sqliteTable(
+  "auto_submissions",
   {
     id: integer("id").primaryKey({ autoIncrement: true }),
     userId: integer("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "restrict" }),
-    // Original, full-quality upload (R2: auto-uploads/{uuid}.pdf). This is the
+    // Original, full-quality upload (R2: auto-submissions/{uuid}.pdf). This is the
     // copy promoted to `submissions/` on confirm.
     pdfKey: text("pdf_key").notNull(),
-    // Compressed copy fed to the AI (R2: auto-uploads/{uuid}-compressed.pdf).
+    // Compressed copy fed to the AI (R2: auto-submissions/{uuid}-compressed.pdf).
     // Scratch only — deleted on confirm/delete.
     compressedPdfKey: text("compressed_pdf_key"),
     // Size of the ORIGINAL upload in bytes.
@@ -225,8 +225,8 @@ export const autoUploads = sqliteTable(
       .default(sql`(unixepoch())`),
   },
   (table) => [
-    index("auto_uploads_user_id_idx").on(table.userId),
-    index("auto_uploads_status_idx").on(table.status),
+    index("auto_submissions_user_id_idx").on(table.userId),
+    index("auto_submissions_status_idx").on(table.status),
   ],
 );
 
@@ -280,16 +280,16 @@ export const usersRelations = relations(users, ({ many }) => ({
   reviewedManualSubmissions: many(manualSubmissions, {
     relationName: "manualSubmissionReviewer",
   }),
-  autoUploads: many(autoUploads),
+  autoSubmissions: many(autoSubmissions),
 }));
 
-export const autoUploadsRelations = relations(autoUploads, ({ one }) => ({
+export const autoSubmissionsRelations = relations(autoSubmissions, ({ one }) => ({
   user: one(users, {
-    fields: [autoUploads.userId],
+    fields: [autoSubmissions.userId],
     references: [users.id],
   }),
   submission: one(submissions, {
-    fields: [autoUploads.submissionId],
+    fields: [autoSubmissions.submissionId],
     references: [submissions.id],
   }),
 }));
@@ -354,4 +354,4 @@ export type ExamType = typeof examTypes.$inferSelect;
 export type Question = typeof questions.$inferSelect;
 export type Submission = typeof submissions.$inferSelect;
 export type ManualSubmission = typeof manualSubmissions.$inferSelect;
-export type AutoUpload = typeof autoUploads.$inferSelect;
+export type AutoSubmission = typeof autoSubmissions.$inferSelect;

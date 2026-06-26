@@ -22,14 +22,14 @@
       "bucket_name": "diuqbank-files"
     }
   ],
-  // Durable pipeline for AI-assisted auto uploads: compress -> extract -> persist.
+  // Durable pipeline for AI-assisted auto submissions: compress -> extract -> persist.
   // The class is exported from src/index.ts; instances are started with
-  // env.AUTO_UPLOAD_WORKFLOW.create({ params: { uploadId } }).
+  // env.AUTO_SUBMISSION_WORKFLOW.create({ params: { autoSubmissionId } }).
   "workflows": [
     {
-      "name": "diuqbank-auto-upload",
-      "binding": "AUTO_UPLOAD_WORKFLOW",
-      "class_name": "AutoUploadWorkflow"
+      "name": "diuqbank-auto-submission",
+      "binding": "AUTO_SUBMISSION_WORKFLOW",
+      "class_name": "AutoSubmissionWorkflow"
     }
   ],
   "vars": {
