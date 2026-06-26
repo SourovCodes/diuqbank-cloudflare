@@ -23,6 +23,7 @@ import {
 } from "./schemas/admin/semesters";
 import { submissionUpdateSchema } from "./schemas/admin/submissions";
 import { userUpdateSchema } from "./schemas/admin/users";
+import { autoUploadReprocessSchema } from "./schemas/auto-uploads";
 import { googleSignInSchema } from "./schemas/auth";
 import { profileUpdateSchema } from "./schemas/profile";
 
@@ -229,6 +230,73 @@ const manualSubmissionList = z.object({
   meta: paginationMeta,
 });
 
+// --- Auto upload read models ----------------------------------------------
+
+const aiExtraction = z.object({
+  isAcceptable: z
+    .boolean()
+    .describe("The AI's own verdict on whether the PDF is a usable exam paper."),
+  rejectionReason: z
+    .string()
+    .nullable()
+    .describe("Why the upload was rejected, when `isAcceptable` is false."),
+  departmentName: z.string().nullable(),
+  departmentShortName: z.string().nullable(),
+  courseName: z.string().nullable(),
+  semesterName: z.string().nullable(),
+  examTypeName: z.string().nullable(),
+  section: z.string().nullable(),
+  batch: z.string().nullable(),
+  reasoning: z.string(),
+});
+
+const autoUpload = z.object({
+  id: z.number().int(),
+  userId: z.number().int(),
+  status: z.enum(["processing", "awaiting_confirmation", "failed", "confirmed"]),
+  fileSize: z.number().int().describe("Size of the original PDF in bytes."),
+  aiResult: aiExtraction
+    .nullable()
+    .describe("AI extraction result; null until processing finishes."),
+  extraContext: z
+    .string()
+    .nullable()
+    .describe("Optional hint supplied by the uploader for re-extraction."),
+  errorMessage: z.string().nullable(),
+  submissionId: z
+    .number()
+    .int()
+    .nullable()
+    .describe("The created submission id, set once confirmed."),
+  pdfUrl: z
+    .string()
+    .nullable()
+    .describe("Absolute URL to the uploaded PDF, served by `GET /files/:key`."),
+  createdAt: z.number().int().describe("Unix epoch seconds (UTC)"),
+  updatedAt: z.number().int().describe("Unix epoch seconds (UTC)"),
+});
+
+const autoUploadList = z.object({
+  data: z.array(autoUpload),
+  meta: paginationMeta,
+});
+
+const autoUploadConfirmResult = z.object({
+  autoUpload: autoUpload.nullable(),
+  submission: z.object({
+    id: z.number().int(),
+    questionId: z.number().int(),
+    pdfUrl: z.string().nullable(),
+  }),
+  created: z.object({
+    departmentId: z.number().int(),
+    courseId: z.number().int(),
+    semesterId: z.number().int(),
+    examTypeId: z.number().int(),
+    questionId: z.number().int(),
+  }),
+});
+
 // --- Admin read models ----------------------------------------------------
 
 const departmentList = z.object({
@@ -380,6 +448,23 @@ const componentSchemas = {
       "semesterName",
       "examTypeName",
     ],
+  },
+
+  // Auto uploads.
+  AutoUpload: toSchema(autoUpload),
+  AutoUploadList: toSchema(autoUploadList),
+  AutoUploadConfirmResult: toSchema(autoUploadConfirmResult),
+  AutoUploadReprocess: toSchema(autoUploadReprocessSchema),
+  AutoUploadCreateForm: {
+    type: "object",
+    properties: {
+      pdf: {
+        type: "string",
+        format: "binary",
+        description: "PDF file (max 20 MB).",
+      },
+    },
+    required: ["pdf"],
   },
 
   // Admin request bodies (derived from the route validation schemas).
@@ -1204,6 +1289,11 @@ export const buildOpenApiDoc = () => ({
       name: "manual-submissions",
       description: "Signed-in users: upload and manage PDFs submitted for review.",
     },
+    {
+      name: "auto-uploads",
+      description:
+        "Signed-in users: upload a PDF, let AI extract the metadata, then self-confirm into a submission.",
+    },
     { name: "admin-departments", description: "Admin: manage departments." },
     { name: "admin-courses", description: "Admin: manage courses." },
     { name: "admin-semesters", description: "Admin: manage semesters." },
@@ -1226,6 +1316,7 @@ export const buildOpenApiDoc = () => ({
         "questions",
         "filter-options",
         "manual-submissions",
+        "auto-uploads",
       ],
     },
     {
@@ -1545,6 +1636,114 @@ export const buildOpenApiDoc = () => ({
           "401": commonErrors["401"],
           "404": commonErrors["404"],
           "409": errResp("Approved manual submissions cannot be deleted by users"),
+        },
+      },
+    },
+    "/auto-uploads": {
+      get: {
+        tags: ["auto-uploads"],
+        summary: "List your auto uploads",
+        ...authFields(
+          "User",
+          "Returns only auto uploads owned by the authenticated user, newest first.",
+        ),
+        parameters: pageParams,
+        responses: {
+          "200": okJson("OK", ref("AutoUploadList")),
+          "400": commonErrors["400"],
+          "401": commonErrors["401"],
+        },
+      },
+      post: {
+        tags: ["auto-uploads"],
+        summary: "Create an auto upload",
+        ...authFields(
+          "User",
+          "Uploads only a PDF. A background workflow compresses it, extracts the metadata with AI, then moves the row to `awaiting_confirmation`. Poll `GET /auto-uploads/{id}` for the result.",
+        ),
+        requestBody: {
+          required: true,
+          content: multipart("AutoUploadCreateForm"),
+        },
+        responses: {
+          "201": okJson("Created — processing started", ref("AutoUpload")),
+          "400": commonErrors["400"],
+          "401": commonErrors["401"],
+          "413": errResp("PDF exceeds the 20 MB size limit"),
+        },
+      },
+    },
+    "/auto-uploads/{id}": {
+      get: {
+        tags: ["auto-uploads"],
+        summary: "Get one of your auto uploads",
+        ...authFields(
+          "User",
+          "A single auto upload you own, including the AI result once processing finishes.",
+        ),
+        parameters: [idPathParam("Auto upload")],
+        responses: {
+          "200": okJson("OK", ref("AutoUpload")),
+          "401": commonErrors["401"],
+          "404": commonErrors["404"],
+        },
+      },
+      delete: {
+        tags: ["auto-uploads"],
+        summary: "Delete one of your auto uploads",
+        ...authFields(
+          "User",
+          "Deletes an auto upload you own (unless already confirmed) and removes its PDFs from storage.",
+        ),
+        parameters: [idPathParam("Auto upload")],
+        responses: {
+          "204": noContent,
+          "401": commonErrors["401"],
+          "404": commonErrors["404"],
+          "409": errResp("Confirmed auto uploads cannot be deleted"),
+        },
+      },
+    },
+    "/auto-uploads/{id}/reprocess": {
+      post: {
+        tags: ["auto-uploads"],
+        summary: "Reprocess an auto upload",
+        ...authFields(
+          "User",
+          "Re-runs AI extraction, optionally with an `extraContext` hint. Allowed when status is `awaiting_confirmation` or `failed`. Reuses the already-compressed copy, so it does not re-compress.",
+        ),
+        parameters: [idPathParam("Auto upload")],
+        requestBody: { required: false, content: json(ref("AutoUploadReprocess")) },
+        responses: {
+          "200": okJson("Reprocessing started", ref("AutoUpload")),
+          "400": commonErrors["400"],
+          "401": commonErrors["401"],
+          "404": commonErrors["404"],
+          "409": errResp("Upload is not in a reprocessable state"),
+          "502": errResp("Failed to start reprocessing"),
+        },
+      },
+    },
+    "/auto-uploads/{id}/confirm": {
+      post: {
+        tags: ["auto-uploads"],
+        summary: "Confirm an auto upload",
+        ...authFields(
+          "User",
+          "Accepts the AI result and creates the real question + submission, find-or-creating the department, course, semester, and exam type as needed. No admin review. Requires `isAcceptable` and all metadata fields.",
+        ),
+        parameters: [idPathParam("Auto upload")],
+        responses: {
+          "200": okJson(
+            "Confirmed — submission created",
+            ref("AutoUploadConfirmResult"),
+          ),
+          "400": errResp(
+            "AI result missing/unacceptable, or required metadata fields absent",
+          ),
+          "401": commonErrors["401"],
+          "404": commonErrors["404"],
+          "409": errResp("Upload is not in a confirmable state"),
         },
       },
     },

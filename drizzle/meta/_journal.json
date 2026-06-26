@@ -43,6 +43,13 @@
       "when": 1782153091388,
       "tag": "0005_blue_black_knight",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1782462517025,
+      "tag": "0006_famous_darkstar",
+      "breakpoints": true
     }
   ]
 }

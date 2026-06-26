@@ -22,13 +22,34 @@
       "bucket_name": "diuqbank-files"
     }
   ],
+  // Durable pipeline for AI-assisted auto uploads: compress -> extract -> persist.
+  // The class is exported from src/index.ts; instances are started with
+  // env.AUTO_UPLOAD_WORKFLOW.create({ params: { uploadId } }).
+  "workflows": [
+    {
+      "name": "diuqbank-auto-upload",
+      "binding": "AUTO_UPLOAD_WORKFLOW",
+      "class_name": "AutoUploadWorkflow"
+    }
+  ],
   "vars": {
     // Google OAuth client id (public value — fine to commit). The ID token's
     // `aud` claim must match this. Replace with your own from the Google Cloud
     // console (OAuth 2.0 Client IDs).
-    "GOOGLE_CLIENT_ID": "85673828423-q1upghugo5oehip02358e6tjvqi1pln2.apps.googleusercontent.com"
+    "GOOGLE_CLIENT_ID": "85673828423-q1upghugo5oehip02358e6tjvqi1pln2.apps.googleusercontent.com",
+    // Cloudflare account id + AI Gateway name — used to build the gateway URL
+    // that proxies Gemini calls (see src/lib/ai-extraction.ts).
+    "CF_ACCOUNT_ID": "",
+    "AI_GATEWAY_NAME": "diuqbank",
+    // Base URL of the external PDF Processor service (compression/watermarking).
+    "PDF_PROCESSOR_URL": "https://pdf-processor.diuqbank.com"
   },
   "secrets": {
-    "required": ["JWT_SECRET", "ADMIN_EMAIL"]
+    "required": [
+      "JWT_SECRET",
+      "ADMIN_EMAIL",
+      "GEMINI_API_KEY",
+      "PDF_PROCESSOR_API_KEY"
+    ]
   }
 }

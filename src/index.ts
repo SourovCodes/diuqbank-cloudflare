@@ -6,6 +6,7 @@ import { logger } from "hono/logger";
 import { openApiDoc } from "./openapi";
 import admin from "./routes/admin";
 import auth from "./routes/auth";
+import autoUploads from "./routes/auto-uploads";
 import contributors from "./routes/contributors";
 import files from "./routes/files";
 import filterOptions from "./routes/filter-options";
@@ -47,6 +48,7 @@ app.route("/contributors", contributors);
 app.route("/questions", questions);
 app.route("/filter-options", filterOptions);
 app.route("/manual-submissions", manualSubmissions);
+app.route("/auto-uploads", autoUploads);
 app.route("/admin", admin);
 
 // ---------------------------------------------------------------------------
@@ -101,5 +103,9 @@ app.onError((err, c) => {
 });
 
 app.notFound((c) => c.json({ error: "Not found" }, 404));
+
+// Cloudflare Workflow class — referenced by `class_name` in wrangler.jsonc and
+// driven by the /auto-uploads routes via the AUTO_UPLOAD_WORKFLOW binding.
+export { AutoUploadWorkflow } from "./workflows/auto-upload";
 
 export default app;
