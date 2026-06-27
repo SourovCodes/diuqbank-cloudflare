@@ -43,9 +43,6 @@ function SubmitDropdown({ onClose }: { onClose?: () => void }) {
           <Link to="/submit/manual" onClick={() => { setOpen(false); onClose?.() }} className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
             ✋ Manual Submission
           </Link>
-          <Link to="/submit/auto" onClick={() => { setOpen(false); onClose?.() }} className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
-            🤖 Auto Submission
-          </Link>
         </div>
       )}
     </div>
@@ -85,7 +82,6 @@ function UserMenu() {
           )}
           <div className="border-t border-gray-100" />
           <Link to="/my/manual-submissions" onClick={() => setOpen(false)} className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">My Manual Submissions</Link>
-          <Link to="/my/auto-submissions" onClick={() => setOpen(false)} className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">My Auto Submissions</Link>
           <div className="border-t border-gray-100" />
           <button onClick={() => { logout(); setOpen(false); navigate('/') }} className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50">
             Sign Out
@@ -125,7 +121,6 @@ function MobileMenu({ onClose }: { onClose: () => void }) {
               <div className="my-2 border-t border-gray-200 pt-2">
                 <p className="mb-1 px-3 text-xs font-semibold uppercase tracking-wide text-gray-400">Submit</p>
                 <MobileNavLink to="/submit/manual" onClick={onClose}>✋ Manual Submission</MobileNavLink>
-                <MobileNavLink to="/submit/auto" onClick={onClose}>🤖 Auto Submission</MobileNavLink>
               </div>
 
               <div className="my-2 border-t border-gray-200 pt-2">
@@ -143,7 +138,6 @@ function MobileMenu({ onClose }: { onClose: () => void }) {
                   <MobileNavLink to="/admin" onClick={onClose}>🛠 Admin Panel</MobileNavLink>
                 )}
                 <MobileNavLink to="/my/manual-submissions" onClick={onClose}>My Manual Submissions</MobileNavLink>
-                <MobileNavLink to="/my/auto-submissions" onClick={onClose}>My Auto Submissions</MobileNavLink>
               </div>
 
               <div className="border-t border-gray-200 pt-2">

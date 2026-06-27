@@ -1,6 +1,6 @@
 import type {
   FilterOptions, PaginationMeta, Question, QuestionFilters,
-  Submission, Contributor, User, AutoSubmission, ManualSubmission, ContributorSubmission,
+  Submission, Contributor, User, ManualSubmission, ContributorSubmission,
   Department, Course, Semester, ExamType,
   AdminQuestion, AdminSubmission, AdminManualSubmission, AdminUser, WatermarkStatus,
   ApiErrorResponse, Page,
@@ -194,31 +194,6 @@ export const api = {
 
   deleteManualSubmission: (token: string, id: number) =>
     authedDelete(`/manual-submissions/${id}`, token),
-
-  // --- Auto Submissions ---
-  createAutoSubmission: (token: string, file: File) => {
-    const fd = new FormData()
-    fd.append('pdf', file)
-    return authedPost<AutoSubmission>('/auto-submissions', token, fd)
-  },
-
-  myAutoSubmissions: (token: string, page = 1) =>
-    authedGet<{ data: AutoSubmission[]; meta: PaginationMeta }>(
-      `/auto-submissions?page=${page}&perPage=20`,
-      token
-    ),
-
-  getAutoSubmission: (token: string, id: number) =>
-    authedGet<AutoSubmission>(`/auto-submissions/${id}`, token),
-
-  confirmAutoSubmission: (token: string, id: number) =>
-    authedPost<AutoSubmission>(`/auto-submissions/${id}/confirm`, token, {}),
-
-  reprocessAutoSubmission: (token: string, id: number, extraContext?: string) =>
-    authedPost<AutoSubmission>(`/auto-submissions/${id}/reprocess`, token, extraContext ? { extraContext } : {}),
-
-  deleteAutoSubmission: (token: string, id: number) =>
-    authedDelete(`/auto-submissions/${id}`, token),
 
   // --- Admin: Departments ---
   adminDepartments: (token: string, params: AdminListParams & { search?: string } = {}) =>

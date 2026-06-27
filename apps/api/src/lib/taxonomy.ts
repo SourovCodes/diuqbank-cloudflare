@@ -13,7 +13,7 @@ import {
 /**
  * Race-safe find-or-create. Try `find`; if absent, `create`; if the create
  * loses a uniqueness race, re-`find` and adopt the winner. Used by the
- * auto-submission confirm flow, which may introduce new taxonomy values.
+ * admin/manual-submission flows, which may introduce new taxonomy values.
  */
 const findOrCreate = async (
   find: () => Promise<{ id: number } | undefined>,

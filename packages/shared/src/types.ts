@@ -69,29 +69,6 @@ export type ContributorSubmission = {
   question: Question
 }
 
-export type AutoSubmission = {
-  id: number
-  status: 'processing' | 'awaiting_confirmation' | 'failed' | 'confirmed'
-  fileSize: number
-  pdfUrl: string | null
-  aiResult: {
-    isAcceptable: boolean
-    rejectionReason: string | null
-    departmentName: string | null
-    departmentShortName: string | null
-    courseName: string | null
-    semesterName: string | null
-    examTypeName: string | null
-    section: string | null
-    batch: string | null
-    reasoning: string
-  } | null
-  errorMessage: string | null
-  submissionId: number | null
-  createdAt: number
-  updatedAt: number
-}
-
 export type ManualSubmission = {
   id: number
   status: 'pending_review' | 'approved' | 'rejected'

@@ -185,51 +185,6 @@ export const manualSubmissions = sqliteTable(
   ],
 );
 
-// AI-assisted self-service uploads. A user uploads only a PDF; a Cloudflare
-// Workflow compresses it, sends it to Gemini to extract the metadata, and
-// stores the result here for the user to review and confirm. On confirm the
-// row's PDF is promoted into a real `submissions` row (see routes/auto-submissions).
-export const autoSubmissions = sqliteTable(
-  "auto_submissions",
-  {
-    id: integer("id").primaryKey({ autoIncrement: true }),
-    userId: integer("user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "restrict" }),
-    // Original, full-quality upload (R2: auto-submissions/{uuid}.pdf). This is the
-    // copy promoted to `submissions/` on confirm.
-    pdfKey: text("pdf_key").notNull(),
-    // Compressed copy fed to the AI (R2: auto-submissions/{uuid}-compressed.pdf).
-    // Scratch only — deleted on confirm/delete.
-    compressedPdfKey: text("compressed_pdf_key"),
-    // Size of the ORIGINAL upload in bytes.
-    fileSize: integer("file_size").notNull(),
-    status: text("status", {
-      enum: ["processing", "awaiting_confirmation", "failed", "confirmed"],
-    })
-      .notNull()
-      .default("processing"),
-    // JSON-encoded AiExtraction (see lib/ai-extraction). Null until extracted.
-    aiResult: text("ai_result"),
-    // Optional free-text hint the user supplies when reprocessing.
-    extraContext: text("extra_context"),
-    errorMessage: text("error_message"),
-    submissionId: integer("submission_id").references(() => submissions.id, {
-      onDelete: "set null",
-    }),
-    createdAt: integer("created_at")
-      .notNull()
-      .default(sql`(unixepoch())`),
-    updatedAt: integer("updated_at")
-      .notNull()
-      .default(sql`(unixepoch())`),
-  },
-  (table) => [
-    index("auto_submissions_user_id_idx").on(table.userId),
-    index("auto_submissions_status_idx").on(table.status),
-  ],
-);
-
 export const coursesRelations = relations(courses, ({ one, many }) => ({
   department: one(departments, {
     fields: [courses.departmentId],
@@ -279,18 +234,6 @@ export const usersRelations = relations(users, ({ many }) => ({
   }),
   reviewedManualSubmissions: many(manualSubmissions, {
     relationName: "manualSubmissionReviewer",
-  }),
-  autoSubmissions: many(autoSubmissions),
-}));
-
-export const autoSubmissionsRelations = relations(autoSubmissions, ({ one }) => ({
-  user: one(users, {
-    fields: [autoSubmissions.userId],
-    references: [users.id],
-  }),
-  submission: one(submissions, {
-    fields: [autoSubmissions.submissionId],
-    references: [submissions.id],
   }),
 }));
 
@@ -354,4 +297,3 @@ export type ExamType = typeof examTypes.$inferSelect;
 export type Question = typeof questions.$inferSelect;
 export type Submission = typeof submissions.$inferSelect;
 export type ManualSubmission = typeof manualSubmissions.$inferSelect;
-export type AutoSubmission = typeof autoSubmissions.$inferSelect;

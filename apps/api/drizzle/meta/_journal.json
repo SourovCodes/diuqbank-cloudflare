@@ -15,6 +15,13 @@
       "when": 1782494519375,
       "tag": "0001_submission_count_triggers",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1782588449266,
+      "tag": "0002_drop_auto_submissions",
+      "breakpoints": true
     }
   ]
 }

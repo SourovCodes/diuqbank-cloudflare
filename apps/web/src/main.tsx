@@ -20,13 +20,10 @@ import { QuestionDetailPage } from './pages/QuestionDetailPage'
 import { AuthPage } from './pages/AuthPage'
 import { EditProfilePage } from './pages/EditProfilePage'
 import { ManualSubmissionPage } from './pages/ManualSubmissionPage'
-import { AutoSubmissionPage } from './pages/AutoSubmissionPage'
 import { ContributorsPage } from './pages/ContributorsPage'
 import { ContributorProfilePage } from './pages/ContributorProfilePage'
 import { MyManualSubmissionsPage } from './pages/MyManualSubmissionsPage'
-import { MyAutoSubmissionsPage } from './pages/MyAutoSubmissionsPage'
 import { ManualSubmissionDetailPage } from './pages/ManualSubmissionDetailPage'
-import { AutoSubmissionDetailPage } from './pages/AutoSubmissionDetailPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { ErrorBoundary } from './components/ErrorBoundary'
 
@@ -92,11 +89,8 @@ function App() {
                 <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
                   <Route path="/profile/edit" element={<EditProfilePage />} />
                   <Route path="/submit/manual" element={<ManualSubmissionPage />} />
-                  <Route path="/submit/auto" element={<AutoSubmissionPage />} />
                   <Route path="/my/manual-submissions" element={<MyManualSubmissionsPage />} />
                   <Route path="/my/manual-submissions/:id" element={<ManualSubmissionDetailPage />} />
-                  <Route path="/my/auto-submissions" element={<MyAutoSubmissionsPage />} />
-                  <Route path="/my/auto-submissions/:id" element={<AutoSubmissionDetailPage />} />
                 </Route>
 
                 {/* Admin routes — role-guarded, with admin sidebar layout */}

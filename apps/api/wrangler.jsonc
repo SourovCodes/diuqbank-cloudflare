@@ -28,7 +28,7 @@
   "ratelimits": [
     {
       // Strict limiter for expensive / abuse-prone endpoints (Google sign-in,
-      // file uploads → R2 / PDF processor / Gemini). Keyed per IP or user.
+      // file uploads → R2). Keyed per IP or user.
       "name": "AUTH_RATELIMIT",
       "namespace_id": "1001",
       "simple": { "limit": 10, "period": 60 }
@@ -40,30 +40,11 @@
       "simple": { "limit": 120, "period": 60 }
     }
   ],
-  // Durable pipeline for AI-assisted auto submissions: compress -> extract -> persist.
-  // The class is exported from src/index.ts; instances are started with
-  // env.AUTO_SUBMISSION_WORKFLOW.create({ params: { autoSubmissionId } }).
-  "workflows": [
-    {
-      "name": "diuqbank-auto-submission",
-      "binding": "AUTO_SUBMISSION_WORKFLOW",
-      "class_name": "AutoSubmissionWorkflow"
-    }
-  ],
   "vars": {
     // Google OAuth client id (public value — fine to commit). The ID token's
     // `aud` claim must match this. Replace with your own from the Google Cloud
     // console (OAuth 2.0 Client IDs).
     "GOOGLE_CLIENT_ID": "85673828423-q1upghugo5oehip02358e6tjvqi1pln2.apps.googleusercontent.com",
-    // Cloudflare account id. Used to build the AI Gateway URL when one is set.
-    "CF_ACCOUNT_ID": "f270c3ed6636c3aa31b1393dc34ee95c",
-    // AI Gateway slug — Gemini is always routed through this Cloudflare AI
-    // Gateway (caching / analytics). The gateway must exist in the dashboard;
-    // if it has authenticated-gateway ON, also set the AI_GATEWAY_TOKEN secret.
-    // Required (extraction errors out if unset) — there is no direct fallback.
-    "AI_GATEWAY_NAME": "diuqbank",
-    // Base URL of the external PDF Processor service (compression/watermarking).
-    "PDF_PROCESSOR_URL": "https://pdf-processor.diuqbank.com",
     // Comma-separated CORS allowlist. Requests from any other Origin are
     // rejected (no CORS headers). Add your production/custom domains here.
     "WEB_ORIGINS": "https://diuqbank-web.sourovcodes.workers.dev,http://localhost:5173"
@@ -71,9 +52,7 @@
   "secrets": {
     "required": [
       "JWT_SECRET",
-      "ADMIN_EMAIL",
-      "GEMINI_API_KEY",
-      "PDF_PROCESSOR_API_KEY"
+      "ADMIN_EMAIL"
     ]
   }
 }
