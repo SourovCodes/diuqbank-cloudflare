@@ -6,20 +6,13 @@ import { useMyAutoSubmissions } from '../hooks/useMyAutoSubmissions'
 import { api } from '../lib/api'
 import { Badge } from '../components/ui/Badge'
 import { Pagination } from '../components/ui/Pagination'
-import { Spinner } from '../components/ui/Spinner'
+import { SkeletonList } from '../components/ui/Skeleton'
+import { EmptyState } from '../components/ui/EmptyState'
 import { ErrorMessage } from '../components/ui/ErrorMessage'
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
+import { toastError, toastSuccess } from '../lib/toast'
 import type { AutoSubmission } from '@diuqbank/shared/types'
-
-function formatDate(unix: number) {
-  return new Date(unix * 1000).toLocaleDateString('en-GB', {
-    day: 'numeric', month: 'short', year: 'numeric',
-  })
-}
-
-function formatBytes(bytes: number) {
-  if (bytes >= 1_048_576) return `${(bytes / 1_048_576).toFixed(1)} MB`
-  return `${(bytes / 1024).toFixed(0)} KB`
-}
+import { formatBytes, formatDate } from '@diuqbank/shared'
 
 const statusVariant = (s: AutoSubmission['status']) => {
   if (s === 'confirmed') return 'green'
@@ -41,7 +34,6 @@ function SubmissionCard({ submission, onMutated }: { submission: AutoSubmission;
   const [confirming, setConfirming] = useState(false)
   const [reprocessing, setReprocessing] = useState(false)
   const [deleting, setDeleting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
 
   const ai = submission.aiResult
   const canDelete = submission.status !== 'confirmed'
@@ -50,36 +42,39 @@ function SubmissionCard({ submission, onMutated }: { submission: AutoSubmission;
 
   async function handleConfirm() {
     if (!token) return
-    setConfirming(true); setError(null)
+    setConfirming(true)
     try {
       await api.confirmAutoSubmission(token, submission.id)
+      toastSuccess('Submission confirmed.')
       onMutated()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Confirmation failed.')
+      toastError(err, 'Confirmation failed.')
       setConfirming(false)
     }
   }
 
   async function handleReprocess() {
     if (!token) return
-    setReprocessing(true); setError(null)
+    setReprocessing(true)
     try {
       await api.reprocessAutoSubmission(token, submission.id)
+      toastSuccess('Reprocessing started.')
       onMutated()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Reprocess failed.')
+      toastError(err, 'Reprocess failed.')
       setReprocessing(false)
     }
   }
 
   async function handleDelete() {
     if (!token || !window.confirm('Delete this submission? This cannot be undone.')) return
-    setDeleting(true); setError(null)
+    setDeleting(true)
     try {
       await api.deleteAutoSubmission(token, submission.id)
+      toastSuccess('Submission deleted.')
       onMutated()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Delete failed.')
+      toastError(err, 'Delete failed.')
       setDeleting(false)
     }
   }
@@ -116,7 +111,6 @@ function SubmissionCard({ submission, onMutated }: { submission: AutoSubmission;
             {submission.submissionId && <span>Submission #{submission.submissionId}</span>}
           </div>
           {submission.errorMessage && <p className="text-xs text-red-600">{submission.errorMessage}</p>}
-          {error && <p className="text-xs text-red-600">{error}</p>}
         </div>
 
         <div className="flex shrink-0 flex-col items-start gap-2 sm:items-end">
@@ -149,6 +143,7 @@ function SubmissionCard({ submission, onMutated }: { submission: AutoSubmission;
 }
 
 export function MyAutoSubmissionsPage() {
+  useDocumentTitle('My Auto Submissions')
   const { token } = useAuth()
   const [page, setPage] = useState(1)
   const queryClient = useQueryClient()
@@ -176,16 +171,18 @@ export function MyAutoSubmissionsPage() {
       </div>
 
       {isPending ? (
-        <div className="flex justify-center py-16"><Spinner /></div>
+        <SkeletonList count={5} />
       ) : isError ? (
         <ErrorMessage message="Failed to load your submissions." />
       ) : data?.data.length === 0 ? (
-        <div className="rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 py-16 text-center">
-          <p className="text-sm text-gray-500">You haven't made any auto submissions yet.</p>
-          <Link to="/submit/auto" className="mt-3 inline-block text-sm font-medium text-blue-600 hover:underline">
-            Submit your first paper →
-          </Link>
-        </div>
+        <EmptyState
+          message="You haven't made any auto submissions yet."
+          action={
+            <Link to="/submit/auto" className="text-sm font-medium text-blue-600 hover:underline">
+              Submit your first paper →
+            </Link>
+          }
+        />
       ) : (
         <>
           <div className="flex flex-col gap-3">

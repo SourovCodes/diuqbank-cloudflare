@@ -182,3 +182,13 @@ export type AdminManualSubmission = {
 }
 
 export type AdminUser = User & { submissionCount: number }
+
+/** A single field-level validation issue (from `validate()` on the API). */
+export type ApiErrorIssue = { field: string; message: string }
+
+/**
+ * Canonical error body returned by the API. Every non-2xx response is shaped
+ * `{ error }`; validation failures (400) additionally carry `issues`. The web
+ * API client narrows against this when surfacing messages to the user.
+ */
+export type ApiErrorResponse = { error: string; issues?: ApiErrorIssue[] }

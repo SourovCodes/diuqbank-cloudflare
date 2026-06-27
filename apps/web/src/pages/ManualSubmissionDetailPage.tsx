@@ -8,13 +8,10 @@ import { Badge } from '../components/ui/Badge'
 import { Spinner } from '../components/ui/Spinner'
 import { ErrorMessage } from '../components/ui/ErrorMessage'
 import { NotFoundPage } from './NotFoundPage'
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
+import { toastError, toastSuccess } from '../lib/toast'
 import type { ManualSubmission } from '@diuqbank/shared/types'
-
-function formatDate(unix: number) {
-  return new Date(unix * 1000).toLocaleDateString('en-GB', {
-    day: 'numeric', month: 'short', year: 'numeric',
-  })
-}
+import { formatDate } from '@diuqbank/shared'
 
 const statusVariant = (s: ManualSubmission['status']) =>
   s === 'approved' ? 'green' : s === 'rejected' ? 'red' : 'yellow'
@@ -30,20 +27,20 @@ export function ManualSubmissionDetailPage() {
   const numId = id ? Number(id) : null
 
   const { data: sub, isPending, isError, error } = useManualSubmission(token, numId)
+  useDocumentTitle('Manual Submission')
 
   const [deleting, setDeleting] = useState(false)
-  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   async function handleDelete() {
     if (!token || numId === null || !window.confirm('Delete this submission? This cannot be undone.')) return
     setDeleting(true)
-    setDeleteError(null)
     try {
       await api.deleteManualSubmission(token, numId)
       queryClient.invalidateQueries({ queryKey: ['my-manual-submissions'] })
+      toastSuccess('Submission deleted.')
       navigate('/my/manual-submissions')
     } catch (err) {
-      setDeleteError(err instanceof Error ? err.message : 'Delete failed.')
+      toastError(err, 'Delete failed.')
       setDeleting(false)
     }
   }
@@ -111,7 +108,6 @@ export function ManualSubmissionDetailPage() {
           </div>
 
           {/* Actions */}
-          {deleteError && <ErrorMessage message={deleteError} />}
           {sub.status === 'pending_review' && (
             <button
               onClick={handleDelete}

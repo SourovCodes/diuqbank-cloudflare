@@ -22,6 +22,24 @@
       "bucket_name": "diuqbank-files"
     }
   ],
+  // Cloudflare native rate limiting (per-datacenter, fixed window). `period` may
+  // only be 10 or 60 seconds. Counts are scoped per `namespace_id`, so each
+  // limiter needs a distinct one. Wrapped by src/middleware/rate-limit.ts.
+  "ratelimits": [
+    {
+      // Strict limiter for expensive / abuse-prone endpoints (Google sign-in,
+      // file uploads → R2 / PDF processor / Gemini). Keyed per IP or user.
+      "name": "AUTH_RATELIMIT",
+      "namespace_id": "1001",
+      "simple": { "limit": 10, "period": 60 }
+    },
+    {
+      // General per-IP limiter applied to every request as a backstop.
+      "name": "API_RATELIMIT",
+      "namespace_id": "1002",
+      "simple": { "limit": 120, "period": 60 }
+    }
+  ],
   // Durable pipeline for AI-assisted auto submissions: compress -> extract -> persist.
   // The class is exported from src/index.ts; instances are started with
   // env.AUTO_SUBMISSION_WORKFLOW.create({ params: { autoSubmissionId } }).
@@ -45,7 +63,10 @@
     // Required (extraction errors out if unset) — there is no direct fallback.
     "AI_GATEWAY_NAME": "diuqbank",
     // Base URL of the external PDF Processor service (compression/watermarking).
-    "PDF_PROCESSOR_URL": "https://pdf-processor.diuqbank.com"
+    "PDF_PROCESSOR_URL": "https://pdf-processor.diuqbank.com",
+    // Comma-separated CORS allowlist. Requests from any other Origin are
+    // rejected (no CORS headers). Add your production/custom domains here.
+    "WEB_ORIGINS": "https://diuqbank-web.sourovcodes.workers.dev,http://localhost:5173"
   },
   "secrets": {
     "required": [

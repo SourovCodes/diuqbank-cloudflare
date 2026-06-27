@@ -9,5 +9,7 @@ export type AppEnv = {
   Variables: {
     // Set by requireAuth on protected routes.
     user: AuthPayload;
+    // Set by the requestId() middleware; echoed as the X-Request-Id header.
+    requestId: string;
   };
 };

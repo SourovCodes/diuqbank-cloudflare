@@ -3,6 +3,7 @@ import type {
   Submission, Contributor, User, AutoSubmission, ManualSubmission, ContributorSubmission,
   Department, Course, Semester, ExamType,
   AdminQuestion, AdminSubmission, AdminManualSubmission, AdminUser, WatermarkStatus,
+  ApiErrorResponse, Page,
 } from '@diuqbank/shared/types'
 
 const BASE = import.meta.env.VITE_API_URL ?? 'https://diuqbank.sourovcodes.workers.dev'
@@ -23,6 +24,20 @@ export function isNotFound(err: unknown): boolean {
   return err instanceof ApiError && err.status === 404
 }
 
+// When an *authenticated* request comes back 401, the session token is expired
+// or revoked. AuthProvider registers a handler here to log the user out so the
+// app doesn't sit in a broken half-signed-in state.
+let onUnauthorized: (() => void) | null = null
+
+/** Register (or clear, with `null`) the global 401 handler. */
+export function setUnauthorizedHandler(fn: (() => void) | null) {
+  onUnauthorized = fn
+}
+
+function notifyIfUnauthorized(status: number) {
+  if (status === 401) onUnauthorized?.()
+}
+
 // Build a query string from a params object, dropping null/undefined/empty values.
 function qs(params: Record<string, string | number | undefined | null>): string {
   const p = new URLSearchParams()
@@ -32,8 +47,6 @@ function qs(params: Record<string, string | number | undefined | null>): string 
   const s = p.toString()
   return s ? `?${s}` : ''
 }
-
-type Page<T> = { data: T[]; meta: PaginationMeta }
 
 export type AdminListParams = { page?: number; perPage?: number }
 
@@ -47,7 +60,10 @@ async function authedGet<T>(path: string, token: string): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
     headers: { Authorization: `Bearer ${token}` },
   })
-  if (!res.ok) throw new ApiError(res.status, `API ${res.status}: ${path}`)
+  if (!res.ok) {
+    notifyIfUnauthorized(res.status)
+    throw new ApiError(res.status, `API ${res.status}: ${path}`)
+  }
   return res.json() as Promise<T>
 }
 
@@ -62,8 +78,9 @@ async function authedPost<T>(path: string, token: string, body: FormData | objec
     body: isForm ? body : JSON.stringify(body),
   })
   if (!res.ok) {
+    notifyIfUnauthorized(res.status)
     const err = await res.json().catch(() => ({ error: 'Request failed' }))
-    throw new ApiError(res.status, (err as { error?: string }).error ?? `API ${res.status}`)
+    throw new ApiError(res.status, (err as ApiErrorResponse).error ?? `API ${res.status}`)
   }
   return res.json() as Promise<T>
 }
@@ -75,8 +92,9 @@ async function authedPatch<T>(path: string, token: string, body: object): Promis
     body: JSON.stringify(body),
   })
   if (!res.ok) {
+    notifyIfUnauthorized(res.status)
     const err = await res.json().catch(() => ({ error: 'Request failed' }))
-    throw new ApiError(res.status, (err as { error?: string }).error ?? `API ${res.status}`)
+    throw new ApiError(res.status, (err as ApiErrorResponse).error ?? `API ${res.status}`)
   }
   return res.json() as Promise<T>
 }
@@ -88,8 +106,9 @@ async function authedPutFile<T>(path: string, token: string, body: FormData): Pr
     body,
   })
   if (!res.ok) {
+    notifyIfUnauthorized(res.status)
     const err = await res.json().catch(() => ({ error: 'Request failed' }))
-    throw new ApiError(res.status, (err as { error?: string }).error ?? `API ${res.status}`)
+    throw new ApiError(res.status, (err as ApiErrorResponse).error ?? `API ${res.status}`)
   }
   return res.json() as Promise<T>
 }
@@ -100,8 +119,9 @@ async function authedDelete(path: string, token: string): Promise<void> {
     headers: { Authorization: `Bearer ${token}` },
   })
   if (!res.ok) {
+    notifyIfUnauthorized(res.status)
     const err = await res.json().catch(() => ({ error: 'Delete failed' }))
-    throw new ApiError(res.status, (err as { error?: string }).error ?? `API ${res.status}`)
+    throw new ApiError(res.status, (err as ApiErrorResponse).error ?? `API ${res.status}`)
   }
 }
 
@@ -143,7 +163,7 @@ export const api = {
     }).then(async res => {
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: 'Sign-in failed' }))
-        throw new Error((err as { error?: string }).error ?? 'Sign-in failed')
+        throw new Error((err as ApiErrorResponse).error ?? 'Sign-in failed')
       }
       return res.json() as Promise<{ token: string; user: User }>
     }),

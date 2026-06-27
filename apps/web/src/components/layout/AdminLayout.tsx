@@ -2,7 +2,7 @@ import { Suspense } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { Avatar } from '../ui/Avatar'
-import { Spinner } from '../ui/Spinner'
+import { Skeleton, SkeletonList } from '../ui/Skeleton'
 
 type NavLinkItem = { to: string; icon: string; text: string; end?: boolean }
 
@@ -107,7 +107,14 @@ export function AdminLayout() {
 
         {/* Main content area */}
         <div className="min-w-0 flex-1">
-          <Suspense fallback={<div className="flex justify-center py-16"><Spinner /></div>}>
+          <Suspense
+            fallback={
+              <div className="space-y-6">
+                <Skeleton className="h-8 w-48" />
+                <SkeletonList count={6} />
+              </div>
+            }
+          >
             <Outlet />
           </Suspense>
         </div>

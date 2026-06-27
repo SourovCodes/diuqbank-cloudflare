@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { GoogleOAuthProvider } from '@react-oauth/google'
+import { Toaster } from 'sonner'
 import './main.css'
 
 import { AuthProvider, useAuth } from './context/AuthContext'
@@ -69,8 +70,14 @@ function App() {
     <GoogleOAuthProvider clientId={googleClientId ?? ''}>
       <BrowserRouter>
           <div className="flex min-h-screen flex-col bg-gray-50 text-gray-900">
+            <a
+              href="#main-content"
+              className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-white focus:px-4 focus:py-2 focus:shadow focus:ring-2 focus:ring-blue-500"
+            >
+              Skip to content
+            </a>
             <Navbar />
-            <main className="flex-1">
+            <main id="main-content" className="flex-1">
               <ErrorBoundary>
               <Routes>
                 {/* Public routes */}
@@ -125,6 +132,7 @@ function App() {
               </ErrorBoundary>
             </main>
             <Footer />
+            <Toaster richColors closeButton position="top-center" />
           </div>
         </BrowserRouter>
     </GoogleOAuthProvider>

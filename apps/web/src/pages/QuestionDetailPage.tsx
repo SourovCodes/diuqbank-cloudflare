@@ -8,22 +8,14 @@ import { NotFoundPage } from './NotFoundPage'
 import { isNotFound } from '../lib/api'
 import { useQuestion } from '../hooks/useQuestion'
 import { useSubmissions } from '../hooks/useSubmissions'
-
-function formatBytes(bytes: number): string {
-  if (bytes >= 1_048_576) return `${(bytes / 1_048_576).toFixed(1)} MB`
-  return `${(bytes / 1024).toFixed(0)} KB`
-}
-
-function formatDate(unix: number): string {
-  return new Date(unix * 1000).toLocaleDateString('en-GB', {
-    day: 'numeric', month: 'short', year: 'numeric',
-  })
-}
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
+import { formatBytes, formatDate } from '@diuqbank/shared'
 
 export function QuestionDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { data: question, isPending: questionLoading, isError: questionError, error: questionErr } = useQuestion(id ?? '')
   const { data: submissionsData, isPending: submissionsLoading } = useSubmissions(id ?? '')
+  useDocumentTitle(question?.title)
 
   const submissions = submissionsData?.data.slice().sort((a, b) => b.createdAt - a.createdAt) ?? []
 

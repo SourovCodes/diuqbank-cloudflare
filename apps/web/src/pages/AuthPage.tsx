@@ -3,8 +3,10 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { GoogleLogin } from '@react-oauth/google'
 import { useAuth } from '../context/AuthContext'
 import { api } from '../lib/api'
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
 
 export function AuthPage() {
+  useDocumentTitle('Sign In')
   const { isAuthenticated, login } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()

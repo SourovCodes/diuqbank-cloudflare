@@ -9,15 +9,8 @@ import { Spinner } from '../components/ui/Spinner'
 import { ErrorMessage } from '../components/ui/ErrorMessage'
 import { NotFoundPage } from './NotFoundPage'
 import { isNotFound } from '../lib/api'
-
-function formatDate(unix: number) {
-  return new Date(unix * 1000).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-}
-
-function formatBytes(bytes: number) {
-  if (bytes >= 1_048_576) return `${(bytes / 1_048_576).toFixed(1)} MB`
-  return `${(bytes / 1024).toFixed(0)} KB`
-}
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
+import { formatBytes, formatDate } from '@diuqbank/shared'
 
 export function ContributorProfilePage() {
   const { username } = useParams<{ username: string }>()
@@ -25,6 +18,7 @@ export function ContributorProfilePage() {
 
   const { data: contributor, isPending: profileLoading, isError: profileError, error: profileErr } = useContributor(username ?? '')
   const { data: submissionsData, isPending: subsLoading } = useContributorSubmissions(username ?? '', page)
+  useDocumentTitle(contributor?.name)
 
   if (profileLoading) {
     return <div className="flex justify-center py-24"><Spinner /></div>

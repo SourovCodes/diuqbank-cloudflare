@@ -1,12 +1,8 @@
 import { useRef, useState } from 'react'
 import { clsx } from 'clsx'
+import { MAX_PDF_BYTES, PDF_MIME_TYPE, formatBytes } from '@diuqbank/shared'
 
-const MAX_MB = 20
-
-function formatBytes(bytes: number) {
-  if (bytes >= 1_048_576) return `${(bytes / 1_048_576).toFixed(1)} MB`
-  return `${(bytes / 1024).toFixed(0)} KB`
-}
+const MAX_MB = Math.round(MAX_PDF_BYTES / 1024 / 1024)
 
 export function FileUpload({
   file,
@@ -23,11 +19,11 @@ export function FileUpload({
 
   function handleFile(f: File | null) {
     if (!f) return
-    if (f.type !== 'application/pdf') {
+    if (f.type !== PDF_MIME_TYPE) {
       setError('Only PDF files are accepted.')
       return
     }
-    if (f.size > MAX_MB * 1024 * 1024) {
+    if (f.size > MAX_PDF_BYTES) {
       setError(`File must be under ${MAX_MB} MB.`)
       return
     }

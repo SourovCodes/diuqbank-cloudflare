@@ -1,10 +1,9 @@
+import { MAX_PDF_BYTES, PDF_MIME_TYPE } from "@diuqbank/shared/constants";
 import { HTTPException } from "hono/http-exception";
-
-export const MAX_PDF_BYTES = 20 * 1024 * 1024; // 20 MB
 
 export type ParsedPdf = {
   buffer: ArrayBuffer;
-  contentType: "application/pdf";
+  contentType: typeof PDF_MIME_TYPE;
   ext: "pdf";
 };
 
@@ -35,5 +34,5 @@ export const parsePdfFile = async (file: unknown): Promise<ParsedPdf> => {
   if (!isPdf) {
     throw new HTTPException(400, { message: "file must be a PDF" });
   }
-  return { buffer, contentType: "application/pdf", ext: "pdf" };
+  return { buffer, contentType: PDF_MIME_TYPE, ext: "pdf" };
 };

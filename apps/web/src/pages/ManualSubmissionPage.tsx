@@ -5,9 +5,11 @@ import { useFilterOptions } from '../hooks/useFilterOptions'
 import { api } from '../lib/api'
 import { SearchableSelect } from '../components/ui/SearchableSelect'
 import { FileUpload } from '../components/ui/FileUpload'
-import { ErrorMessage } from '../components/ui/ErrorMessage'
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
+import { toastError, toastSuccess } from '../lib/toast'
 
 export function ManualSubmissionPage() {
+  useDocumentTitle('Manual Submission')
   const { token } = useAuth()
   const navigate = useNavigate()
   const { data: filterOptions } = useFilterOptions()
@@ -20,7 +22,6 @@ export function ManualSubmissionPage() {
   const [batch, setBatch] = useState('')
   const [file, setFile] = useState<File | null>(null)
   const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
 
   const dept = filterOptions?.departments.find(d => String(d.id) === departmentId)
   const course = filterOptions?.courses.find(c => String(c.id) === courseId)
@@ -40,7 +41,6 @@ export function ManualSubmissionPage() {
     e.preventDefault()
     if (!token || !file || !dept || !course || !semester || !examType) return
     setSubmitting(true)
-    setError(null)
     try {
       const fd = new FormData()
       fd.append('pdf', file)
@@ -52,9 +52,10 @@ export function ManualSubmissionPage() {
       if (section.trim()) fd.append('section', section.trim())
       if (batch.trim()) fd.append('batch', batch.trim())
       const created = await api.createManualSubmission(token, fd)
+      toastSuccess('Submitted for review.')
       navigate(`/my/manual-submissions/${created.id}`)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Submission failed.')
+      toastError(err, 'Submission failed.')
       setSubmitting(false)
     }
   }
@@ -131,8 +132,6 @@ export function ManualSubmissionPage() {
           <h2 className="mb-3 text-sm font-semibold text-gray-700">PDF File *</h2>
           <FileUpload file={file} onChange={setFile} disabled={submitting} />
         </div>
-
-        {error && <ErrorMessage message={error} />}
 
         <button
           type="submit"

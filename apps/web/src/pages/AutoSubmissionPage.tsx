@@ -3,24 +3,24 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { api } from '../lib/api'
 import { FileUpload } from '../components/ui/FileUpload'
-import { ErrorMessage } from '../components/ui/ErrorMessage'
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
+import { toastError } from '../lib/toast'
 
 export function AutoSubmissionPage() {
+  useDocumentTitle('Auto Submission')
   const { token } = useAuth()
   const navigate = useNavigate()
   const [file, setFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
-  const [uploadError, setUploadError] = useState<string | null>(null)
 
   async function handleUpload() {
     if (!token || !file) return
     setUploading(true)
-    setUploadError(null)
     try {
       const result = await api.createAutoSubmission(token, file)
       navigate(`/my/auto-submissions/${result.id}`)
     } catch (err) {
-      setUploadError(err instanceof Error ? err.message : 'Upload failed.')
+      toastError(err, 'Upload failed.')
       setUploading(false)
     }
   }
@@ -32,7 +32,6 @@ export function AutoSubmissionPage() {
 
       <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm space-y-4">
         <FileUpload file={file} onChange={setFile} disabled={uploading} />
-        {uploadError && <ErrorMessage message={uploadError} />}
         <button
           onClick={handleUpload}
           disabled={!file || uploading}

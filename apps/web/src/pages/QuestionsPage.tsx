@@ -1,19 +1,24 @@
 import { useSearchParams } from 'react-router-dom'
+import { DEFAULT_PER_PAGE } from '@diuqbank/shared'
 import { FilterBar } from '../components/questions/FilterBar'
 import { QuestionCard } from '../components/questions/QuestionCard'
 import { Pagination } from '../components/ui/Pagination'
 import { Spinner } from '../components/ui/Spinner'
+import { SkeletonList } from '../components/ui/Skeleton'
+import { EmptyState } from '../components/ui/EmptyState'
 import { ErrorMessage } from '../components/ui/ErrorMessage'
 import { useFilterOptions } from '../hooks/useFilterOptions'
 import { useQuestions } from '../hooks/useQuestions'
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import type { QuestionFilters } from '@diuqbank/shared/types'
 
 export function QuestionsPage() {
+  useDocumentTitle('Browse Questions')
   const [searchParams, setSearchParams] = useSearchParams()
 
   const filters: QuestionFilters = {
     page: Number(searchParams.get('page')) || 1,
-    perPage: 20,
+    perPage: DEFAULT_PER_PAGE,
     departmentId: searchParams.get('departmentId') ?? '',
     courseId: searchParams.get('courseId') ?? '',
     semesterId: searchParams.get('semesterId') ?? '',
@@ -26,7 +31,8 @@ export function QuestionsPage() {
   function updateFilter(key: keyof QuestionFilters, value: string) {
     setSearchParams(prev => {
       const next = new URLSearchParams(prev)
-      value ? next.set(key, value) : next.delete(key)
+      if (value) next.set(key, value)
+      else next.delete(key)
       next.set('page', '1')
       return next
     }, { replace: true })
@@ -35,7 +41,8 @@ export function QuestionsPage() {
   function handleDepartmentChange(deptId: string) {
     setSearchParams(prev => {
       const next = new URLSearchParams(prev)
-      deptId ? next.set('departmentId', deptId) : next.delete('departmentId')
+      if (deptId) next.set('departmentId', deptId)
+      else next.delete('departmentId')
       next.delete('courseId')
       next.set('page', '1')
       return next
@@ -84,16 +91,12 @@ export function QuestionsPage() {
       {isError ? (
         <ErrorMessage message="Failed to load questions. Please try again." />
       ) : questionsLoading && !data ? (
-        <div className="flex justify-center py-16">
-          <Spinner />
-        </div>
+        <SkeletonList count={6} />
       ) : (
         <>
           <div className={`flex flex-col gap-3 transition-opacity ${questionsLoading ? 'opacity-60' : ''}`}>
             {data?.data.length === 0 ? (
-              <p className="py-12 text-center text-gray-500">
-                No questions match your filters.
-              </p>
+              <EmptyState message="No questions match your filters." />
             ) : (
               data?.data.map(q => <QuestionCard key={q.id} question={q} variant="list" />)
             )}

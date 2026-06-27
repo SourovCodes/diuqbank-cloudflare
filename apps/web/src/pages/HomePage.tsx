@@ -3,8 +3,10 @@ import { QuestionCard } from '../components/questions/QuestionCard'
 import { Spinner } from '../components/ui/Spinner'
 import { useQuestions } from '../hooks/useQuestions'
 import { useContributors } from '../hooks/useContributors'
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
 
 export function HomePage() {
+  useDocumentTitle()
   const { data: questionsData, isPending: questionsLoading } = useQuestions({
     page: 1,
     perPage: 6,

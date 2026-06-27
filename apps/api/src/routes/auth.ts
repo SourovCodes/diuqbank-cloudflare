@@ -10,6 +10,7 @@ import { signAuthToken } from "../lib/jwt";
 import { toAuthUser } from "../lib/user-shape";
 import { validate } from "../lib/validator";
 import { requireAuth } from "../middleware/auth";
+import { rateLimit } from "../middleware/rate-limit";
 import { googleSignInSchema } from "@diuqbank/shared/schemas/auth";
 import { profileUpdateSchema } from "@diuqbank/shared/schemas/profile";
 import type { AppEnv } from "../types";
@@ -39,7 +40,11 @@ const ALLOWED_EMAIL_DOMAIN = "diu.edu.bd";
 
 auth.get("/config", (c) => c.json({ googleClientId: c.env.GOOGLE_CLIENT_ID }));
 
-auth.post("/google", validate("json", googleSignInSchema), async (c) => {
+auth.post(
+  "/google",
+  rateLimit((env) => env.AUTH_RATELIMIT),
+  validate("json", googleSignInSchema),
+  async (c) => {
   const { idToken } = c.req.valid("json");
   const db = getDb(c.env.DB);
 
@@ -156,7 +161,11 @@ auth.patch("/me", requireAuth, validate("json", profileUpdateSchema), async (c) 
   return c.json({ user: toAuthUser(updated, origin) });
 });
 
-auth.put("/me/image", requireAuth, async (c) => {
+auth.put(
+  "/me/image",
+  requireAuth,
+  rateLimit((env) => env.AUTH_RATELIMIT),
+  async (c) => {
   const { buffer, contentType, ext } = await parseImageUpload(c);
   const payload = c.get("user");
   const db = getDb(c.env.DB);

@@ -1252,7 +1252,10 @@ the \`diu.edu.bd\` domain are rejected (\`403\`).
 
 - All timestamps are **Unix epoch seconds** (UTC integers), not ISO 8601 strings.
 - Errors return \`{ "error": "<message>" }\`. Validation failures additionally include an
-  \`issues\` array with field-level details.`;
+  \`issues\` array with field-level details.
+- Requests are **rate limited**. Exceeding a limit returns \`429 Too Many Requests\` with a
+  \`Retry-After\` header (seconds). Sign-in and upload endpoints are limited more strictly
+  than general reads.`;
 
 export const buildOpenApiDoc = () => ({
   openapi: "3.1.0",

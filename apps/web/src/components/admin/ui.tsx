@@ -2,6 +2,10 @@ import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { clsx } from 'clsx'
 
+// Re-exported for admin pages that import these alongside the admin UI primitives.
+export { formatDate } from '@diuqbank/shared'
+export { EmptyState } from '../ui/EmptyState'
+
 export function PageHeader({
   title, subtitle, action,
 }: { title: string; subtitle?: ReactNode; action?: ReactNode }) {
@@ -64,16 +68,3 @@ export function SubmitButton({ saving, children }: { saving: boolean; children: 
   )
 }
 
-export function EmptyState({ message }: { message: string }) {
-  return (
-    <div className="rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 py-16 text-center">
-      <p className="text-sm text-gray-500">{message}</p>
-    </div>
-  )
-}
-
-export function formatDate(unix: number) {
-  return new Date(unix * 1000).toLocaleDateString('en-GB', {
-    day: 'numeric', month: 'short', year: 'numeric',
-  })
-}

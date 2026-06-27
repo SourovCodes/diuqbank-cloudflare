@@ -8,18 +8,10 @@ import { Badge } from '../components/ui/Badge'
 import { Spinner } from '../components/ui/Spinner'
 import { ErrorMessage } from '../components/ui/ErrorMessage'
 import { NotFoundPage } from './NotFoundPage'
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
+import { toastError, toastSuccess } from '../lib/toast'
 import type { AutoSubmission } from '@diuqbank/shared/types'
-
-function formatDate(unix: number) {
-  return new Date(unix * 1000).toLocaleDateString('en-GB', {
-    day: 'numeric', month: 'short', year: 'numeric',
-  })
-}
-
-function formatBytes(bytes: number) {
-  if (bytes >= 1_048_576) return `${(bytes / 1_048_576).toFixed(1)} MB`
-  return `${(bytes / 1024).toFixed(0)} KB`
-}
+import { formatBytes, formatDate } from '@diuqbank/shared'
 
 const statusVariant = (s: AutoSubmission['status']) => {
   if (s === 'confirmed') return 'green'
@@ -42,21 +34,22 @@ export function AutoSubmissionDetailPage() {
   const numId = id ? Number(id) : null
 
   const { data: sub, isPending, isError, error } = useAutoSubmission(token, numId)
+  useDocumentTitle('Auto Submission')
 
   const [confirming, setConfirming] = useState(false)
   const [reprocessing, setReprocessing] = useState(false)
   const [deleting, setDeleting] = useState(false)
-  const [actionError, setActionError] = useState<string | null>(null)
 
   async function handleConfirm() {
     if (!token || numId === null) return
-    setConfirming(true); setActionError(null)
+    setConfirming(true)
     try {
       await api.confirmAutoSubmission(token, numId)
       queryClient.invalidateQueries({ queryKey: ['auto-submission', numId] })
       queryClient.invalidateQueries({ queryKey: ['my-auto-submissions'] })
+      toastSuccess('Submission confirmed.')
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Confirmation failed.')
+      toastError(err, 'Confirmation failed.')
     } finally {
       setConfirming(false)
     }
@@ -64,12 +57,13 @@ export function AutoSubmissionDetailPage() {
 
   async function handleReprocess() {
     if (!token || numId === null) return
-    setReprocessing(true); setActionError(null)
+    setReprocessing(true)
     try {
       await api.reprocessAutoSubmission(token, numId)
       queryClient.invalidateQueries({ queryKey: ['auto-submission', numId] })
+      toastSuccess('Reprocessing started.')
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Reprocess failed.')
+      toastError(err, 'Reprocess failed.')
     } finally {
       setReprocessing(false)
     }
@@ -77,13 +71,14 @@ export function AutoSubmissionDetailPage() {
 
   async function handleDelete() {
     if (!token || numId === null || !window.confirm('Delete this submission? This cannot be undone.')) return
-    setDeleting(true); setActionError(null)
+    setDeleting(true)
     try {
       await api.deleteAutoSubmission(token, numId)
       queryClient.invalidateQueries({ queryKey: ['my-auto-submissions'] })
+      toastSuccess('Submission deleted.')
       navigate('/my/auto-submissions')
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Delete failed.')
+      toastError(err, 'Delete failed.')
       setDeleting(false)
     }
   }
@@ -188,7 +183,6 @@ export function AutoSubmissionDetailPage() {
           </div>
 
           {/* Actions */}
-          {actionError && <ErrorMessage message={actionError} />}
           <div className="flex flex-col gap-2">
             {canConfirm && (
               <button onClick={handleConfirm} disabled={confirming}

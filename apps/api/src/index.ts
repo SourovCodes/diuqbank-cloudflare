@@ -1,8 +1,12 @@
 import { Hono } from "hono";
+import { bodyLimit } from "hono/body-limit";
 import { cors } from "hono/cors";
 import { HTTPException } from "hono/http-exception";
 import { logger } from "hono/logger";
+import { requestId } from "hono/request-id";
+import { secureHeaders } from "hono/secure-headers";
 
+import { rateLimit } from "./middleware/rate-limit";
 import { openApiDoc } from "./openapi";
 import admin from "./routes/admin";
 import auth from "./routes/auth";
@@ -12,12 +16,64 @@ import files from "./routes/files";
 import filterOptions from "./routes/filter-options";
 import manualSubmissions from "./routes/manual-submissions";
 import questions from "./routes/questions";
-import type { AppEnv } from "./types";
+import type { AppEnv, Bindings } from "./types";
 
 const app = new Hono<AppEnv>();
 
+// Tag every request with an id (echoed as X-Request-Id) for log correlation.
+app.use("*", requestId());
 app.use("*", logger());
-app.use("*", cors());
+
+// Security headers. No CSP is set so the Scalar /docs page (which loads from
+// jsdelivr) keeps working; CORP is relaxed to cross-origin because this Worker
+// also serves R2 files consumed by the web app on a different origin.
+app.use(
+  "*",
+  secureHeaders({
+    xFrameOptions: "DENY",
+    crossOriginResourcePolicy: "cross-origin",
+  }),
+);
+
+// CORS locked to an env-configured allowlist (WEB_ORIGINS, comma-separated).
+// Requests from any other Origin get no CORS headers and are blocked by the
+// browser. The token travels in the Authorization header, so credentials off.
+app.use(
+  "*",
+  cors({
+    origin: (origin, c) => {
+      const env = c.env as Bindings;
+      const allowed = env.WEB_ORIGINS.split(",")
+        .map((o) => o.trim())
+        .filter(Boolean);
+      return allowed.includes(origin) ? origin : null;
+    },
+    allowMethods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
+    allowHeaders: ["Authorization", "Content-Type"],
+    maxAge: 86400,
+  }),
+);
+
+// Cap JSON (and other non-multipart) bodies at 256 KB. Multipart uploads are
+// skipped — they legitimately reach 20 MB and self-validate their own size.
+const jsonBodyLimit = bodyLimit({
+  maxSize: 256 * 1024,
+  onError: (c) => c.json({ error: "Payload too large" }, 413),
+});
+app.use("*", (c, next) =>
+  (c.req.header("content-type") ?? "").includes("multipart/form-data")
+    ? next()
+    : jsonBodyLimit(c, next),
+);
+
+// Global per-IP backstop rate limiter. Skips the health probe and the immutable
+// file route (browser-cached; a page of avatars/PDFs shouldn't burn the budget).
+const globalRateLimit = rateLimit((env) => env.API_RATELIMIT);
+app.use("*", (c, next) =>
+  c.req.path === "/health" || c.req.path.startsWith("/files")
+    ? next()
+    : globalRateLimit(c, next),
+);
 
 app.get("/", (c) =>
   c.json({ ok: true, service: "diuqbank", docs: "/docs", openapi: "/openapi.json" }),
@@ -98,7 +154,7 @@ app.onError((err, c) => {
     return c.json({ error: `${notNull[1]} is required` }, 400);
   }
 
-  console.error("Unhandled error", err);
+  console.error(`Unhandled error [${c.get("requestId")}]`, err);
   return c.json({ error: "Internal server error" }, 500);
 });
 

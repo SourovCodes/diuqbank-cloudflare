@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
 import type { User } from '@diuqbank/shared/types'
-import { api } from '../lib/api'
+import { api, setUnauthorizedHandler } from '../lib/api'
+import { isTokenExpired } from '../lib/jwt'
 
 type AuthState = {
   token: string | null
@@ -19,7 +20,14 @@ const AuthContext = createContext<AuthState | null>(null)
 function readToken(): string | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) return (JSON.parse(raw) as { token?: string }).token ?? null
+    const token = raw ? (JSON.parse(raw) as { token?: string }).token ?? null : null
+    // Drop an obviously-expired token up front so we never start the app in a
+    // doomed signed-in state (the API would 401 the first request anyway).
+    if (token && isTokenExpired(token)) {
+      localStorage.removeItem(STORAGE_KEY)
+      return null
+    }
+    return token
   } catch {
     localStorage.removeItem(STORAGE_KEY)
   }
@@ -53,6 +61,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   function updateUser(u: User) {
     setUser(u)
   }
+
+  // Any authenticated request that comes back 401 means the token is expired or
+  // revoked — clear the session so route guards bounce to /auth. Registered once;
+  // it only calls stable state setters, so no dependency churn.
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      setToken(null)
+      setUser(null)
+      setLoading(false)
+      localStorage.removeItem(STORAGE_KEY)
+    })
+    return () => setUnauthorizedHandler(null)
+  }, [])
 
   // Fetch the user from the API whenever we have a token but no user loaded.
   useEffect(() => {

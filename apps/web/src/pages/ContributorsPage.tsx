@@ -1,13 +1,16 @@
 import { useState } from 'react'
+import { DEFAULT_PER_PAGE } from '@diuqbank/shared'
 import { useContributors } from '../hooks/useContributors'
 import { ContributorCard } from '../components/contributors/ContributorCard'
 import { Pagination } from '../components/ui/Pagination'
-import { Spinner } from '../components/ui/Spinner'
+import { Skeleton } from '../components/ui/Skeleton'
 import { ErrorMessage } from '../components/ui/ErrorMessage'
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
 
 export function ContributorsPage() {
+  useDocumentTitle('Contributors')
   const [page, setPage] = useState(1)
-  const { data, isPending, isError } = useContributors(page, 20)
+  const { data, isPending, isError } = useContributors(page, DEFAULT_PER_PAGE)
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -19,7 +22,11 @@ export function ContributorsPage() {
       )}
 
       {isPending ? (
-        <div className="flex justify-center py-16"><Spinner /></div>
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+          {Array.from({ length: 10 }).map((_, i) => (
+            <Skeleton key={i} className="h-40 w-full" />
+          ))}
+        </div>
       ) : isError ? (
         <ErrorMessage message="Failed to load contributors." />
       ) : (

@@ -18,6 +18,7 @@ import {
 import { fileUrlFor } from "../lib/user-shape";
 import { validate } from "../lib/validator";
 import { requireAuth } from "../middleware/auth";
+import { rateLimit } from "../middleware/rate-limit";
 import {
   autoSubmissionReprocessSchema,
   autoSubmissionsListQuery,
@@ -130,7 +131,7 @@ route.get("/", validate("query", autoSubmissionsListQuery), async (c) => {
   });
 });
 
-route.post("/", async (c) => {
+route.post("/", rateLimit((env) => env.AUTH_RATELIMIT), async (c) => {
   const body = await c.req.parseBody();
   const pdf = await parsePdfFile(body["pdf"]);
   const userId = c.get("user").sub;
@@ -205,6 +206,7 @@ route.get("/:id", async (c) => {
 
 route.post(
   "/:id/reprocess",
+  rateLimit((env) => env.AUTH_RATELIMIT),
   validate("json", autoSubmissionReprocessSchema),
   async (c) => {
     const id = parseId(c.req.param("id"));

@@ -1,32 +1,33 @@
 import { useState, useRef } from 'react'
+import { MAX_IMAGE_BYTES } from '@diuqbank/shared'
 import { useAuth } from '../context/AuthContext'
 import { api } from '../lib/api'
 import { Avatar } from '../components/ui/Avatar'
 import { Spinner } from '../components/ui/Spinner'
-import { ErrorMessage } from '../components/ui/ErrorMessage'
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
+import { toast, toastError, toastSuccess } from '../lib/toast'
+
+const MAX_IMAGE_MB = Math.round(MAX_IMAGE_BYTES / 1024 / 1024)
 
 export function EditProfilePage() {
+  useDocumentTitle('Edit Profile')
   const { user, token, updateUser } = useAuth()
   const [name, setName] = useState(user?.name ?? '')
   const [username, setUsername] = useState(user?.username ?? '')
   const [saving, setSaving] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
-  const [success, setSuccess] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const imageInputRef = useRef<HTMLInputElement>(null)
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
     if (!token) return
     setSaving(true)
-    setError(null)
-    setSuccess(false)
     try {
       const updated = await api.updateMe(token, { name, username })
       updateUser(updated)
-      setSuccess(true)
+      toastSuccess('Profile updated.')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save changes.')
+      toastError(err, 'Failed to save changes.')
     } finally {
       setSaving(false)
     }
@@ -34,17 +35,17 @@ export function EditProfilePage() {
 
   async function handleImageUpload(file: File) {
     if (!token) return
-    if (file.size > 5 * 1024 * 1024) {
-      setError('Image must be under 5 MB.')
+    if (file.size > MAX_IMAGE_BYTES) {
+      toast.error(`Image must be under ${MAX_IMAGE_MB} MB.`)
       return
     }
     setUploadingImage(true)
-    setError(null)
     try {
       const updated = await api.uploadImage(token, file)
       updateUser(updated)
+      toastSuccess('Photo updated.')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to upload image.')
+      toastError(err, 'Failed to upload image.')
     } finally {
       setUploadingImage(false)
     }
@@ -71,7 +72,7 @@ export function EditProfilePage() {
               >
                 {uploadingImage ? 'Uploading…' : 'Change photo'}
               </button>
-              <p className="mt-1 text-xs text-gray-400">PNG, JPG, GIF, WebP · max 5 MB</p>
+              <p className="mt-1 text-xs text-gray-400">PNG, JPG, GIF, WebP · max {MAX_IMAGE_MB} MB</p>
               <input
                 ref={imageInputRef}
                 type="file"
@@ -121,13 +122,6 @@ export function EditProfilePage() {
               className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-500"
             />
           </div>
-
-          {error && <ErrorMessage message={error} />}
-          {success && (
-            <div className="rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-700">
-              Profile updated successfully.
-            </div>
-          )}
 
           <button
             type="submit"
