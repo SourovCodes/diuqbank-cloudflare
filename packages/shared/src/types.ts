@@ -66,7 +66,6 @@ export type ContributorSubmission = {
   section: string | null
   batch: string | null
   fileSize: number
-  watermarkStatus: WatermarkStatus
   createdAt: number
   pdfUrl: string | null
   question: Question
