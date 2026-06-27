@@ -7,6 +7,8 @@ import { Badge } from '../components/ui/Badge'
 import { Pagination } from '../components/ui/Pagination'
 import { Spinner } from '../components/ui/Spinner'
 import { ErrorMessage } from '../components/ui/ErrorMessage'
+import { NotFoundPage } from './NotFoundPage'
+import { isNotFound } from '../lib/api'
 
 function formatDate(unix: number) {
   return new Date(unix * 1000).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -21,13 +23,14 @@ export function ContributorProfilePage() {
   const { username } = useParams<{ username: string }>()
   const [page, setPage] = useState(1)
 
-  const { data: contributor, isPending: profileLoading, isError: profileError } = useContributor(username ?? '')
+  const { data: contributor, isPending: profileLoading, isError: profileError, error: profileErr } = useContributor(username ?? '')
   const { data: submissionsData, isPending: subsLoading } = useContributorSubmissions(username ?? '', page)
 
   if (profileLoading) {
     return <div className="flex justify-center py-24"><Spinner /></div>
   }
 
+  if (profileError && isNotFound(profileErr)) return <NotFoundPage />
   if (profileError || !contributor) {
     return (
       <div className="container mx-auto px-4 py-12">

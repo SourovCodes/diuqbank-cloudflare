@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../../context/AuthContext'
-import { api } from '../../lib/api'
+import { api, isNotFound } from '../../lib/api'
 import { Spinner } from '../../components/ui/Spinner'
 import { ErrorMessage } from '../../components/ui/ErrorMessage'
+import { NotFoundPage } from '../NotFoundPage'
 import { Badge } from '../../components/ui/Badge'
 import { Card, Field, TextInput } from '../../components/admin/ui'
 import type { ManualSubmission } from '@diuqbank/shared/types'
@@ -20,7 +21,7 @@ export function AdminManualSubmissionDetailPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
 
-  const { data, isPending, isError } = useQuery({
+  const { data, isPending, isError, error: loadError } = useQuery({
     queryKey: ['admin-manual-submissions', 'detail', Number(id)],
     queryFn: () => api.adminManualSubmission(token!, Number(id)),
     enabled: !!token,
@@ -90,6 +91,7 @@ export function AdminManualSubmissionDetailPage() {
   }
 
   if (isPending) return <div className="flex justify-center py-16"><Spinner /></div>
+  if (isError && isNotFound(loadError)) return <NotFoundPage />
   if (isError || !data) return <ErrorMessage message="Failed to load submission." />
 
   const pending = data.status === 'pending_review'

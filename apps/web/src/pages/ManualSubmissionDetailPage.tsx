@@ -3,10 +3,11 @@ import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../context/AuthContext'
 import { useManualSubmission } from '../hooks/useManualSubmission'
-import { api } from '../lib/api'
+import { api, isNotFound } from '../lib/api'
 import { Badge } from '../components/ui/Badge'
 import { Spinner } from '../components/ui/Spinner'
 import { ErrorMessage } from '../components/ui/ErrorMessage'
+import { NotFoundPage } from './NotFoundPage'
 import type { ManualSubmission } from '@diuqbank/shared/types'
 
 function formatDate(unix: number) {
@@ -28,7 +29,7 @@ export function ManualSubmissionDetailPage() {
   const queryClient = useQueryClient()
   const numId = id ? Number(id) : null
 
-  const { data: sub, isPending, isError } = useManualSubmission(token, numId)
+  const { data: sub, isPending, isError, error } = useManualSubmission(token, numId)
 
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
@@ -48,6 +49,7 @@ export function ManualSubmissionDetailPage() {
   }
 
   if (isPending) return <div className="flex justify-center py-16"><Spinner /></div>
+  if (isError && isNotFound(error)) return <NotFoundPage />
   if (isError || !sub) {
     return (
       <div>

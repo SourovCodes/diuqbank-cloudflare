@@ -3,10 +3,11 @@ import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../context/AuthContext'
 import { useAutoSubmission } from '../hooks/useAutoSubmission'
-import { api } from '../lib/api'
+import { api, isNotFound } from '../lib/api'
 import { Badge } from '../components/ui/Badge'
 import { Spinner } from '../components/ui/Spinner'
 import { ErrorMessage } from '../components/ui/ErrorMessage'
+import { NotFoundPage } from './NotFoundPage'
 import type { AutoSubmission } from '@diuqbank/shared/types'
 
 function formatDate(unix: number) {
@@ -40,7 +41,7 @@ export function AutoSubmissionDetailPage() {
   const queryClient = useQueryClient()
   const numId = id ? Number(id) : null
 
-  const { data: sub, isPending } = useAutoSubmission(token, numId)
+  const { data: sub, isPending, isError, error } = useAutoSubmission(token, numId)
 
   const [confirming, setConfirming] = useState(false)
   const [reprocessing, setReprocessing] = useState(false)
@@ -88,6 +89,7 @@ export function AutoSubmissionDetailPage() {
   }
 
   if (isPending) return <div className="flex justify-center py-16"><Spinner /></div>
+  if (isError && isNotFound(error)) return <NotFoundPage />
   if (!sub) {
     return (
       <div>

@@ -7,6 +7,22 @@ import type {
 
 const BASE = import.meta.env.VITE_API_URL ?? 'https://diuqbank.sourovcodes.workers.dev'
 
+/** Error thrown by the API client, carrying the HTTP status so callers can
+ * branch on it (e.g. render a 404 page when a resource doesn't exist). */
+export class ApiError extends Error {
+  status: number
+  constructor(status: number, message: string) {
+    super(message)
+    this.name = 'ApiError'
+    this.status = status
+  }
+}
+
+/** True when an error is a 404 from the API — i.e. the resource doesn't exist. */
+export function isNotFound(err: unknown): boolean {
+  return err instanceof ApiError && err.status === 404
+}
+
 // Build a query string from a params object, dropping null/undefined/empty values.
 function qs(params: Record<string, string | number | undefined | null>): string {
   const p = new URLSearchParams()
@@ -23,7 +39,7 @@ export type AdminListParams = { page?: number; perPage?: number }
 
 async function get<T>(path: string): Promise<T> {
   const res = await fetch(`${BASE}${path}`)
-  if (!res.ok) throw new Error(`API ${res.status}: ${path}`)
+  if (!res.ok) throw new ApiError(res.status, `API ${res.status}: ${path}`)
   return res.json() as Promise<T>
 }
 
@@ -31,7 +47,7 @@ async function authedGet<T>(path: string, token: string): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
     headers: { Authorization: `Bearer ${token}` },
   })
-  if (!res.ok) throw new Error(`API ${res.status}: ${path}`)
+  if (!res.ok) throw new ApiError(res.status, `API ${res.status}: ${path}`)
   return res.json() as Promise<T>
 }
 
@@ -47,7 +63,7 @@ async function authedPost<T>(path: string, token: string, body: FormData | objec
   })
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: 'Request failed' }))
-    throw new Error((err as { error?: string }).error ?? `API ${res.status}`)
+    throw new ApiError(res.status, (err as { error?: string }).error ?? `API ${res.status}`)
   }
   return res.json() as Promise<T>
 }
@@ -60,7 +76,7 @@ async function authedPatch<T>(path: string, token: string, body: object): Promis
   })
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: 'Request failed' }))
-    throw new Error((err as { error?: string }).error ?? `API ${res.status}`)
+    throw new ApiError(res.status, (err as { error?: string }).error ?? `API ${res.status}`)
   }
   return res.json() as Promise<T>
 }
@@ -73,7 +89,7 @@ async function authedPutFile<T>(path: string, token: string, body: FormData): Pr
   })
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: 'Request failed' }))
-    throw new Error((err as { error?: string }).error ?? `API ${res.status}`)
+    throw new ApiError(res.status, (err as { error?: string }).error ?? `API ${res.status}`)
   }
   return res.json() as Promise<T>
 }
@@ -85,7 +101,7 @@ async function authedDelete(path: string, token: string): Promise<void> {
   })
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: 'Delete failed' }))
-    throw new Error((err as { error?: string }).error ?? `API ${res.status}`)
+    throw new ApiError(res.status, (err as { error?: string }).error ?? `API ${res.status}`)
   }
 }
 

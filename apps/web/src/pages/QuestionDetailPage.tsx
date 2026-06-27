@@ -4,6 +4,8 @@ import { clsx } from 'clsx'
 import { Badge } from '../components/ui/Badge'
 import { Spinner } from '../components/ui/Spinner'
 import { ErrorMessage } from '../components/ui/ErrorMessage'
+import { NotFoundPage } from './NotFoundPage'
+import { isNotFound } from '../lib/api'
 import { useQuestion } from '../hooks/useQuestion'
 import { useSubmissions } from '../hooks/useSubmissions'
 
@@ -20,7 +22,7 @@ function formatDate(unix: number): string {
 
 export function QuestionDetailPage() {
   const { id } = useParams<{ id: string }>()
-  const { data: question, isPending: questionLoading, isError: questionError } = useQuestion(id ?? '')
+  const { data: question, isPending: questionLoading, isError: questionError, error: questionErr } = useQuestion(id ?? '')
   const { data: submissionsData, isPending: submissionsLoading } = useSubmissions(id ?? '')
 
   const submissions = submissionsData?.data.slice().sort((a, b) => b.createdAt - a.createdAt) ?? []
@@ -40,6 +42,7 @@ export function QuestionDetailPage() {
     return <div className="flex justify-center py-24"><Spinner /></div>
   }
 
+  if (questionError && isNotFound(questionErr)) return <NotFoundPage />
   if (questionError || !question) {
     return (
       <div className="container mx-auto px-4 py-12">
