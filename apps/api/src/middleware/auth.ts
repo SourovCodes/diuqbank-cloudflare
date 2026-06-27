@@ -1,6 +1,9 @@
 import { createMiddleware } from "hono/factory";
 import { HTTPException } from "hono/http-exception";
+import { eq } from "drizzle-orm";
 
+import { getDb } from "../db/client";
+import { users } from "../db/schema";
 import { verifyAuthToken } from "../lib/jwt";
 import type { AppEnv } from "../types";
 
@@ -23,8 +26,20 @@ export const requireAuth = createMiddleware<AppEnv>(async (c, next) => {
 /** Require the authenticated user to have `role: "admin"`. Use after requireAuth. */
 export const requireAdmin = createMiddleware<AppEnv>(async (c, next) => {
   const user = c.get("user");
-  if (!user || user.role !== "admin") {
+  if (!user) {
     throw new HTTPException(403, { message: "Admin access required" });
   }
+
+  const [currentUser] = await getDb(c.env.DB)
+    .select({ username: users.username, role: users.role })
+    .from(users)
+    .where(eq(users.id, user.sub))
+    .limit(1);
+
+  if (!currentUser || currentUser.role !== "admin") {
+    throw new HTTPException(403, { message: "Admin access required" });
+  }
+
+  c.set("user", { ...user, username: currentUser.username, role: currentUser.role });
   await next();
 });

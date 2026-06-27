@@ -59,11 +59,14 @@ export type ContributorSummary = {
   image: string | null
 }
 
+export type WatermarkStatus = 'awaiting' | 'completed' | 'failed'
+
 export type ContributorSubmission = {
   id: number
   section: string | null
   batch: string | null
   fileSize: number
+  watermarkStatus: WatermarkStatus
   createdAt: number
   pdfUrl: string | null
   question: Question
@@ -109,8 +112,6 @@ export type QuestionFilters = {
 }
 
 // --- Admin ---
-
-export type WatermarkStatus = 'awaiting' | 'completed' | 'failed'
 
 export type AdminQuestion = {
   id: number

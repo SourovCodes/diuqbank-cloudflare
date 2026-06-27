@@ -171,12 +171,12 @@ export const api = {
   me: (token: string) => authedGet<{ user: User }>('/auth/me', token),
 
   updateMe: (token: string, data: { name?: string; username?: string }) =>
-    authedPatch<User>('/auth/me', token, data),
+    authedPatch<{ user: User }>('/auth/me', token, data).then(({ user }) => user),
 
   uploadImage: (token: string, file: File) => {
     const fd = new FormData()
     fd.append('image', file)
-    return authedPutFile<User>('/auth/me/image', token, fd)
+    return authedPutFile<{ user: User }>('/auth/me/image', token, fd).then(({ user }) => user)
   },
 
   // --- Manual Submissions ---
