@@ -19,13 +19,45 @@ import type { AppEnv, Bindings } from "./types";
 
 const app = new Hono<AppEnv>();
 
+const allowedWebOrigins = (env: Bindings) =>
+  env.WEB_ORIGINS.split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
+const frameAncestorPolicy = (env: Bindings) => {
+  const ancestors = new Set<string>(["'self'"]);
+
+  for (const origin of allowedWebOrigins(env)) {
+    try {
+      const url = new URL(origin);
+      if (url.protocol === "http:" || url.protocol === "https:") {
+        ancestors.add(url.origin);
+      }
+    } catch {
+      // Invalid CORS entries are ignored for CSP rather than emitting a bad header.
+    }
+  }
+
+  return `frame-ancestors ${Array.from(ancestors).join(" ")};`;
+};
+
 // Tag every request with an id (echoed as X-Request-Id) for log correlation.
 app.use("*", requestId());
 app.use("*", logger());
 
-// Security headers. No CSP is set so the Scalar /docs page (which loads from
-// jsdelivr) keeps working; CORP is relaxed to cross-origin because this Worker
-// also serves R2 files consumed by the web app on a different origin.
+// Allow only this API and the configured web frontends to iframe API pages/files.
+// This must wrap secureHeaders so it can replace X-Frame-Options (which cannot
+// express an allowlist) with the modern CSP frame-ancestors directive.
+app.use("*", async (c, next) => {
+  await next();
+  c.res.headers.delete("X-Frame-Options");
+  c.res.headers.set("Content-Security-Policy", frameAncestorPolicy(c.env as Bindings));
+});
+
+// Security headers. CSP is limited to frame-ancestors above so the Scalar /docs
+// page (which loads from jsdelivr) keeps working; CORP is relaxed to cross-origin
+// because this Worker also serves R2 files consumed by the web app on a different
+// origin.
 app.use(
   "*",
   secureHeaders({
@@ -42,10 +74,7 @@ app.use(
   cors({
     origin: (origin, c) => {
       const env = c.env as Bindings;
-      const allowed = env.WEB_ORIGINS.split(",")
-        .map((o) => o.trim())
-        .filter(Boolean);
-      return allowed.includes(origin) ? origin : null;
+      return allowedWebOrigins(env).includes(origin) ? origin : null;
     },
     allowMethods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
     allowHeaders: ["Authorization", "Content-Type"],
