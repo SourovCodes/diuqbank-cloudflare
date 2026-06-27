@@ -106,7 +106,7 @@ export function EditProfilePage() {
                 value={username}
                 onChange={e => setUsername(e.target.value)}
                 className="flex-1 rounded-r-lg px-2 py-2 text-sm text-gray-900 focus:outline-none"
-                pattern="[a-z0-9._-]+"
+                pattern="[a-z0-9._\-]+"
                 title="Lowercase letters, numbers, dots, underscores, hyphens"
               />
             </div>

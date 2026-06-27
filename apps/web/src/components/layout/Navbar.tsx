@@ -119,7 +119,6 @@ function MobileMenu({ onClose }: { onClose: () => void }) {
           <MobileNavLink to="/" onClick={onClose}>Home</MobileNavLink>
           <MobileNavLink to="/questions" onClick={onClose}>Questions</MobileNavLink>
           <MobileNavLink to="/contributors" onClick={onClose}>Contributors</MobileNavLink>
-          <MobileNavLink to="/about" onClick={onClose}>About</MobileNavLink>
 
           {isAuthenticated && (
             <>
@@ -188,7 +187,6 @@ export function Navbar() {
             <NavLink to="/" end className={navLinkClass}>Home</NavLink>
             <NavLink to="/questions" className={navLinkClass}>Questions</NavLink>
             <NavLink to="/contributors" className={navLinkClass}>Contributors</NavLink>
-            <NavLink to="/about" className={navLinkClass}>About</NavLink>
 
             {isAuthenticated ? (
               <>

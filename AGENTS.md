@@ -5,47 +5,50 @@ for the human-facing overview.
 
 ## What this is
 
-A **pnpm-workspace monorepo** with three packages, all deployed to Cloudflare:
+A **pnpm-workspace monorepo** with deployable apps under `apps/` and shared libraries under
+`packages/`, all deployed to Cloudflare:
 
-- **`api/`** — a Hono API on Cloudflare **Workers**: D1 + Drizzle, R2 for files, stateless JWT
+- **`apps/api/`** — a Hono API on Cloudflare **Workers**: D1 + Drizzle, R2 for files, stateless JWT
   auth, hand-written OpenAPI. Worker name `diuqbank`. Mirrors the production reference repo
   `github.com/SourovCodes/diuqbank-backend-api`.
-- **`web/`** — a Vite + React 19 SPA (React Router 7, TanStack Query, Tailwind 4) deployed as a
+- **`apps/web/`** — a Vite + React 19 SPA (React Router 7, TanStack Query, Tailwind 4) deployed as a
   Cloudflare **Workers static-assets** site (worker name `diuqbank-web`, SPA fallback). Calls the
   API over `fetch`; base URL from `import.meta.env.VITE_API_URL` (defaults to the deployed Worker).
-- **`shared/`** — `@diuqbank/shared`: the API↔web contract. Response DTO **types**
-  (`shared/src/types.ts`), Zod request **schemas** (`shared/src/schemas/**`), and pure **utils**
-  (`pagination`, `question-title`). Ships raw TS (no build); both bundlers transpile it. The API's
-  shape helpers are annotated to return these DTO types, so `tsc` fails on contract drift.
+- **`packages/shared/`** — `@diuqbank/shared`: the API↔web contract. Response DTO **types**
+  (`packages/shared/src/types.ts`), Zod request **schemas** (`packages/shared/src/schemas/**`), and
+  pure **utils** (`pagination`, `question-title`). Ships raw TS (no build); both bundlers transpile
+  it. The API's shape helpers are annotated to return these DTO types, so `tsc` fails on contract drift.
 
 Package manager: **pnpm 10.33.2** (pinned at the root `packageManager`). Run `pnpm install` once
-at the repo root. The detailed API conventions below describe files **under `api/`**.
+at the repo root. The detailed API conventions below describe files **under `apps/api/`**.
 
 ## Layout
 
 ```
-api/
-  src/
-    index.ts             App entry: builds Hono<AppEnv>, mounts routes, global onError, CORS
-    types.ts             AppEnv / Bindings (DB, BUCKET, GOOGLE_CLIENT_ID, JWT_SECRET…)
-    openapi.ts           Hand-written OpenAPI 3 doc (imports Zod schemas from @diuqbank/shared)
-    db/
-      schema.ts          Drizzle schema — source of truth for the DB (tables + relations)
-      client.ts          getDb(c.env.DB)
-    middleware/auth.ts   requireAuth (sets c.var.user) / requireAdmin
-    routes/              One file per domain: auth, questions, contributors, filter-options, files
-      admin/             One file per admin resource + index.ts (auth applied once)
-    lib/                 validator, jwt, google-oauth, image-upload, pdf-upload, parse-id,
-                         user-shape, admin-shape (pagination + question-title now in shared/)
-  drizzle/               Generated SQL migrations (applied via wrangler, not the Drizzle client)
-  wrangler.jsonc         Worker config: D1 binding DB, R2 binding BUCKET, vars, etc.
-web/
-  src/                   React SPA; lib/api.ts is the API client (imports types from @diuqbank/shared)
-  wrangler.jsonc         Static-assets Worker (assets dir ./dist, SPA not_found_handling)
-shared/
-  src/types.ts           Canonical response DTOs (single source of truth)
-  src/schemas/           Zod request schemas (admin/ mirrors api routes/admin/)
-  src/utils/             pagination (pageFields, buildMeta), question-title (buildQuestionTitle)
+apps/
+  api/
+    src/
+      index.ts             App entry: builds Hono<AppEnv>, mounts routes, global onError, CORS
+      types.ts             AppEnv / Bindings (DB, BUCKET, GOOGLE_CLIENT_ID, JWT_SECRET…)
+      openapi.ts           Hand-written OpenAPI 3 doc (imports Zod schemas from @diuqbank/shared)
+      db/
+        schema.ts          Drizzle schema — source of truth for the DB (tables + relations)
+        client.ts          getDb(c.env.DB)
+      middleware/auth.ts   requireAuth (sets c.var.user) / requireAdmin
+      routes/              One file per domain: auth, questions, contributors, filter-options, files
+        admin/             One file per admin resource + index.ts (auth applied once)
+      lib/                 validator, jwt, google-oauth, image-upload, pdf-upload, parse-id,
+                           user-shape, admin-shape (pagination + question-title now in packages/shared/)
+    drizzle/               Generated SQL migrations (applied via wrangler, not the Drizzle client)
+    wrangler.jsonc         Worker config: D1 binding DB, R2 binding BUCKET, vars, etc.
+  web/
+    src/                   React SPA; lib/api.ts is the API client (imports types from @diuqbank/shared)
+    wrangler.jsonc         Static-assets Worker (assets dir ./dist, SPA not_found_handling)
+packages/
+  shared/
+    src/types.ts           Canonical response DTOs (single source of truth)
+    src/schemas/           Zod request schemas (admin/ mirrors api routes/admin/)
+    src/utils/             pagination (pageFields, buildMeta), question-title (buildQuestionTitle)
 ```
 
 **Imports from shared:** types via `@diuqbank/shared/types`, schemas via
@@ -92,14 +95,14 @@ pnpm build               # production build (web)
 pnpm deploy:api          # wrangler deploy --minify (the API Worker)
 pnpm deploy:web          # vite build && wrangler deploy (the static-assets Worker)
 
-# API-only tasks — run from api/ (or `pnpm --filter @diuqbank/api <script>`):
+# API-only tasks — run from apps/api/ (or `pnpm --filter @diuqbank/api <script>`):
 pnpm db:generate         # generate a Drizzle migration after editing schema.ts
 pnpm db:migrate:local    # apply migrations to local D1
 pnpm db:migrate:remote   # apply migrations to remote D1
 pnpm cf-typegen          # regenerate worker-configuration.d.ts after wrangler.jsonc changes
 ```
 
-For local web→API dev, set `VITE_API_URL=http://localhost:8787` (see `web/.env.example`).
+For local web→API dev, set `VITE_API_URL=http://localhost:8787` (see `apps/web/.env.example`).
 
 ## Gotchas
 

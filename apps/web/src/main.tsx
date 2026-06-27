@@ -22,7 +22,6 @@ import { ManualSubmissionPage } from './pages/ManualSubmissionPage'
 import { AutoSubmissionPage } from './pages/AutoSubmissionPage'
 import { ContributorsPage } from './pages/ContributorsPage'
 import { ContributorProfilePage } from './pages/ContributorProfilePage'
-import { AboutPage } from './pages/AboutPage'
 import { MyManualSubmissionsPage } from './pages/MyManualSubmissionsPage'
 import { MyAutoSubmissionsPage } from './pages/MyAutoSubmissionsPage'
 import { ManualSubmissionDetailPage } from './pages/ManualSubmissionDetailPage'
@@ -76,7 +75,6 @@ function App() {
                 <Route path="/auth" element={<AuthPage />} />
                 <Route path="/contributors" element={<ContributorsPage />} />
                 <Route path="/contributors/:username" element={<ContributorProfilePage />} />
-                <Route path="/about" element={<AboutPage />} />
 
                 {/* Dashboard routes — protected, with sidebar layout */}
                 <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useFilterOptions } from '../hooks/useFilterOptions'
 import { api } from '../lib/api'
@@ -9,6 +9,7 @@ import { ErrorMessage } from '../components/ui/ErrorMessage'
 
 export function ManualSubmissionPage() {
   const { token } = useAuth()
+  const navigate = useNavigate()
   const { data: filterOptions } = useFilterOptions()
 
   const [departmentId, setDepartmentId] = useState('')
@@ -20,7 +21,6 @@ export function ManualSubmissionPage() {
   const [file, setFile] = useState<File | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState(false)
 
   const dept = filterOptions?.departments.find(d => String(d.id) === departmentId)
   const course = filterOptions?.courses.find(c => String(c.id) === courseId)
@@ -51,30 +51,12 @@ export function ManualSubmissionPage() {
       fd.append('examTypeName', examType.name)
       if (section.trim()) fd.append('section', section.trim())
       if (batch.trim()) fd.append('batch', batch.trim())
-      await api.createManualSubmission(token, fd)
-      setSuccess(true)
+      const created = await api.createManualSubmission(token, fd)
+      navigate(`/my/manual-submissions/${created.id}`)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Submission failed.')
-    } finally {
       setSubmitting(false)
     }
-  }
-
-  if (success) {
-    return (
-      <div className="flex py-12 justify-center">
-        <div className="w-full max-w-sm rounded-2xl border border-green-200 bg-green-50 p-8 text-center">
-          <div className="mb-3 text-4xl">✅</div>
-          <h2 className="mb-2 text-lg font-bold text-gray-900">Submitted for Review</h2>
-          <p className="mb-6 text-sm text-gray-600">
-            Your question paper has been submitted and is pending admin review.
-          </p>
-          <Link to="/questions" className="inline-flex rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition">
-            Browse Questions
-          </Link>
-        </div>
-      </div>
-    )
   }
 
   const isValid = !!file && !!departmentId && !!courseId && !!semesterId && !!examTypeId

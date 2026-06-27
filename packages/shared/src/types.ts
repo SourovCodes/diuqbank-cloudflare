@@ -1,6 +1,6 @@
 // Canonical API response DTOs — the single source of truth for the JSON shapes
 // the API returns and the web consumes. The API's response-shape helpers
-// (api/src/lib/user-shape.ts, admin-shape.ts) are annotated to return these
+// (apps/api/src/lib/user-shape.ts, admin-shape.ts) are annotated to return these
 // types, so `tsc` fails if the served shape ever drifts from this contract.
 
 export type Department = { id: number; name: string; shortName: string }
