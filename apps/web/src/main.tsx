@@ -1,4 +1,4 @@
-import { StrictMode, useState, useEffect } from 'react'
+import { StrictMode, useState, useEffect, lazy } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -26,24 +26,28 @@ import { MyManualSubmissionsPage } from './pages/MyManualSubmissionsPage'
 import { MyAutoSubmissionsPage } from './pages/MyAutoSubmissionsPage'
 import { ManualSubmissionDetailPage } from './pages/ManualSubmissionDetailPage'
 import { AutoSubmissionDetailPage } from './pages/AutoSubmissionDetailPage'
+import { NotFoundPage } from './pages/NotFoundPage'
+import { ErrorBoundary } from './components/ErrorBoundary'
 
-import { AdminDashboardPage } from './pages/admin/AdminDashboardPage'
-import { AdminDepartmentsPage } from './pages/admin/AdminDepartmentsPage'
-import { AdminDepartmentFormPage } from './pages/admin/AdminDepartmentFormPage'
-import { AdminCoursesPage } from './pages/admin/AdminCoursesPage'
-import { AdminCourseFormPage } from './pages/admin/AdminCourseFormPage'
-import { AdminSemestersPage } from './pages/admin/AdminSemestersPage'
-import { AdminSemesterFormPage } from './pages/admin/AdminSemesterFormPage'
-import { AdminExamTypesPage } from './pages/admin/AdminExamTypesPage'
-import { AdminExamTypeFormPage } from './pages/admin/AdminExamTypeFormPage'
-import { AdminQuestionsPage } from './pages/admin/AdminQuestionsPage'
-import { AdminQuestionFormPage } from './pages/admin/AdminQuestionFormPage'
-import { AdminSubmissionsPage } from './pages/admin/AdminSubmissionsPage'
-import { AdminSubmissionFormPage } from './pages/admin/AdminSubmissionFormPage'
-import { AdminManualSubmissionsPage } from './pages/admin/AdminManualSubmissionsPage'
-import { AdminManualSubmissionDetailPage } from './pages/admin/AdminManualSubmissionDetailPage'
-import { AdminUsersPage } from './pages/admin/AdminUsersPage'
-import { AdminUserFormPage } from './pages/admin/AdminUserFormPage'
+// Admin pages are lazy-loaded so their code splits into a separate chunk that
+// only admins fetch — keeps the main bundle small for regular visitors.
+const AdminDashboardPage = lazy(() => import('./pages/admin/AdminDashboardPage').then(m => ({ default: m.AdminDashboardPage })))
+const AdminDepartmentsPage = lazy(() => import('./pages/admin/AdminDepartmentsPage').then(m => ({ default: m.AdminDepartmentsPage })))
+const AdminDepartmentFormPage = lazy(() => import('./pages/admin/AdminDepartmentFormPage').then(m => ({ default: m.AdminDepartmentFormPage })))
+const AdminCoursesPage = lazy(() => import('./pages/admin/AdminCoursesPage').then(m => ({ default: m.AdminCoursesPage })))
+const AdminCourseFormPage = lazy(() => import('./pages/admin/AdminCourseFormPage').then(m => ({ default: m.AdminCourseFormPage })))
+const AdminSemestersPage = lazy(() => import('./pages/admin/AdminSemestersPage').then(m => ({ default: m.AdminSemestersPage })))
+const AdminSemesterFormPage = lazy(() => import('./pages/admin/AdminSemesterFormPage').then(m => ({ default: m.AdminSemesterFormPage })))
+const AdminExamTypesPage = lazy(() => import('./pages/admin/AdminExamTypesPage').then(m => ({ default: m.AdminExamTypesPage })))
+const AdminExamTypeFormPage = lazy(() => import('./pages/admin/AdminExamTypeFormPage').then(m => ({ default: m.AdminExamTypeFormPage })))
+const AdminQuestionsPage = lazy(() => import('./pages/admin/AdminQuestionsPage').then(m => ({ default: m.AdminQuestionsPage })))
+const AdminQuestionFormPage = lazy(() => import('./pages/admin/AdminQuestionFormPage').then(m => ({ default: m.AdminQuestionFormPage })))
+const AdminSubmissionsPage = lazy(() => import('./pages/admin/AdminSubmissionsPage').then(m => ({ default: m.AdminSubmissionsPage })))
+const AdminSubmissionFormPage = lazy(() => import('./pages/admin/AdminSubmissionFormPage').then(m => ({ default: m.AdminSubmissionFormPage })))
+const AdminManualSubmissionsPage = lazy(() => import('./pages/admin/AdminManualSubmissionsPage').then(m => ({ default: m.AdminManualSubmissionsPage })))
+const AdminManualSubmissionDetailPage = lazy(() => import('./pages/admin/AdminManualSubmissionDetailPage').then(m => ({ default: m.AdminManualSubmissionDetailPage })))
+const AdminUsersPage = lazy(() => import('./pages/admin/AdminUsersPage').then(m => ({ default: m.AdminUsersPage })))
+const AdminUserFormPage = lazy(() => import('./pages/admin/AdminUserFormPage').then(m => ({ default: m.AdminUserFormPage })))
 import { api } from './lib/api'
 
 const queryClient = new QueryClient({
@@ -67,6 +71,7 @@ function App() {
           <div className="flex min-h-screen flex-col bg-gray-50 text-gray-900">
             <Navbar />
             <main className="flex-1">
+              <ErrorBoundary>
               <Routes>
                 {/* Public routes */}
                 <Route path="/" element={<HomePage />} />
@@ -113,7 +118,11 @@ function App() {
                   <Route path="/admin/users" element={<AdminUsersPage />} />
                   <Route path="/admin/users/:id/edit" element={<AdminUserFormPage />} />
                 </Route>
+
+                {/* Catch-all 404 */}
+                <Route path="*" element={<NotFoundPage />} />
               </Routes>
+              </ErrorBoundary>
             </main>
             <Footer />
           </div>

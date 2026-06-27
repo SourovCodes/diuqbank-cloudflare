@@ -1,6 +1,8 @@
+import { Suspense } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { Avatar } from '../ui/Avatar'
+import { Spinner } from '../ui/Spinner'
 
 type NavLinkItem = { to: string; icon: string; text: string; end?: boolean }
 
@@ -105,7 +107,9 @@ export function AdminLayout() {
 
         {/* Main content area */}
         <div className="min-w-0 flex-1">
-          <Outlet />
+          <Suspense fallback={<div className="flex justify-center py-16"><Spinner /></div>}>
+            <Outlet />
+          </Suspense>
         </div>
       </div>
     </div>

@@ -11,8 +11,8 @@
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
     "lint": "pnpm -r lint",
-    "deploy:api": "pnpm --filter @diuqbank/api deploy",
-    "deploy:web": "pnpm --filter @diuqbank/web deploy"
+    "deploy:api": "pnpm --filter @diuqbank/api run deploy",
+    "deploy:web": "pnpm --filter @diuqbank/web run deploy"
   },
   "pnpm": {
     "onlyBuiltDependencies": ["esbuild", "workerd", "sharp"]
