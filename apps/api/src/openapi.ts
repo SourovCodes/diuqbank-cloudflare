@@ -440,10 +440,6 @@ const componentSchemas = {
         description: "Unique id of the record in the legacy system.",
       },
       departmentName: { type: "string", description: "Department name." },
-      departmentShortName: {
-        type: "string",
-        description: "Department short name (used when creating a new department).",
-      },
       semesterName: { type: "string", description: "Semester name." },
       courseName: { type: "string", description: "Course name." },
       examTypeName: { type: "string", description: "Exam type name." },
@@ -476,7 +472,6 @@ const componentSchemas = {
       "pdf",
       "legacyId",
       "departmentName",
-      "departmentShortName",
       "semesterName",
       "courseName",
       "examTypeName",

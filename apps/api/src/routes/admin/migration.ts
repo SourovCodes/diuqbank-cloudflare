@@ -41,6 +41,20 @@ const submissionWith = {
 const caseInsensitiveEq = (column: AnySQLiteColumn, value: string): SQL =>
   sql`lower(${column}) = lower(${value})`;
 
+// Build a short name from the first letter of each word in `name`, uppercased.
+// Adds a numeric suffix when the base collides with an existing short name.
+const generateShortName = (name: string, attempt = 0): string => {
+  const base = name
+    .trim()
+    .split(/\s+/)
+    .map((w) => w[0]?.toUpperCase() ?? "")
+    .join("")
+    .slice(0, 20) || name.slice(0, 5).toUpperCase().replace(/\s+/g, "");
+  if (attempt === 0) return base;
+  const suffix = String(attempt);
+  return base.slice(0, 20 - suffix.length) + suffix;
+};
+
 // Best-effort delete of stored objects; never fail the request on cleanup.
 const deleteObject = async (bucket: R2Bucket, key: string): Promise<void> => {
   try {
@@ -55,11 +69,7 @@ const deleteObject = async (bucket: R2Bucket, key: string): Promise<void> => {
 // re-selecting. A surviving unique violation (e.g. a department short name owned
 // by a different department) propagates to the global onError → 409. ---
 
-const resolveDepartment = async (
-  db: Db,
-  name: string,
-  shortName: string,
-): Promise<number> => {
+const resolveDepartment = async (db: Db, name: string): Promise<number> => {
   const find = async () => {
     const [row] = await db
       .select({ id: departments.id })
@@ -70,17 +80,24 @@ const resolveDepartment = async (
   };
   const existing = await find();
   if (existing) return existing;
-  try {
-    const [created] = await db
-      .insert(departments)
-      .values({ name, shortName })
-      .returning({ id: departments.id });
-    return created.id;
-  } catch (err) {
-    const again = await find();
-    if (again) return again;
-    throw err;
+  // Retry with incrementing numeric suffix on short-name uniqueness collisions.
+  for (let attempt = 0; attempt <= 99; attempt++) {
+    const shortName = generateShortName(name, attempt);
+    try {
+      const [created] = await db
+        .insert(departments)
+        .values({ name, shortName })
+        .returning({ id: departments.id });
+      return created.id;
+    } catch {
+      const again = await find();
+      if (again) return again;
+      // Otherwise assume short-name collision and try next suffix.
+    }
   }
+  throw new HTTPException(500, {
+    message: `Could not generate a unique short name for department "${name}"`,
+  });
 };
 
 const resolveSemester = async (db: Db, name: string): Promise<number> => {
@@ -315,7 +332,7 @@ route.post("/submissions", validate("form", migrationSubmissionForm), async (c) 
         .values({
           userId,
           departmentName: input.departmentName,
-          departmentShortName: input.departmentShortName,
+          departmentShortName: generateShortName(input.departmentName),
           courseName: input.courseName,
           semesterName: input.semesterName,
           examTypeName: input.examTypeName,
@@ -340,11 +357,7 @@ route.post("/submissions", validate("form", migrationSubmissionForm), async (c) 
 
   // autoPublish=true → publish directly: resolve/create lookups + question and
   // create a live submission.
-  const departmentId = await resolveDepartment(
-    db,
-    input.departmentName,
-    input.departmentShortName,
-  );
+  const departmentId = await resolveDepartment(db, input.departmentName);
   const [courseId, semesterId, examTypeId] = await Promise.all([
     resolveCourse(db, departmentId, input.courseName),
     resolveSemester(db, input.semesterName),
