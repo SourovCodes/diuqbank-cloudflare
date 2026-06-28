@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "diuqbank-web",
+  "name": "diuqbank-web-prod",
   "account_id": "fa8625f86a085605ee19ba16ccfc9615",
   "compatibility_date": "2026-06-20",
   // Asset-only Worker: no `main`. Wrangler serves the built SPA from ./dist.

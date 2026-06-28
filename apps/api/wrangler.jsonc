@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "diuqbank",
+  "name": "diuqbank-api-prod",
   "account_id": "fa8625f86a085605ee19ba16ccfc9615",
   "main": "src/index.ts",
   "compatibility_date": "2026-06-20",
@@ -61,7 +61,7 @@
     "PDF_PROCESSOR_URL": "https://pdf-processor.diuqbank.com",
     // Comma-separated CORS allowlist. Requests from any other Origin are
     // rejected (no CORS headers). Add your production/custom domains here.
-    "WEB_ORIGINS": "https://diuqbank-web.sourov-cse.workers.dev,http://localhost:5173"
+    "WEB_ORIGINS": "https://diuqbank-web-prod.sourov-cse.workers.dev,http://localhost:5173"
   },
   "secrets": {
     "required": [
