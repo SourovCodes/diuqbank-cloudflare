@@ -11,15 +11,15 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "diuqbank-db",
-      "database_id": "a0975903-4f94-4819-9be1-5cef71ea7b81",
+      "database_name": "diuqbank-db-prod",
+      "database_id": "e11286c4-bc44-4956-bc4e-8ce1817359fe",
       "migrations_dir": "drizzle"
     }
   ],
   "r2_buckets": [
     {
       "binding": "BUCKET",
-      "bucket_name": "diuqbank-files"
+      "bucket_name": "diuqbank-files-prod"
     }
   ],
   // Cloudflare native rate limiting (per-datacenter, fixed window). `period` may
