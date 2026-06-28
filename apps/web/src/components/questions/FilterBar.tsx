@@ -14,6 +14,14 @@ export function FilterBar({ options, filters, onFilterChange, onDepartmentChange
     ? options.courses.filter(c => c.departmentId === Number(filters.departmentId))
     : options.courses
 
+  const deptShortName = new Map(options.departments.map(d => [d.id, d.shortName]))
+  const courseOptions = visibleCourses.map(c => ({
+    value: String(c.id),
+    label: filters.departmentId
+      ? c.name
+      : `${c.name} (${deptShortName.get(c.departmentId) ?? '?'})`,
+  }))
+
   const hasFilters = !!(filters.departmentId || filters.courseId || filters.semesterId || filters.examTypeId)
 
   return (
@@ -32,11 +40,10 @@ export function FilterBar({ options, filters, onFilterChange, onDepartmentChange
         <div>
           <label className="mb-1 block text-xs font-medium text-gray-500">Course</label>
           <SearchableSelect
-            options={visibleCourses.map(c => ({ value: String(c.id), label: c.name }))}
+            options={courseOptions}
             value={filters.courseId}
             onChange={v => onFilterChange('courseId', v)}
-            placeholder={filters.departmentId ? 'All courses' : 'Select dept first'}
-            disabled={!filters.departmentId}
+            placeholder="All courses"
           />
         </div>
 
