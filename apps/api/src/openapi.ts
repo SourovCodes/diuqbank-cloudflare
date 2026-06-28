@@ -427,6 +427,58 @@ const componentSchemas = {
     },
     required: ["pdf"],
   },
+  MigrationSubmissionForm: {
+    type: "object",
+    properties: {
+      pdf: {
+        type: "string",
+        format: "binary",
+        description: "Submission PDF file (max 20 MB).",
+      },
+      legacyId: {
+        type: "string",
+        description: "Unique id of the record in the legacy system.",
+      },
+      departmentName: { type: "string", description: "Department name." },
+      departmentShortName: {
+        type: "string",
+        description: "Department short name (used when creating a new department).",
+      },
+      semesterName: { type: "string", description: "Semester name." },
+      courseName: { type: "string", description: "Course name." },
+      examTypeName: { type: "string", description: "Exam type name." },
+      contributorEmail: {
+        type: "string",
+        format: "email",
+        description: "Original contributor's email (used to find or create them).",
+      },
+      contributorUsername: {
+        type: "string",
+        description: "Original contributor's username (used when creating them).",
+      },
+      contributorName: { type: "string", description: "Original contributor's name." },
+      contributorImageUrl: {
+        type: "string",
+        format: "uri",
+        description:
+          "Optional profile picture URL; downloaded into storage when creating the contributor (best-effort).",
+      },
+      section: { type: "string", description: "Optional section label." },
+      batch: { type: "string", description: "Optional batch label." },
+    },
+    required: [
+      "pdf",
+      "legacyId",
+      "departmentName",
+      "departmentShortName",
+      "semesterName",
+      "courseName",
+      "examTypeName",
+      "contributorEmail",
+      "contributorUsername",
+      "contributorName",
+    ],
+  },
 
   // Admin response models.
   DepartmentList: toSchema(departmentList),
@@ -955,6 +1007,28 @@ const adminPaths = {
       },
     },
   },
+  "/admin/migration/submissions": {
+    post: {
+      tags: ["admin-migration"],
+      summary: "Migrate a legacy submission",
+      ...authFields(
+        "Admin",
+        "Imports one legacy submission: uploads its PDF (multipart field `pdf`, max 20 MB) plus flat metadata. Department/semester/course/exam type are resolved or created by name; the contributor is found or created by email (with their profile picture downloaded best-effort). The PDF is stored as-is (no watermarking). `legacyId` is unique — a record can only be migrated once.",
+      ),
+      requestBody: {
+        required: true,
+        content: multipart("MigrationSubmissionForm"),
+      },
+      responses: {
+        "201": okJson("Migrated", ref("AdminSubmission")),
+        "400": commonErrors["400"],
+        "401": commonErrors["401"],
+        "403": commonErrors["403"],
+        "409": errResp("Legacy id already migrated, or a username/short-name conflict"),
+        "413": errResp("PDF exceeds the 20 MB size limit"),
+      },
+    },
+  },
   "/admin/manual-submissions": {
     get: {
       tags: ["admin-manual-submissions"],
@@ -1218,6 +1292,10 @@ export const buildOpenApiDoc = () => ({
       name: "admin-manual-submissions",
       description: "Admin: review and manage manual submissions.",
     },
+    {
+      name: "admin-migration",
+      description: "Admin: import legacy submissions.",
+    },
     { name: "admin-users", description: "Admin: manage users." },
   ],
   "x-tagGroups": [
@@ -1242,6 +1320,7 @@ export const buildOpenApiDoc = () => ({
         "admin-questions",
         "admin-submissions",
         "admin-manual-submissions",
+        "admin-migration",
         "admin-users",
       ],
     },

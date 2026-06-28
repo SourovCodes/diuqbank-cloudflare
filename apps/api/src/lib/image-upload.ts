@@ -49,6 +49,11 @@ export type ParsedImage = {
   ext: Format["ext"];
 };
 
+// Identify an image format from its leading bytes (first 12), or null if none
+// match. Shared by the multipart upload path and the migration URL fetcher.
+export const detectImageFormat = (head: Uint8Array): Format | null =>
+  FORMATS.find((f) => f.test(head)) ?? null;
+
 export const parseImageUpload = async (c: Context<AppEnv>): Promise<ParsedImage> => {
   // Cheap pre-check via Content-Length so we 413 before buffering the body.
   const claimed = Number(c.req.header("content-length") ?? 0);
@@ -74,7 +79,7 @@ export const parseImageUpload = async (c: Context<AppEnv>): Promise<ParsedImage>
   }
   const buffer = await file.arrayBuffer();
   const head = new Uint8Array(buffer.slice(0, 12));
-  const match = FORMATS.find((f) => f.test(head));
+  const match = detectImageFormat(head);
   if (!match) {
     throw new HTTPException(400, {
       message: "image must be a PNG, JPEG, GIF, or WebP",

@@ -115,6 +115,11 @@ export const submissions = sqliteTable(
       .default("awaiting"),
     watermarkError: text("watermark_error"),
     transcription: text("transcription"),
+    // Back-reference to the original record when imported via the admin
+    // migration endpoint. Nullable (normal uploads have none); unique so a
+    // legacy submission can only be migrated once. SQLite unique indexes allow
+    // multiple NULLs, so non-migrated rows are unaffected.
+    legacyId: text("legacy_id").unique(),
     createdAt: integer("created_at")
       .notNull()
       .default(sql`(unixepoch())`),

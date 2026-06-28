@@ -138,6 +138,7 @@ export type AdminSubmission = {
   watermarkError: string | null
   pdfUrl: string | null
   watermarkedPdfUrl: string | null
+  legacyId: string | null
   createdAt: number
 }
 

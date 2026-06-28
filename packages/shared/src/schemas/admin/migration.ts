@@ -1,0 +1,23 @@
+import { z } from "zod";
+
+// Text fields that accompany the `pdf` file on the migration multipart create.
+// The file itself is validated separately (see `lib/pdf-upload.ts`). Values
+// arrive as strings. Lookups (department/semester/course/exam type) are
+// resolved or created by name, so a department short name is required to create
+// a new department. The contributor is find-or-created by email.
+export const migrationSubmissionForm = z.object({
+  legacyId: z.string().trim().min(1).max(100),
+  departmentName: z.string().trim().min(1).max(100),
+  departmentShortName: z.string().trim().min(1).max(20),
+  semesterName: z.string().trim().min(1).max(100),
+  courseName: z.string().trim().min(1).max(100),
+  examTypeName: z.string().trim().min(1).max(100),
+  contributorEmail: z.string().trim().toLowerCase().email().max(255),
+  contributorUsername: z.string().trim().min(1).max(100),
+  contributorName: z.string().trim().min(1).max(100),
+  contributorImageUrl: z.string().trim().url().max(2048).optional(),
+  section: z.string().trim().max(100).optional(),
+  batch: z.string().trim().max(100).optional(),
+});
+
+export type MigrationSubmissionInput = z.infer<typeof migrationSubmissionForm>;
