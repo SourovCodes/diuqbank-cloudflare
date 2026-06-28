@@ -210,6 +210,7 @@ const manualSubmission = z.object({
   course: manualCourse,
   semester: manualSemester,
   examType: manualExamType,
+  note: z.string().nullable(),
   status: z.enum(["pending_review", "approved", "rejected"]),
   rejectedReason: z.string().nullable(),
   reviewedBy: z.number().int().nullable(),
@@ -287,6 +288,7 @@ const adminManualSubmission = z.object({
   course: manualCourse,
   semester: manualSemester,
   examType: manualExamType,
+  note: z.string().nullable(),
   status: z.enum(["pending_review", "approved", "rejected"]),
   rejectedReason: z.string().nullable(),
   reviewedBy: z.number().int().nullable(),
@@ -369,6 +371,7 @@ const componentSchemas = {
       courseName: { type: "string", minLength: 1, maxLength: 150 },
       semesterName: { type: "string", minLength: 1, maxLength: 100 },
       examTypeName: { type: "string", minLength: 1, maxLength: 100 },
+      note: { type: "string", maxLength: 1000 },
     },
     required: [
       "pdf",

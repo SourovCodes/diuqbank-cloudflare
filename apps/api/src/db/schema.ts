@@ -140,6 +140,7 @@ export const manualSubmissions = sqliteTable(
     courseName: text("course_name").notNull(),
     semesterName: text("semester_name").notNull(),
     examTypeName: text("exam_type_name").notNull(),
+    note: text("note"),
     departmentId: integer("department_id").references(() => departments.id, {
       onDelete: "restrict",
     }),

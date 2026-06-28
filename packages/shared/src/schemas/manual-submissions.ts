@@ -10,6 +10,7 @@ export const manualSubmissionCreateForm = z.object({
   courseName: z.string().trim().min(1).max(150),
   semesterName: z.string().trim().min(1).max(100),
   examTypeName: z.string().trim().min(1).max(100),
+  note: z.string().trim().max(1000).optional(),
 });
 
 export const manualSubmissionsListQuery = z.object({

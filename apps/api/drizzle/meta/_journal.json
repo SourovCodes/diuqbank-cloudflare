@@ -29,6 +29,13 @@
       "when": 1782639910232,
       "tag": "0003_rapid_wendigo",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1782653308575,
+      "tag": "0004_simple_black_cat",
+      "breakpoints": true
     }
   ]
 }

@@ -22,6 +22,7 @@ export function ManualSubmissionPage() {
   const [examTypeId, setExamTypeId] = useState('')
   const [section, setSection] = useState('')
   const [batch, setBatch] = useState('')
+  const [note, setNote] = useState('')
   const [file, setFile] = useState<File | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
@@ -58,6 +59,7 @@ export function ManualSubmissionPage() {
       fd.append('examTypeName', examType.name)
       if (section.trim()) fd.append('section', section.trim())
       if (batch.trim()) fd.append('batch', batch.trim())
+      if (note.trim()) fd.append('note', note.trim())
       const created = await api.createManualSubmission(token, fd)
       toastSuccess('Submitted for review.')
       navigate(`/my/manual-submissions/${created.id}`)
@@ -151,6 +153,18 @@ export function ManualSubmissionPage() {
               <label className={labelClass}>Batch (optional)</label>
               <input type="text" value={batch} onChange={e => setBatch(e.target.value)} placeholder="e.g. 46" className={inputClass} />
             </div>
+          </div>
+
+          <div>
+            <label className={labelClass}>Note (optional)</label>
+            <textarea
+              value={note}
+              onChange={e => setNote(e.target.value)}
+              rows={3}
+              maxLength={1000}
+              placeholder="Anything the reviewer should know about this paper"
+              className={inputClass}
+            />
           </div>
         </div>
 

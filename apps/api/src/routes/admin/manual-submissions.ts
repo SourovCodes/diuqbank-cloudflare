@@ -86,6 +86,7 @@ const toAdminManualSubmission = (
   },
   semester: { id: row.semesterId, name: row.semesterName },
   examType: { id: row.examTypeId, name: row.examTypeName },
+  note: row.note,
   status: row.status,
   rejectedReason: row.rejectedReason,
   reviewedBy: row.reviewedBy,

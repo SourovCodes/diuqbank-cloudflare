@@ -1,0 +1,1 @@
+ALTER TABLE `manual_submissions` ADD `note` text;

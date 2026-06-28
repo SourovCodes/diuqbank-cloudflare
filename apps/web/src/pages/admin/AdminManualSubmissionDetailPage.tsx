@@ -183,6 +183,13 @@ export function AdminManualSubmissionDetailPage() {
         </Card>
 
         <div className="space-y-4 xl:sticky xl:top-24 xl:self-start">
+          {data.note && (
+            <Card className="p-5">
+              <h2 className="mb-1 text-sm font-semibold text-gray-950">Submitter's note</h2>
+              <p className="whitespace-pre-wrap text-sm text-gray-700">{data.note}</p>
+            </Card>
+          )}
+
           <Card className="p-5">
             <div className="mb-4">
               <h2 className="text-sm font-semibold text-gray-950">Categorization</h2>

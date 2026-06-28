@@ -78,6 +78,7 @@ export type ManualSubmission = {
   course: Course
   semester: Semester
   examType: ExamType
+  note: string | null
   rejectedReason: string | null
   questionId: number | null
   pdfUrl: string | null
@@ -148,6 +149,7 @@ export type AdminManualSubmission = {
   course: { id: number | null; departmentId: number | null; name: string }
   semester: { id: number | null; name: string }
   examType: { id: number | null; name: string }
+  note: string | null
   status: 'pending_review' | 'approved' | 'rejected'
   rejectedReason: string | null
   reviewedBy: number | null

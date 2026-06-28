@@ -39,6 +39,7 @@ const toManualSubmission = (
   },
   semester: { id: row.semesterId, name: row.semesterName },
   examType: { id: row.examTypeId, name: row.examTypeName },
+  note: row.note,
   status: row.status,
   rejectedReason: row.rejectedReason,
   reviewedBy: row.reviewedBy,
@@ -90,6 +91,7 @@ route.post(
       courseName,
       semesterName,
       examTypeName,
+      note,
     } = c.req.valid("form");
     const body = await c.req.parseBody();
     const pdf = await parsePdfFile(body["pdf"]);
@@ -113,6 +115,7 @@ route.post(
           courseName,
           semesterName,
           examTypeName,
+          note: note ?? null,
           pdfKey: key,
         })
         .returning({ id: manualSubmissions.id });
