@@ -4,10 +4,25 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../../context/AuthContext'
 import { useAdminSemesters } from '../../hooks/admin'
 import { api } from '../../lib/api'
-import { Spinner } from '../../components/ui/Spinner'
+import { toastError, toastSuccess } from '../../lib/toast'
 import { ErrorMessage } from '../../components/ui/ErrorMessage'
 import { Pagination } from '../../components/ui/Pagination'
-import { PageHeader, PrimaryLink, Card, TextInput, EmptyState } from '../../components/admin/ui'
+import {
+  Button,
+  ConfirmDialog,
+  DataTable,
+  EmptyState,
+  LoadingState,
+  PageHeader,
+  PrimaryLink,
+  RowActions,
+  TableCard,
+  TableHead,
+  Td,
+  TextInput,
+  Th,
+  Toolbar,
+} from '../../components/admin/ui'
 
 export function AdminSemestersPage() {
   const { token } = useAuth()
@@ -15,16 +30,23 @@ export function AdminSemestersPage() {
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
   const { data, isPending, isError } = useAdminSemesters(token, page, search)
-  const [error, setError] = useState<string | null>(null)
+  const [confirmId, setConfirmId] = useState<number | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
-  async function handleDelete(id: number) {
-    if (!token || !window.confirm('Delete this semester? This cannot be undone.')) return
-    setError(null)
+  const confirmSemester = data?.data.find(s => s.id === confirmId)
+
+  async function handleDelete() {
+    if (!token || confirmId === null) return
+    setDeleting(true)
     try {
-      await api.deleteSemester(token, id)
-      queryClient.invalidateQueries({ queryKey: ['admin-semesters'] })
+      await api.deleteSemester(token, confirmId)
+      await queryClient.invalidateQueries({ queryKey: ['admin-semesters'] })
+      toastSuccess('Semester deleted.')
+      setConfirmId(null)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Delete failed.')
+      toastError(err, 'Delete failed.')
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -33,47 +55,59 @@ export function AdminSemestersPage() {
       <PageHeader
         title="Semesters"
         subtitle={data && `${data.meta.total} total`}
-        action={<PrimaryLink to="/admin/semesters/new">+ New Semester</PrimaryLink>}
+        action={<PrimaryLink to="/admin/semesters/new">New Semester</PrimaryLink>}
       />
 
-      <div className="mb-4 max-w-xs">
-        <TextInput placeholder="Search semesters…" value={search} onChange={e => { setSearch(e.target.value); setPage(1) }} />
-      </div>
-
-      {error && <div className="mb-4"><ErrorMessage message={error} /></div>}
+      <Toolbar>
+        <div className="w-full max-w-xs">
+          <TextInput placeholder="Search semesters" value={search} onChange={e => { setSearch(e.target.value); setPage(1) }} />
+        </div>
+      </Toolbar>
 
       {isPending ? (
-        <div className="flex justify-center py-16"><Spinner /></div>
+        <LoadingState label="Loading semesters" />
       ) : isError ? (
         <ErrorMessage message="Failed to load semesters." />
       ) : data.data.length === 0 ? (
         <EmptyState message="No semesters found." />
       ) : (
         <>
-          <Card className="overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="border-b border-gray-100 bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-400">
+          <TableCard>
+            <DataTable>
+              <TableHead>
                 <tr>
-                  <th className="px-4 py-3 font-medium">Name</th>
-                  <th className="px-4 py-3 font-medium text-right">Actions</th>
+                  <Th>Name</Th>
+                  <Th className="text-right">Actions</Th>
                 </tr>
-              </thead>
+              </TableHead>
               <tbody className="divide-y divide-gray-100">
                 {data.data.map(s => (
                   <tr key={s.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 font-medium text-gray-900">{s.name}</td>
-                    <td className="px-4 py-3 text-right">
-                      <Link to={`/admin/semesters/${s.id}/edit`} className="text-xs font-medium text-blue-600 hover:underline">Edit</Link>
-                      <button onClick={() => handleDelete(s.id)} className="ml-4 text-xs font-medium text-red-500 hover:underline">Delete</button>
-                    </td>
+                    <Td className="font-medium text-gray-950">{s.name}</Td>
+                    <Td>
+                      <RowActions>
+                        <Link to={`/admin/semesters/${s.id}/edit`} className="text-xs font-medium text-blue-600 hover:underline">Edit</Link>
+                        <Button type="button" variant="dangerLink" onClick={() => setConfirmId(s.id)}>Delete</Button>
+                      </RowActions>
+                    </Td>
                   </tr>
                 ))}
               </tbody>
-            </table>
-          </Card>
+            </DataTable>
+          </TableCard>
           <Pagination meta={data.meta} onPageChange={setPage} />
         </>
       )}
+
+      <ConfirmDialog
+        open={confirmId !== null}
+        title="Delete semester"
+        description={`Delete ${confirmSemester?.name ?? 'this semester'}? This cannot be undone.`}
+        confirmLabel="Delete"
+        busy={deleting}
+        onCancel={() => setConfirmId(null)}
+        onConfirm={handleDelete}
+      />
     </div>
   )
 }

@@ -4,9 +4,9 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { semesterCreateSchema } from '@diuqbank/shared/schemas/admin/semesters'
 import { useAuth } from '../../context/AuthContext'
 import { api } from '../../lib/api'
-import { Spinner } from '../../components/ui/Spinner'
+import { toastError, toastSuccess } from '../../lib/toast'
 import { ErrorMessage } from '../../components/ui/ErrorMessage'
-import { PageHeader, Card, Field, TextInput, SubmitButton } from '../../components/admin/ui'
+import { Button, Card, Field, FormActions, LoadingState, PageHeader, SubmitButton, TextInput } from '../../components/admin/ui'
 
 export function AdminSemesterFormPage() {
   const { token } = useAuth()
@@ -42,14 +42,16 @@ export function AdminSemesterFormPage() {
       if (isEdit) await api.updateSemester(token, Number(id), parsed.data)
       else await api.createSemester(token, parsed.data)
       queryClient.invalidateQueries({ queryKey: ['admin-semesters'] })
+      toastSuccess(isEdit ? 'Semester updated.' : 'Semester created.')
       navigate('/admin/semesters')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Save failed.')
+      toastError(err, 'Save failed.')
       setSaving(false)
     }
   }
 
-  if (isEdit && isPending) return <div className="flex justify-center py-16"><Spinner /></div>
+  if (isEdit && isPending) return <LoadingState label="Loading semester" />
 
   return (
     <div className="max-w-lg">
@@ -60,10 +62,10 @@ export function AdminSemesterFormPage() {
             <TextInput value={name} onChange={e => setName(e.target.value)} required maxLength={100} />
           </Field>
           {error && <ErrorMessage message={error} />}
-          <div className="flex gap-3">
+          <FormActions>
             <SubmitButton saving={saving}>{isEdit ? 'Save changes' : 'Create'}</SubmitButton>
-            <button type="button" onClick={() => navigate('/admin/semesters')} className="rounded-lg border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
-          </div>
+            <Button type="button" variant="secondary" onClick={() => navigate('/admin/semesters')}>Cancel</Button>
+          </FormActions>
         </form>
       </Card>
     </div>

@@ -3,11 +3,20 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../../context/AuthContext'
 import { api, isNotFound } from '../../lib/api'
-import { Spinner } from '../../components/ui/Spinner'
+import { toastError, toastSuccess } from '../../lib/toast'
 import { ErrorMessage } from '../../components/ui/ErrorMessage'
 import { NotFoundPage } from '../NotFoundPage'
 import { Badge } from '../../components/ui/Badge'
-import { Card, Field, TextInput } from '../../components/admin/ui'
+import {
+  Button,
+  Card,
+  ConfirmDialog,
+  Field,
+  LoadingState,
+  PageHeader,
+  StatusBanner,
+  TextInput,
+} from '../../components/admin/ui'
 import type { ManualSubmission } from '@diuqbank/shared/types'
 
 const statusVariant = (s: ManualSubmission['status']) =>
@@ -33,6 +42,7 @@ export function AdminManualSubmissionDetailPage() {
   const [reason, setReason] = useState('')
   const [busy, setBusy] = useState<'save' | 'approve' | 'reject' | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [approveOpen, setApproveOpen] = useState(false)
 
   useEffect(() => {
     if (data) {
@@ -46,51 +56,64 @@ export function AdminManualSubmissionDetailPage() {
     }
   }, [data])
 
-  function invalidate() {
-    queryClient.invalidateQueries({ queryKey: ['admin-manual-submissions'] })
+  async function invalidate() {
+    await queryClient.invalidateQueries({ queryKey: ['admin-manual-submissions'] })
   }
 
   async function handleSave() {
     if (!token) return
-    setBusy('save'); setError(null)
+    setBusy('save')
+    setError(null)
     try {
       await api.updateManualSubmission(token, Number(id), fields)
-      invalidate()
+      await invalidate()
+      toastSuccess('Categorization saved.')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Save failed.')
+      toastError(err, 'Save failed.')
     } finally {
       setBusy(null)
     }
   }
 
-  async function handleApprove() {
-    if (!token || !window.confirm('Approve this submission? It will become a published question paper.')) return
-    setBusy('approve'); setError(null)
+  async function confirmApprove() {
+    if (!token) return
+    setBusy('approve')
+    setError(null)
     try {
       await api.approveManualSubmission(token, Number(id))
-      invalidate()
+      await invalidate()
+      toastSuccess('Submission approved.')
       navigate('/admin/manual-submissions')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Approve failed.')
+      toastError(err, 'Approve failed.')
       setBusy(null)
     }
   }
 
   async function handleReject() {
     if (!token) return
-    if (!reason.trim()) { setError('A rejection reason is required.'); return }
-    setBusy('reject'); setError(null)
+    if (!reason.trim()) {
+      setError('A rejection reason is required.')
+      toastError(new Error('A rejection reason is required.'), 'Reject failed.')
+      return
+    }
+    setBusy('reject')
+    setError(null)
     try {
       await api.rejectManualSubmission(token, Number(id), reason.trim())
-      invalidate()
+      await invalidate()
+      toastSuccess('Submission rejected.')
       navigate('/admin/manual-submissions')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Reject failed.')
+      toastError(err, 'Reject failed.')
       setBusy(null)
     }
   }
 
-  if (isPending) return <div className="flex justify-center py-16"><Spinner /></div>
+  if (isPending) return <LoadingState label="Loading manual submission" />
   if (isError && isNotFound(loadError)) return <NotFoundPage />
   if (isError || !data) return <ErrorMessage message="Failed to load submission." />
 
@@ -98,43 +121,53 @@ export function AdminManualSubmissionDetailPage() {
 
   return (
     <div>
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <Link to="/admin/manual-submissions" className="text-xs font-medium text-gray-500 hover:underline">← Back to list</Link>
-          <h1 className="mt-1 text-2xl font-bold text-gray-900">Review Submission #{data.id}</h1>
-          <p className="mt-1 text-sm text-gray-500">by @{data.contributor.username}</p>
-        </div>
-        <Badge label={statusLabel(data.status)} variant={statusVariant(data.status)} />
+      <PageHeader
+        title={`Review Submission #${data.id}`}
+        subtitle={`Submitted by @${data.contributor.username}`}
+        action={<Badge label={statusLabel(data.status)} variant={statusVariant(data.status)} />}
+      />
+
+      <div className="mb-4 flex flex-wrap items-center gap-3 text-sm">
+        <Link to="/admin/manual-submissions" className="font-medium text-gray-600 hover:text-gray-950 hover:underline">Back to submissions</Link>
+        {data.questionId && (
+          <Link to={`/questions/${data.questionId}`} className="font-medium text-blue-600 hover:underline">
+            Published question #{data.questionId}
+          </Link>
+        )}
       </div>
 
       {data.rejectedReason && (
-        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-          Rejected: {data.rejectedReason}
+        <div className="mb-4">
+          <StatusBanner tone="danger">Rejected: {data.rejectedReason}</StatusBanner>
         </div>
       )}
       {data.questionId && (
-        <div className="mb-4 text-sm text-gray-600">
-          Published as <Link to={`/questions/${data.questionId}`} className="font-medium text-blue-600 hover:underline">question #{data.questionId} ↗</Link>
+        <div className="mb-4">
+          <StatusBanner tone="success">This submission has been published and linked to the question bank.</StatusBanner>
         </div>
       )}
 
-      <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
-        <div className="min-w-0 lg:flex-1">
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <Card className="min-h-[520px] overflow-hidden">
           {data.pdfUrl ? (
             <iframe
               src={data.pdfUrl}
               title="Submission paper"
-              className="w-full rounded-xl border border-gray-200 shadow-sm"
-              style={{ height: 'calc(100vh - 260px)', minHeight: '400px' }}
+              className="h-[calc(100vh-210px)] min-h-[520px] w-full bg-white"
             />
           ) : (
-            <div className="rounded-xl border border-gray-200 bg-gray-50 p-8 text-center text-sm text-gray-500">No PDF attached.</div>
+            <div className="flex min-h-[520px] items-center justify-center bg-gray-50 p-8 text-center text-sm text-gray-500">
+              No PDF attached.
+            </div>
           )}
-        </div>
+        </Card>
 
-        <div className="w-full lg:w-80 lg:shrink-0">
+        <div className="space-y-4 xl:sticky xl:top-24 xl:self-start">
           <Card className="p-5">
-            <h2 className="mb-4 text-sm font-semibold text-gray-700">Categorization</h2>
+            <div className="mb-4">
+              <h2 className="text-sm font-semibold text-gray-950">Categorization</h2>
+              <p className="mt-1 text-xs text-gray-500">Match these fields to existing catalog records before approval.</p>
+            </div>
             <div className="space-y-3">
               <Field label="Department"><TextInput value={fields.departmentName} onChange={e => setFields(f => ({ ...f, departmentName: e.target.value }))} disabled={!pending} /></Field>
               <Field label="Department Short Name"><TextInput value={fields.departmentShortName} onChange={e => setFields(f => ({ ...f, departmentShortName: e.target.value }))} disabled={!pending} /></Field>
@@ -143,52 +176,67 @@ export function AdminManualSubmissionDetailPage() {
               <Field label="Exam Type"><TextInput value={fields.examTypeName} onChange={e => setFields(f => ({ ...f, examTypeName: e.target.value }))} disabled={!pending} /></Field>
 
               {pending && (
-                <button
-                  type="button"
-                  onClick={handleSave}
-                  disabled={busy !== null}
-                  className="w-full rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:opacity-60"
-                >
-                  {busy === 'save' ? 'Saving…' : 'Save categorization'}
-                </button>
+                <Button type="button" variant="secondary" onClick={handleSave} disabled={busy !== null} className="w-full">
+                  {busy === 'save' ? 'Saving...' : 'Save categorization'}
+                </Button>
               )}
             </div>
+          </Card>
 
-            {pending && (
-              <div className="mt-5 border-t border-gray-100 pt-5">
-                <button
-                  type="button"
-                  onClick={handleApprove}
-                  disabled={busy !== null}
-                  className="mb-3 w-full rounded-lg bg-green-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-green-700 disabled:opacity-60"
-                >
-                  {busy === 'approve' ? 'Approving…' : '✓ Approve'}
-                </button>
+          {pending && (
+            <Card className="p-5">
+              <div className="mb-4">
+                <h2 className="text-sm font-semibold text-gray-950">Review decision</h2>
+                <p className="mt-1 text-xs text-gray-500">Approval publishes the paper into the public question bank.</p>
+              </div>
+              <Button
+                type="button"
+                variant="success"
+                onClick={() => setApproveOpen(true)}
+                disabled={busy !== null}
+                className="w-full"
+              >
+                {busy === 'approve' ? 'Approving...' : 'Approve'}
+              </Button>
+
+              <div className="mt-4 border-t border-gray-100 pt-4">
                 <Field label="Rejection reason">
                   <textarea
                     value={reason}
                     onChange={e => setReason(e.target.value)}
                     rows={3}
                     maxLength={1000}
-                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    placeholder="Required to reject…"
+                    className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    placeholder="Required before rejecting"
                   />
                 </Field>
-                <button
+                <Button
                   type="button"
+                  variant="danger"
                   onClick={handleReject}
                   disabled={busy !== null}
-                  className="mt-2 w-full rounded-lg bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700 disabled:opacity-60"
+                  className="mt-3 w-full"
                 >
-                  {busy === 'reject' ? 'Rejecting…' : '✕ Reject'}
-                </button>
+                  {busy === 'reject' ? 'Rejecting...' : 'Reject'}
+                </Button>
               </div>
-            )}
+            </Card>
+          )}
 
-            {error && <div className="mt-4"><ErrorMessage message={error} /></div>}
-          </Card>
+          {error && <ErrorMessage message={error} />}
         </div>
       </div>
+
+      <ConfirmDialog
+        open={approveOpen}
+        title="Approve manual submission"
+        description="This will publish the PDF as a question-bank submission and make it available from the public question pages."
+        confirmLabel="Approve"
+        variant="success"
+        busy={busy === 'approve'}
+        onCancel={() => setApproveOpen(false)}
+        onConfirm={confirmApprove}
+      />
     </div>
   )
 }

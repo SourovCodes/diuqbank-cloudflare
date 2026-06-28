@@ -4,12 +4,28 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../../context/AuthContext'
 import { useAdminSubmissions } from '../../hooks/admin'
 import { api } from '../../lib/api'
-import { Spinner } from '../../components/ui/Spinner'
+import { toastError, toastSuccess } from '../../lib/toast'
 import { ErrorMessage } from '../../components/ui/ErrorMessage'
 import { Pagination } from '../../components/ui/Pagination'
 import { Badge } from '../../components/ui/Badge'
 import { SearchableSelect } from '../../components/ui/SearchableSelect'
-import { PageHeader, PrimaryLink, Card, TextInput, EmptyState, formatDate } from '../../components/admin/ui'
+import {
+  Button,
+  ConfirmDialog,
+  DataTable,
+  EmptyState,
+  LoadingState,
+  PageHeader,
+  PrimaryLink,
+  RowActions,
+  TableCard,
+  TableHead,
+  Td,
+  TextInput,
+  Th,
+  Toolbar,
+  formatDate,
+} from '../../components/admin/ui'
 import type { WatermarkStatus } from '@diuqbank/shared/types'
 
 const watermarkVariant = (s: WatermarkStatus) =>
@@ -23,16 +39,23 @@ export function AdminSubmissionsPage() {
   const [userId, setUserId] = useState('')
   const [watermarkStatus, setWatermarkStatus] = useState<WatermarkStatus | ''>('')
   const { data, isPending, isError } = useAdminSubmissions(token, page, { questionId, userId, watermarkStatus })
-  const [error, setError] = useState<string | null>(null)
+  const [confirmId, setConfirmId] = useState<number | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
-  async function handleDelete(id: number) {
-    if (!token || !window.confirm('Delete this submission? This cannot be undone.')) return
-    setError(null)
+  const confirmSubmission = data?.data.find(s => s.id === confirmId)
+
+  async function handleDelete() {
+    if (!token || confirmId === null) return
+    setDeleting(true)
     try {
-      await api.deleteSubmission(token, id)
-      queryClient.invalidateQueries({ queryKey: ['admin-submissions'] })
+      await api.deleteSubmission(token, confirmId)
+      await queryClient.invalidateQueries({ queryKey: ['admin-submissions'] })
+      toastSuccess('Submission deleted.')
+      setConfirmId(null)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Delete failed.')
+      toastError(err, 'Delete failed.')
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -41,13 +64,13 @@ export function AdminSubmissionsPage() {
       <PageHeader
         title="Submissions"
         subtitle={data && `${data.meta.total} total`}
-        action={<PrimaryLink to="/admin/submissions/new">+ New Submission</PrimaryLink>}
+        action={<PrimaryLink to="/admin/submissions/new">New Submission</PrimaryLink>}
       />
 
-      <div className="mb-4 flex flex-wrap gap-3">
-        <TextInput className="w-32" placeholder="Question ID" value={questionId} onChange={e => { setQuestionId(e.target.value.replace(/\D/g, '')); setPage(1) }} />
-        <TextInput className="w-32" placeholder="User ID" value={userId} onChange={e => { setUserId(e.target.value.replace(/\D/g, '')); setPage(1) }} />
-        <div className="w-48">
+      <Toolbar>
+        <TextInput className="w-full max-w-32" placeholder="Question ID" value={questionId} onChange={e => { setQuestionId(e.target.value.replace(/\D/g, '')); setPage(1) }} />
+        <TextInput className="w-full max-w-32" placeholder="User ID" value={userId} onChange={e => { setUserId(e.target.value.replace(/\D/g, '')); setPage(1) }} />
+        <div className="w-full max-w-48">
           <SearchableSelect
             placeholder="Any watermark"
             options={[
@@ -59,49 +82,59 @@ export function AdminSubmissionsPage() {
             onChange={v => { setWatermarkStatus(v as WatermarkStatus | ''); setPage(1) }}
           />
         </div>
-      </div>
-
-      {error && <div className="mb-4"><ErrorMessage message={error} /></div>}
+      </Toolbar>
 
       {isPending ? (
-        <div className="flex justify-center py-16"><Spinner /></div>
+        <LoadingState label="Loading submissions" />
       ) : isError ? (
         <ErrorMessage message="Failed to load submissions." />
       ) : data.data.length === 0 ? (
         <EmptyState message="No submissions found." />
       ) : (
         <>
-          <Card className="overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="border-b border-gray-100 bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-400">
+          <TableCard>
+            <DataTable>
+              <TableHead>
                 <tr>
-                  <th className="px-4 py-3 font-medium">Question</th>
-                  <th className="px-4 py-3 font-medium">Contributor</th>
-                  <th className="px-4 py-3 font-medium">Watermark</th>
-                  <th className="px-4 py-3 font-medium">Date</th>
-                  <th className="px-4 py-3 font-medium text-right">Actions</th>
+                  <Th>Question</Th>
+                  <Th>Contributor</Th>
+                  <Th>Watermark</Th>
+                  <Th>Date</Th>
+                  <Th className="text-right">Actions</Th>
                 </tr>
-              </thead>
+              </TableHead>
               <tbody className="divide-y divide-gray-100">
                 {data.data.map(s => (
                   <tr key={s.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 font-medium text-gray-900">{s.question.title}</td>
-                    <td className="px-4 py-3 text-gray-600">{s.contributor ? `@${s.contributor.username}` : '—'}</td>
-                    <td className="px-4 py-3"><Badge label={s.watermarkStatus} variant={watermarkVariant(s.watermarkStatus)} /></td>
-                    <td className="px-4 py-3 text-gray-500">{formatDate(s.createdAt)}</td>
-                    <td className="px-4 py-3 text-right whitespace-nowrap">
-                      {s.pdfUrl && <a href={s.pdfUrl} target="_blank" rel="noreferrer" className="text-xs font-medium text-gray-500 hover:underline">PDF</a>}
-                      <Link to={`/admin/submissions/${s.id}/edit`} className="ml-4 text-xs font-medium text-blue-600 hover:underline">Edit</Link>
-                      <button onClick={() => handleDelete(s.id)} className="ml-4 text-xs font-medium text-red-500 hover:underline">Delete</button>
-                    </td>
+                    <Td className="max-w-md truncate font-medium text-gray-950">{s.question.title}</Td>
+                    <Td className="text-gray-600">{s.contributor ? `@${s.contributor.username}` : '-'}</Td>
+                    <Td><Badge label={s.watermarkStatus} variant={watermarkVariant(s.watermarkStatus)} /></Td>
+                    <Td className="text-gray-500">{formatDate(s.createdAt)}</Td>
+                    <Td>
+                      <RowActions>
+                        {s.pdfUrl && <a href={s.pdfUrl} target="_blank" rel="noreferrer" className="text-xs font-medium text-gray-500 hover:underline">PDF</a>}
+                        <Link to={`/admin/submissions/${s.id}/edit`} className="text-xs font-medium text-blue-600 hover:underline">Edit</Link>
+                        <Button type="button" variant="dangerLink" onClick={() => setConfirmId(s.id)}>Delete</Button>
+                      </RowActions>
+                    </Td>
                   </tr>
                 ))}
               </tbody>
-            </table>
-          </Card>
+            </DataTable>
+          </TableCard>
           <Pagination meta={data.meta} onPageChange={setPage} />
         </>
       )}
+
+      <ConfirmDialog
+        open={confirmId !== null}
+        title="Delete submission"
+        description={`Delete ${confirmSubmission?.question.title ?? 'this submission'}? This cannot be undone.`}
+        confirmLabel="Delete"
+        busy={deleting}
+        onCancel={() => setConfirmId(null)}
+        onConfirm={handleDelete}
+      />
     </div>
   )
 }

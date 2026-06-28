@@ -4,10 +4,10 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../../context/AuthContext'
 import { useFilterOptions } from '../../hooks/useFilterOptions'
 import { api } from '../../lib/api'
-import { Spinner } from '../../components/ui/Spinner'
+import { toastError, toastSuccess } from '../../lib/toast'
 import { ErrorMessage } from '../../components/ui/ErrorMessage'
 import { SearchableSelect } from '../../components/ui/SearchableSelect'
-import { PageHeader, Card, Field, SubmitButton } from '../../components/admin/ui'
+import { Button, Card, Field, FormActions, LoadingState, PageHeader, SubmitButton } from '../../components/admin/ui'
 
 export function AdminQuestionFormPage() {
   const { token } = useAuth()
@@ -60,14 +60,16 @@ export function AdminQuestionFormPage() {
       if (isEdit) await api.updateQuestion(token, Number(id), body)
       else await api.createQuestion(token, body)
       queryClient.invalidateQueries({ queryKey: ['admin-questions'] })
+      toastSuccess(isEdit ? 'Question updated.' : 'Question created.')
       navigate('/admin/questions')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Save failed.')
+      toastError(err, 'Save failed.')
       setSaving(false)
     }
   }
 
-  if (isEdit && isPending) return <div className="flex justify-center py-16"><Spinner /></div>
+  if (isEdit && isPending) return <LoadingState label="Loading question" />
 
   return (
     <div className="max-w-lg">
@@ -87,10 +89,10 @@ export function AdminQuestionFormPage() {
             <SearchableSelect placeholder="Select exam type" options={opt(options?.examTypes)} value={examTypeId} onChange={setExamTypeId} />
           </Field>
           {error && <ErrorMessage message={error} />}
-          <div className="flex gap-3">
+          <FormActions>
             <SubmitButton saving={saving}>{isEdit ? 'Save changes' : 'Create'}</SubmitButton>
-            <button type="button" onClick={() => navigate('/admin/questions')} className="rounded-lg border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
-          </div>
+            <Button type="button" variant="secondary" onClick={() => navigate('/admin/questions')}>Cancel</Button>
+          </FormActions>
         </form>
       </Card>
     </div>

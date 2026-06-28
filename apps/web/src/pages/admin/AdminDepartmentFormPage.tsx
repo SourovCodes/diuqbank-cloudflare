@@ -4,9 +4,9 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { departmentCreateSchema } from '@diuqbank/shared/schemas/admin/departments'
 import { useAuth } from '../../context/AuthContext'
 import { api } from '../../lib/api'
-import { Spinner } from '../../components/ui/Spinner'
+import { toastError, toastSuccess } from '../../lib/toast'
 import { ErrorMessage } from '../../components/ui/ErrorMessage'
-import { PageHeader, Card, Field, TextInput, SubmitButton } from '../../components/admin/ui'
+import { Button, Card, Field, FormActions, LoadingState, PageHeader, SubmitButton, TextInput } from '../../components/admin/ui'
 
 export function AdminDepartmentFormPage() {
   const { token } = useAuth()
@@ -45,14 +45,16 @@ export function AdminDepartmentFormPage() {
       if (isEdit) await api.updateDepartment(token, Number(id), parsed.data)
       else await api.createDepartment(token, parsed.data)
       queryClient.invalidateQueries({ queryKey: ['admin-departments'] })
+      toastSuccess(isEdit ? 'Department updated.' : 'Department created.')
       navigate('/admin/departments')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Save failed.')
+      toastError(err, 'Save failed.')
       setSaving(false)
     }
   }
 
-  if (isEdit && isPending) return <div className="flex justify-center py-16"><Spinner /></div>
+  if (isEdit && isPending) return <LoadingState label="Loading department" />
 
   return (
     <div className="max-w-lg">
@@ -66,10 +68,10 @@ export function AdminDepartmentFormPage() {
             <TextInput value={shortName} onChange={e => setShortName(e.target.value)} required maxLength={20} />
           </Field>
           {error && <ErrorMessage message={error} />}
-          <div className="flex gap-3">
+          <FormActions>
             <SubmitButton saving={saving}>{isEdit ? 'Save changes' : 'Create'}</SubmitButton>
-            <button type="button" onClick={() => navigate('/admin/departments')} className="rounded-lg border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
-          </div>
+            <Button type="button" variant="secondary" onClick={() => navigate('/admin/departments')}>Cancel</Button>
+          </FormActions>
         </form>
       </Card>
     </div>

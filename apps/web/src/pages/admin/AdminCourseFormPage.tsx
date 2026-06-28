@@ -5,10 +5,10 @@ import { courseCreateSchema } from '@diuqbank/shared/schemas/admin/courses'
 import { useAuth } from '../../context/AuthContext'
 import { useFilterOptions } from '../../hooks/useFilterOptions'
 import { api } from '../../lib/api'
-import { Spinner } from '../../components/ui/Spinner'
+import { toastError, toastSuccess } from '../../lib/toast'
 import { ErrorMessage } from '../../components/ui/ErrorMessage'
 import { SearchableSelect } from '../../components/ui/SearchableSelect'
-import { PageHeader, Card, Field, TextInput, SubmitButton } from '../../components/admin/ui'
+import { Button, Card, Field, FormActions, LoadingState, PageHeader, SubmitButton, TextInput } from '../../components/admin/ui'
 
 export function AdminCourseFormPage() {
   const { token } = useAuth()
@@ -49,14 +49,16 @@ export function AdminCourseFormPage() {
       if (isEdit) await api.updateCourse(token, Number(id), parsed.data)
       else await api.createCourse(token, parsed.data)
       queryClient.invalidateQueries({ queryKey: ['admin-courses'] })
+      toastSuccess(isEdit ? 'Course updated.' : 'Course created.')
       navigate('/admin/courses')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Save failed.')
+      toastError(err, 'Save failed.')
       setSaving(false)
     }
   }
 
-  if (isEdit && isPending) return <div className="flex justify-center py-16"><Spinner /></div>
+  if (isEdit && isPending) return <LoadingState label="Loading course" />
 
   return (
     <div className="max-w-lg">
@@ -75,10 +77,10 @@ export function AdminCourseFormPage() {
             <TextInput value={name} onChange={e => setName(e.target.value)} required maxLength={150} />
           </Field>
           {error && <ErrorMessage message={error} />}
-          <div className="flex gap-3">
+          <FormActions>
             <SubmitButton saving={saving}>{isEdit ? 'Save changes' : 'Create'}</SubmitButton>
-            <button type="button" onClick={() => navigate('/admin/courses')} className="rounded-lg border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
-          </div>
+            <Button type="button" variant="secondary" onClick={() => navigate('/admin/courses')}>Cancel</Button>
+          </FormActions>
         </form>
       </Card>
     </div>

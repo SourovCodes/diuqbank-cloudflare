@@ -3,11 +3,11 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../../context/AuthContext'
 import { api } from '../../lib/api'
-import { Spinner } from '../../components/ui/Spinner'
+import { toastError, toastSuccess } from '../../lib/toast'
 import { ErrorMessage } from '../../components/ui/ErrorMessage'
 import { SearchableSelect } from '../../components/ui/SearchableSelect'
 import { FileUpload } from '../../components/ui/FileUpload'
-import { PageHeader, Card, Field, TextInput, SubmitButton } from '../../components/admin/ui'
+import { Button, Card, Field, FormActions, LoadingState, PageHeader, SubmitButton, TextInput } from '../../components/admin/ui'
 import type { WatermarkStatus } from '@diuqbank/shared/types'
 
 export function AdminSubmissionFormPage() {
@@ -82,9 +82,11 @@ export function AdminSubmissionFormPage() {
         await api.createSubmission(token, fd)
       }
       queryClient.invalidateQueries({ queryKey: ['admin-submissions'] })
+      toastSuccess(isEdit ? 'Submission updated.' : 'Submission created.')
       navigate('/admin/submissions')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Save failed.')
+      toastError(err, 'Save failed.')
       setSaving(false)
     }
   }
@@ -99,14 +101,16 @@ export function AdminSubmissionFormPage() {
       await api.replaceSubmissionPdf(token, Number(id), fd)
       setReplaceFile(null)
       queryClient.invalidateQueries({ queryKey: ['admin-submissions'] })
+      toastSuccess('PDF replaced.')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Replace failed.')
+      toastError(err, 'Replace failed.')
     } finally {
       setReplacing(false)
     }
   }
 
-  if (isEdit && isPending) return <div className="flex justify-center py-16"><Spinner /></div>
+  if (isEdit && isPending) return <LoadingState label="Loading submission" />
 
   return (
     <div className="max-w-lg">
@@ -147,10 +151,10 @@ export function AdminSubmissionFormPage() {
           )}
 
           {error && <ErrorMessage message={error} />}
-          <div className="flex gap-3">
+          <FormActions>
             <SubmitButton saving={saving}>{isEdit ? 'Save changes' : 'Create'}</SubmitButton>
-            <button type="button" onClick={() => navigate('/admin/submissions')} className="rounded-lg border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
-          </div>
+            <Button type="button" variant="secondary" onClick={() => navigate('/admin/submissions')}>Cancel</Button>
+          </FormActions>
         </form>
       </Card>
 
@@ -161,14 +165,14 @@ export function AdminSubmissionFormPage() {
             <a href={data.pdfUrl} target="_blank" rel="noreferrer" className="mb-3 inline-block text-xs font-medium text-blue-600 hover:underline">View current PDF ↗</a>
           )}
           <FileUpload file={replaceFile} onChange={setReplaceFile} />
-          <button
+          <Button
             type="button"
             onClick={handleReplacePdf}
             disabled={!replaceFile || replacing}
-            className="mt-3 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-60"
+            className="mt-3"
           >
-            {replacing ? 'Uploading…' : 'Replace PDF'}
-          </button>
+            {replacing ? 'Uploading...' : 'Replace PDF'}
+          </Button>
         </Card>
       )}
     </div>

@@ -2,12 +2,24 @@ import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useAdminManualSubmissions } from '../../hooks/admin'
-import { Spinner } from '../../components/ui/Spinner'
 import { ErrorMessage } from '../../components/ui/ErrorMessage'
 import { Pagination } from '../../components/ui/Pagination'
 import { Badge } from '../../components/ui/Badge'
 import { SearchableSelect } from '../../components/ui/SearchableSelect'
-import { PageHeader, Card, TextInput, EmptyState, formatDate } from '../../components/admin/ui'
+import {
+  DataTable,
+  EmptyState,
+  LoadingState,
+  PageHeader,
+  RowActions,
+  TableCard,
+  TableHead,
+  Td,
+  TextInput,
+  Th,
+  Toolbar,
+  formatDate,
+} from '../../components/admin/ui'
 import type { ManualSubmission } from '@diuqbank/shared/types'
 
 const statusVariant = (s: ManualSubmission['status']) =>
@@ -29,8 +41,8 @@ export function AdminManualSubmissionsPage() {
     <div>
       <PageHeader title="Manual Submissions" subtitle={data && `${data.meta.total} total`} />
 
-      <div className="mb-4 flex flex-wrap gap-3">
-        <div className="w-48">
+      <Toolbar>
+        <div className="w-full max-w-52">
           <SearchableSelect
             placeholder="Any status"
             options={[
@@ -42,43 +54,45 @@ export function AdminManualSubmissionsPage() {
             onChange={v => { setStatus(v as ManualSubmission['status'] | ''); setPage(1) }}
           />
         </div>
-        <TextInput className="w-32" placeholder="User ID" value={userId} onChange={e => { setUserId(e.target.value.replace(/\D/g, '')); setPage(1) }} />
-      </div>
+        <TextInput className="w-full max-w-32" placeholder="User ID" value={userId} onChange={e => { setUserId(e.target.value.replace(/\D/g, '')); setPage(1) }} />
+      </Toolbar>
 
       {isPending ? (
-        <div className="flex justify-center py-16"><Spinner /></div>
+        <LoadingState label="Loading manual submissions" />
       ) : isError ? (
         <ErrorMessage message="Failed to load manual submissions." />
       ) : data.data.length === 0 ? (
         <EmptyState message="No manual submissions found." />
       ) : (
         <>
-          <Card className="overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="border-b border-gray-100 bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-400">
+          <TableCard>
+            <DataTable>
+              <TableHead>
                 <tr>
-                  <th className="px-4 py-3 font-medium">Course</th>
-                  <th className="px-4 py-3 font-medium">Contributor</th>
-                  <th className="px-4 py-3 font-medium">Status</th>
-                  <th className="px-4 py-3 font-medium">Date</th>
-                  <th className="px-4 py-3 font-medium text-right">Actions</th>
+                  <Th>Course</Th>
+                  <Th>Contributor</Th>
+                  <Th>Status</Th>
+                  <Th>Date</Th>
+                  <Th className="text-right">Actions</Th>
                 </tr>
-              </thead>
+              </TableHead>
               <tbody className="divide-y divide-gray-100">
                 {data.data.map(s => (
                   <tr key={s.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 font-medium text-gray-900">{s.course.name}</td>
-                    <td className="px-4 py-3 text-gray-600">@{s.contributor.username}</td>
-                    <td className="px-4 py-3"><Badge label={statusLabel(s.status)} variant={statusVariant(s.status)} /></td>
-                    <td className="px-4 py-3 text-gray-500">{formatDate(s.createdAt)}</td>
-                    <td className="px-4 py-3 text-right">
-                      <Link to={`/admin/manual-submissions/${s.id}`} className="text-xs font-medium text-blue-600 hover:underline">Review →</Link>
-                    </td>
+                    <Td className="font-medium text-gray-950">{s.course.name}</Td>
+                    <Td className="text-gray-600">@{s.contributor.username}</Td>
+                    <Td><Badge label={statusLabel(s.status)} variant={statusVariant(s.status)} /></Td>
+                    <Td className="text-gray-500">{formatDate(s.createdAt)}</Td>
+                    <Td>
+                      <RowActions>
+                        <Link to={`/admin/manual-submissions/${s.id}`} className="text-xs font-medium text-blue-600 hover:underline">Review</Link>
+                      </RowActions>
+                    </Td>
                   </tr>
                 ))}
               </tbody>
-            </table>
-          </Card>
+            </DataTable>
+          </TableCard>
           <Pagination meta={data.meta} onPageChange={setPage} />
         </>
       )}

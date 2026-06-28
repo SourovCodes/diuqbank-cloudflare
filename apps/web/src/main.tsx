@@ -1,6 +1,6 @@
 import { StrictMode, useState, useEffect, lazy } from 'react'
 import { createRoot } from 'react-dom/client'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { GoogleOAuthProvider } from '@react-oauth/google'
 import { Toaster } from 'sonner'
@@ -28,7 +28,7 @@ import { NotFoundPage } from './pages/NotFoundPage'
 import { ErrorBoundary } from './components/ErrorBoundary'
 
 // Admin pages are lazy-loaded so their code splits into a separate chunk that
-// only admins fetch — keeps the main bundle small for regular visitors.
+// only admins fetch, keeping the main bundle small for regular visitors.
 const AdminDashboardPage = lazy(() => import('./pages/admin/AdminDashboardPage').then(m => ({ default: m.AdminDashboardPage })))
 const AdminDepartmentsPage = lazy(() => import('./pages/admin/AdminDepartmentsPage').then(m => ({ default: m.AdminDepartmentsPage })))
 const AdminDepartmentFormPage = lazy(() => import('./pages/admin/AdminDepartmentFormPage').then(m => ({ default: m.AdminDepartmentFormPage })))
@@ -52,6 +52,76 @@ const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
 })
 
+function AppRoutes() {
+  const location = useLocation()
+  const isAdmin = location.pathname === '/admin' || location.pathname.startsWith('/admin/')
+
+  return (
+    <div className="flex min-h-screen flex-col bg-gray-50 text-gray-900">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-white focus:px-4 focus:py-2 focus:shadow focus:ring-2 focus:ring-blue-500"
+      >
+        Skip to content
+      </a>
+      {!isAdmin && <Navbar />}
+      <main id="main-content" className="flex-1">
+        <ErrorBoundary>
+          <Routes>
+            {/* Public routes */}
+            <Route path="/" element={<HomePage />} />
+            <Route path="/questions" element={<QuestionsPage />} />
+            <Route path="/questions/:id" element={<QuestionDetailPage />} />
+            <Route path="/auth" element={<AuthPage />} />
+            <Route path="/contributors" element={<ContributorsPage />} />
+            <Route path="/contributors/:username" element={<ContributorProfilePage />} />
+
+            {/* Dashboard routes, protected with sidebar layout */}
+            <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+              <Route path="/profile/edit" element={<EditProfilePage />} />
+              <Route path="/submit/manual" element={<ManualSubmissionPage />} />
+              <Route path="/my/manual-submissions" element={<MyManualSubmissionsPage />} />
+              <Route path="/my/manual-submissions/:id" element={<ManualSubmissionDetailPage />} />
+            </Route>
+
+            {/* Admin routes, role-guarded with dedicated admin workspace */}
+            <Route element={<AdminRoute><AdminLayout /></AdminRoute>}>
+              <Route path="/admin" element={<AdminDashboardPage />} />
+              <Route path="/admin/departments" element={<AdminDepartmentsPage />} />
+              <Route path="/admin/departments/new" element={<AdminDepartmentFormPage />} />
+              <Route path="/admin/departments/:id/edit" element={<AdminDepartmentFormPage />} />
+              <Route path="/admin/courses" element={<AdminCoursesPage />} />
+              <Route path="/admin/courses/new" element={<AdminCourseFormPage />} />
+              <Route path="/admin/courses/:id/edit" element={<AdminCourseFormPage />} />
+              <Route path="/admin/semesters" element={<AdminSemestersPage />} />
+              <Route path="/admin/semesters/new" element={<AdminSemesterFormPage />} />
+              <Route path="/admin/semesters/:id/edit" element={<AdminSemesterFormPage />} />
+              <Route path="/admin/exam-types" element={<AdminExamTypesPage />} />
+              <Route path="/admin/exam-types/new" element={<AdminExamTypeFormPage />} />
+              <Route path="/admin/exam-types/:id/edit" element={<AdminExamTypeFormPage />} />
+              <Route path="/admin/questions" element={<AdminQuestionsPage />} />
+              <Route path="/admin/questions/new" element={<AdminQuestionFormPage />} />
+              <Route path="/admin/questions/:id/edit" element={<AdminQuestionFormPage />} />
+              <Route path="/admin/submissions" element={<AdminSubmissionsPage />} />
+              <Route path="/admin/submissions/new" element={<AdminSubmissionFormPage />} />
+              <Route path="/admin/submissions/:id/edit" element={<AdminSubmissionFormPage />} />
+              <Route path="/admin/manual-submissions" element={<AdminManualSubmissionsPage />} />
+              <Route path="/admin/manual-submissions/:id" element={<AdminManualSubmissionDetailPage />} />
+              <Route path="/admin/users" element={<AdminUsersPage />} />
+              <Route path="/admin/users/:id/edit" element={<AdminUserFormPage />} />
+            </Route>
+
+            {/* Catch-all 404 */}
+            <Route path="*" element={<NotFoundPage />} />
+          </Routes>
+        </ErrorBoundary>
+      </main>
+      {!isAdmin && <Footer />}
+      <Toaster richColors closeButton position="top-center" />
+    </div>
+  )
+}
+
 function App() {
   const { isAuthenticated } = useAuth()
   const [googleClientId, setGoogleClientId] = useState<string | null>(null)
@@ -66,68 +136,7 @@ function App() {
   return (
     <GoogleOAuthProvider clientId={googleClientId ?? ''}>
       <BrowserRouter>
-          <div className="flex min-h-screen flex-col bg-gray-50 text-gray-900">
-            <a
-              href="#main-content"
-              className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-white focus:px-4 focus:py-2 focus:shadow focus:ring-2 focus:ring-blue-500"
-            >
-              Skip to content
-            </a>
-            <Navbar />
-            <main id="main-content" className="flex-1">
-              <ErrorBoundary>
-              <Routes>
-                {/* Public routes */}
-                <Route path="/" element={<HomePage />} />
-                <Route path="/questions" element={<QuestionsPage />} />
-                <Route path="/questions/:id" element={<QuestionDetailPage />} />
-                <Route path="/auth" element={<AuthPage />} />
-                <Route path="/contributors" element={<ContributorsPage />} />
-                <Route path="/contributors/:username" element={<ContributorProfilePage />} />
-
-                {/* Dashboard routes — protected, with sidebar layout */}
-                <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
-                  <Route path="/profile/edit" element={<EditProfilePage />} />
-                  <Route path="/submit/manual" element={<ManualSubmissionPage />} />
-                  <Route path="/my/manual-submissions" element={<MyManualSubmissionsPage />} />
-                  <Route path="/my/manual-submissions/:id" element={<ManualSubmissionDetailPage />} />
-                </Route>
-
-                {/* Admin routes — role-guarded, with admin sidebar layout */}
-                <Route element={<AdminRoute><AdminLayout /></AdminRoute>}>
-                  <Route path="/admin" element={<AdminDashboardPage />} />
-                  <Route path="/admin/departments" element={<AdminDepartmentsPage />} />
-                  <Route path="/admin/departments/new" element={<AdminDepartmentFormPage />} />
-                  <Route path="/admin/departments/:id/edit" element={<AdminDepartmentFormPage />} />
-                  <Route path="/admin/courses" element={<AdminCoursesPage />} />
-                  <Route path="/admin/courses/new" element={<AdminCourseFormPage />} />
-                  <Route path="/admin/courses/:id/edit" element={<AdminCourseFormPage />} />
-                  <Route path="/admin/semesters" element={<AdminSemestersPage />} />
-                  <Route path="/admin/semesters/new" element={<AdminSemesterFormPage />} />
-                  <Route path="/admin/semesters/:id/edit" element={<AdminSemesterFormPage />} />
-                  <Route path="/admin/exam-types" element={<AdminExamTypesPage />} />
-                  <Route path="/admin/exam-types/new" element={<AdminExamTypeFormPage />} />
-                  <Route path="/admin/exam-types/:id/edit" element={<AdminExamTypeFormPage />} />
-                  <Route path="/admin/questions" element={<AdminQuestionsPage />} />
-                  <Route path="/admin/questions/new" element={<AdminQuestionFormPage />} />
-                  <Route path="/admin/questions/:id/edit" element={<AdminQuestionFormPage />} />
-                  <Route path="/admin/submissions" element={<AdminSubmissionsPage />} />
-                  <Route path="/admin/submissions/new" element={<AdminSubmissionFormPage />} />
-                  <Route path="/admin/submissions/:id/edit" element={<AdminSubmissionFormPage />} />
-                  <Route path="/admin/manual-submissions" element={<AdminManualSubmissionsPage />} />
-                  <Route path="/admin/manual-submissions/:id" element={<AdminManualSubmissionDetailPage />} />
-                  <Route path="/admin/users" element={<AdminUsersPage />} />
-                  <Route path="/admin/users/:id/edit" element={<AdminUserFormPage />} />
-                </Route>
-
-                {/* Catch-all 404 */}
-                <Route path="*" element={<NotFoundPage />} />
-              </Routes>
-              </ErrorBoundary>
-            </main>
-            <Footer />
-            <Toaster richColors closeButton position="top-center" />
-          </div>
+        <AppRoutes />
         </BrowserRouter>
     </GoogleOAuthProvider>
   )

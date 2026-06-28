@@ -3,10 +3,10 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../../context/AuthContext'
 import { api } from '../../lib/api'
-import { Spinner } from '../../components/ui/Spinner'
+import { toastError, toastSuccess } from '../../lib/toast'
 import { ErrorMessage } from '../../components/ui/ErrorMessage'
 import { SearchableSelect } from '../../components/ui/SearchableSelect'
-import { PageHeader, Card, Field, TextInput, SubmitButton } from '../../components/admin/ui'
+import { Button, Card, Field, FormActions, LoadingState, PageHeader, SubmitButton, TextInput } from '../../components/admin/ui'
 import type { User } from '@diuqbank/shared/types'
 
 const USERNAME_RE = /^[a-z0-9_.-]+$/
@@ -45,14 +45,16 @@ export function AdminUserFormPage() {
     try {
       await api.updateUser(token, Number(id), { name, username, role })
       queryClient.invalidateQueries({ queryKey: ['admin-users'] })
+      toastSuccess('User updated.')
       navigate('/admin/users')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Save failed.')
+      toastError(err, 'Save failed.')
       setSaving(false)
     }
   }
 
-  if (isPending) return <div className="flex justify-center py-16"><Spinner /></div>
+  if (isPending) return <LoadingState label="Loading user" />
 
   return (
     <div className="max-w-lg">
@@ -73,10 +75,10 @@ export function AdminUserFormPage() {
             />
           </Field>
           {error && <ErrorMessage message={error} />}
-          <div className="flex gap-3">
+          <FormActions>
             <SubmitButton saving={saving}>Save changes</SubmitButton>
-            <button type="button" onClick={() => navigate('/admin/users')} className="rounded-lg border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
-          </div>
+            <Button type="button" variant="secondary" onClick={() => navigate('/admin/users')}>Cancel</Button>
+          </FormActions>
         </form>
       </Card>
     </div>
