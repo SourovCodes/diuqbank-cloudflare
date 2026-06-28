@@ -114,6 +114,7 @@ export const submissions = sqliteTable(
       .notNull()
       .default("awaiting"),
     watermarkError: text("watermark_error"),
+    transcription: text("transcription"),
     createdAt: integer("created_at")
       .notNull()
       .default(sql`(unixepoch())`),

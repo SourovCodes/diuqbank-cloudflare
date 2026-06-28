@@ -22,6 +22,13 @@
       "when": 1782588449266,
       "tag": "0002_drop_auto_submissions",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1782639910232,
+      "tag": "0003_rapid_wendigo",
+      "breakpoints": true
     }
   ]
 }
