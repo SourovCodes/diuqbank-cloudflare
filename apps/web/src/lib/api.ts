@@ -6,7 +6,7 @@ import type {
   ApiErrorResponse, Page,
 } from '@diuqbank/shared/types'
 
-const BASE = import.meta.env.VITE_API_URL ?? 'https://diuqbank-api.sourov-cse.workers.dev'
+const BASE = import.meta.env.VITE_API_URL ?? 'https://diuqbank-api-prod.sourov-cse.workers.dev'
 
 /** Error thrown by the API client, carrying the HTTP status so callers can
  * branch on it (e.g. render a 404 page when a resource doesn't exist). */
