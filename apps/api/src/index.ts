@@ -187,4 +187,8 @@ app.onError((err, c) => {
 
 app.notFound((c) => c.json({ error: "Not found" }, 404));
 
+// Cloudflare Workflow class — referenced by `class_name` in wrangler.jsonc and
+// instantiated via the WATERMARK_WORKFLOW binding.
+export { WatermarkWorkflow } from "./workflows/watermark";
+
 export default app;

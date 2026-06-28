@@ -119,6 +119,7 @@ questionRoutes.get("/:id/submissions", async (c) => {
       fileSize: true,
       createdAt: true,
       pdfKey: true,
+      watermarkedPdfKey: true,
     },
     with: {
       user: { columns: { id: true, name: true, username: true, imageKey: true } },
@@ -133,7 +134,8 @@ questionRoutes.get("/:id/submissions", async (c) => {
       batch: s.batch,
       fileSize: s.fileSize,
       createdAt: s.createdAt,
-      pdfUrl: fileUrlFor(origin, s.pdfKey),
+      // Prefer the watermarked file once it exists; fall back to the original.
+      pdfUrl: fileUrlFor(origin, s.watermarkedPdfKey ?? s.pdfKey),
       contributor: s.user ? toContributorSummary(s.user, origin) : null,
     })),
   });

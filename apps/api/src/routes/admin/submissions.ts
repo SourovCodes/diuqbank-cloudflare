@@ -7,6 +7,7 @@ import { manualSubmissions, submissions } from "../../db/schema";
 import { toAdminSubmission } from "../../lib/admin-shape";
 import { buildMeta } from "@diuqbank/shared/utils/pagination";
 import { parseId } from "../../lib/parse-id";
+import { startWatermark } from "../../lib/pdf-processor";
 import { parsePdfFile } from "../../lib/pdf-upload";
 import { validate } from "../../lib/validator";
 import {
@@ -128,6 +129,9 @@ route.post("/", validate("form", submissionCreateForm), async (c) => {
     throw err;
   }
 
+  // Kick off watermarking (awaiting → completed/failed) in the background.
+  await startWatermark(c.env, created.id);
+
   const row = await db.query.submissions.findFirst({
     where: eq(submissions.id, created.id),
     with: submissionWith,
@@ -213,6 +217,9 @@ route.put("/:id/pdf", async (c) => {
     prev.pdfKey === key ? null : prev.pdfKey,
     prev.watermarkedPdfKey,
   ]);
+
+  // Re-run watermarking against the replacement PDF.
+  await startWatermark(c.env, id);
 
   const row = await db.query.submissions.findFirst({
     where: eq(submissions.id, id),

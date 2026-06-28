@@ -15,6 +15,7 @@ import {
 } from "../../db/schema";
 import { buildMeta } from "@diuqbank/shared/utils/pagination";
 import { parseId } from "../../lib/parse-id";
+import { startWatermark } from "../../lib/pdf-processor";
 import { fileUrlFor, toAuthUser } from "../../lib/user-shape";
 import { validate } from "../../lib/validator";
 import {
@@ -487,6 +488,12 @@ route.post("/:id/approve", async (c) => {
       message: "Failed to load approved manual submission",
     });
   }
+
+  // Watermark the submission the approval just created (status: awaiting).
+  if (detail.submissionId !== null) {
+    await startWatermark(c.env, detail.submissionId);
+  }
+
   return c.json(detail);
 });
 

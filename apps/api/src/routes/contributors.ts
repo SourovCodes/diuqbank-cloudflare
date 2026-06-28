@@ -121,6 +121,7 @@ contributors.get(
           fileSize: true,
           createdAt: true,
           pdfKey: true,
+          watermarkedPdfKey: true,
         },
         with: submissionWith,
         orderBy: desc(submissions.createdAt),
@@ -148,7 +149,8 @@ contributors.get(
         batch: s.batch,
         fileSize: s.fileSize,
         createdAt: s.createdAt,
-        pdfUrl: fileUrlFor(origin, s.pdfKey),
+        // Prefer the watermarked file once it exists; fall back to the original.
+        pdfUrl: fileUrlFor(origin, s.watermarkedPdfKey ?? s.pdfKey),
       })),
       meta: buildMeta(page, perPage, total),
     });

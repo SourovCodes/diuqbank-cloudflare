@@ -40,11 +40,24 @@
       "simple": { "limit": 120, "period": 60 }
     }
   ],
+  // Durable watermarking pipeline. Started from the submission routes with
+  // env.WATERMARK_WORKFLOW.create({ params: { submissionId } }); the
+  // `submissions.watermarkStatus` column is the source of truth.
+  "workflows": [
+    {
+      "name": "diuqbank-watermark",
+      "binding": "WATERMARK_WORKFLOW",
+      "class_name": "WatermarkWorkflow"
+    }
+  ],
   "vars": {
     // Google OAuth client id (public value — fine to commit). The ID token's
     // `aud` claim must match this. Replace with your own from the Google Cloud
     // console (OAuth 2.0 Client IDs).
     "GOOGLE_CLIENT_ID": "85673828423-q1upghugo5oehip02358e6tjvqi1pln2.apps.googleusercontent.com",
+    // External PDF Processor service (Ghostscript + FPDI). The watermark
+    // Workflow POSTs to `${PDF_PROCESSOR_URL}/api/pdfs/watermark-compress`.
+    "PDF_PROCESSOR_URL": "https://pdf-processor.diuqbank.com",
     // Comma-separated CORS allowlist. Requests from any other Origin are
     // rejected (no CORS headers). Add your production/custom domains here.
     "WEB_ORIGINS": "https://diuqbank-web.sourovcodes.workers.dev,http://localhost:5173"
@@ -52,7 +65,9 @@
   "secrets": {
     "required": [
       "JWT_SECRET",
-      "ADMIN_EMAIL"
+      "ADMIN_EMAIL",
+      // X-API-Key for the PDF Processor service (local dev: `.dev.vars`).
+      "PDF_PROCESSOR_API_KEY"
     ]
   }
 }
