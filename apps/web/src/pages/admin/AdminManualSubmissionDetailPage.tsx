@@ -40,9 +40,10 @@ export function AdminManualSubmissionDetailPage() {
     departmentName: '', departmentShortName: '', courseName: '', semesterName: '', examTypeName: '',
   })
   const [reason, setReason] = useState('')
-  const [busy, setBusy] = useState<'save' | 'approve' | 'reject' | null>(null)
+  const [busy, setBusy] = useState<'save' | 'approve' | 'reject' | 'delete' | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [approveOpen, setApproveOpen] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
 
   useEffect(() => {
     if (data) {
@@ -92,6 +93,22 @@ export function AdminManualSubmissionDetailPage() {
     }
   }
 
+  async function confirmDelete() {
+    if (!token) return
+    setBusy('delete')
+    setError(null)
+    try {
+      await api.adminDeleteManualSubmission(token, Number(id))
+      await invalidate()
+      toastSuccess('Submission deleted.')
+      navigate('/admin/manual-submissions')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Delete failed.')
+      toastError(err, 'Delete failed.')
+      setBusy(null)
+    }
+  }
+
   async function handleReject() {
     if (!token) return
     if (!reason.trim()) {
@@ -117,7 +134,10 @@ export function AdminManualSubmissionDetailPage() {
   if (isError && isNotFound(loadError)) return <NotFoundPage />
   if (isError || !data) return <ErrorMessage message="Failed to load submission." />
 
-  const pending = data.status === 'pending_review'
+  // Approved submissions are locked. Pending and rejected submissions can both
+  // be edited, (re)approved, (re)rejected, and deleted — mirror the API rules.
+  const isApproved = data.status === 'approved'
+  const editable = !isApproved
 
   return (
     <div>
@@ -169,13 +189,13 @@ export function AdminManualSubmissionDetailPage() {
               <p className="mt-1 text-xs text-gray-500">Match these fields to existing catalog records before approval.</p>
             </div>
             <div className="space-y-3">
-              <Field label="Department"><TextInput value={fields.departmentName} onChange={e => setFields(f => ({ ...f, departmentName: e.target.value }))} disabled={!pending} /></Field>
-              <Field label="Department Short Name"><TextInput value={fields.departmentShortName} onChange={e => setFields(f => ({ ...f, departmentShortName: e.target.value }))} disabled={!pending} /></Field>
-              <Field label="Course"><TextInput value={fields.courseName} onChange={e => setFields(f => ({ ...f, courseName: e.target.value }))} disabled={!pending} /></Field>
-              <Field label="Semester"><TextInput value={fields.semesterName} onChange={e => setFields(f => ({ ...f, semesterName: e.target.value }))} disabled={!pending} /></Field>
-              <Field label="Exam Type"><TextInput value={fields.examTypeName} onChange={e => setFields(f => ({ ...f, examTypeName: e.target.value }))} disabled={!pending} /></Field>
+              <Field label="Department"><TextInput value={fields.departmentName} onChange={e => setFields(f => ({ ...f, departmentName: e.target.value }))} disabled={!editable} /></Field>
+              <Field label="Department Short Name"><TextInput value={fields.departmentShortName} onChange={e => setFields(f => ({ ...f, departmentShortName: e.target.value }))} disabled={!editable} /></Field>
+              <Field label="Course"><TextInput value={fields.courseName} onChange={e => setFields(f => ({ ...f, courseName: e.target.value }))} disabled={!editable} /></Field>
+              <Field label="Semester"><TextInput value={fields.semesterName} onChange={e => setFields(f => ({ ...f, semesterName: e.target.value }))} disabled={!editable} /></Field>
+              <Field label="Exam Type"><TextInput value={fields.examTypeName} onChange={e => setFields(f => ({ ...f, examTypeName: e.target.value }))} disabled={!editable} /></Field>
 
-              {pending && (
+              {editable && (
                 <Button type="button" variant="secondary" onClick={handleSave} disabled={busy !== null} className="w-full">
                   {busy === 'save' ? 'Saving...' : 'Save categorization'}
                 </Button>
@@ -183,7 +203,7 @@ export function AdminManualSubmissionDetailPage() {
             </div>
           </Card>
 
-          {pending && (
+          {editable && (
             <Card className="p-5">
               <div className="mb-4">
                 <h2 className="text-sm font-semibold text-gray-950">Review decision</h2>
@@ -217,9 +237,27 @@ export function AdminManualSubmissionDetailPage() {
                   disabled={busy !== null}
                   className="mt-3 w-full"
                 >
-                  {busy === 'reject' ? 'Rejecting...' : 'Reject'}
+                  {busy === 'reject' ? 'Rejecting...' : data.status === 'rejected' ? 'Update rejection' : 'Reject'}
                 </Button>
               </div>
+            </Card>
+          )}
+
+          {editable && (
+            <Card className="p-5">
+              <div className="mb-4">
+                <h2 className="text-sm font-semibold text-gray-950">Delete submission</h2>
+                <p className="mt-1 text-xs text-gray-500">Permanently removes this manual submission and its uploaded PDF.</p>
+              </div>
+              <Button
+                type="button"
+                variant="danger"
+                onClick={() => setDeleteOpen(true)}
+                disabled={busy !== null}
+                className="w-full"
+              >
+                {busy === 'delete' ? 'Deleting...' : 'Delete'}
+              </Button>
             </Card>
           )}
 
@@ -236,6 +274,17 @@ export function AdminManualSubmissionDetailPage() {
         busy={busy === 'approve'}
         onCancel={() => setApproveOpen(false)}
         onConfirm={confirmApprove}
+      />
+
+      <ConfirmDialog
+        open={deleteOpen}
+        title="Delete manual submission"
+        description="This permanently removes the submission and its uploaded PDF. This action cannot be undone."
+        confirmLabel="Delete"
+        variant="danger"
+        busy={busy === 'delete'}
+        onCancel={() => setDeleteOpen(false)}
+        onConfirm={confirmDelete}
       />
     </div>
   )

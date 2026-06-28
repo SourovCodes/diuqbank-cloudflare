@@ -292,6 +292,8 @@ export const api = {
     authedPost<AdminManualSubmission>(`/admin/manual-submissions/${id}/approve`, token, {}),
   rejectManualSubmission: (token: string, id: number, reason: string) =>
     authedPost<AdminManualSubmission>(`/admin/manual-submissions/${id}/reject`, token, { reason }),
+  adminDeleteManualSubmission: (token: string, id: number) =>
+    authedDelete(`/admin/manual-submissions/${id}`, token),
 
   // --- Admin: Users ---
   adminUsers: (token: string, params: AdminListParams & { role?: User['role'] | ''; search?: string } = {}) =>
