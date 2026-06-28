@@ -43,6 +43,13 @@
       "when": 1782668080919,
       "tag": "0005_gray_nightshade",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1782670478132,
+      "tag": "0006_dazzling_black_bird",
+      "breakpoints": true
     }
   ]
 }

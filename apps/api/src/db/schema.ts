@@ -146,6 +146,11 @@ export const manualSubmissions = sqliteTable(
     semesterName: text("semester_name").notNull(),
     examTypeName: text("exam_type_name").notNull(),
     note: text("note"),
+    // Back-reference to the legacy record when imported via the admin migration
+    // endpoint with autoPublish=false. Nullable (normal review-queue uploads
+    // have none); unique so a legacy record can only be migrated once. Carried
+    // onto the resulting submission's `legacyId` when this row is approved.
+    legacyId: text("legacy_id").unique(),
     departmentId: integer("department_id").references(() => departments.id, {
       onDelete: "restrict",
     }),

@@ -18,6 +18,15 @@ export const migrationSubmissionForm = z.object({
   contributorImageUrl: z.string().trim().url().max(2048).optional(),
   section: z.string().trim().max(100).optional(),
   batch: z.string().trim().max(100).optional(),
+  // When true (the default), publish directly: resolve/create the
+  // department/course/semester/exam type + question and create a live
+  // submission. When false, file the import into the review queue as a pending
+  // manual submission attributed to the contributor — no lookups or question
+  // are created. Arrives as a string on the multipart form.
+  autoPublish: z.preprocess(
+    (v) => (v === undefined ? true : v === "true" || v === "1" || v === true),
+    z.boolean(),
+  ),
 });
 
 export type MigrationSubmissionInput = z.infer<typeof migrationSubmissionForm>;

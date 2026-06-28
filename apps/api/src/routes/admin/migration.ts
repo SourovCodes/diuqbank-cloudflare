@@ -8,6 +8,7 @@ import {
   courses,
   departments,
   examTypes,
+  manualSubmissions,
   questions,
   semesters,
   submissions,
@@ -19,6 +20,7 @@ import { fetchProfileImage } from "../../lib/profile-image-from-url";
 import { validate } from "../../lib/validator";
 import { migrationSubmissionForm } from "@diuqbank/shared/schemas/admin/migration";
 import type { AppEnv } from "../../types";
+import { loadManualSubmission } from "./manual-submissions";
 
 const route = new Hono<AppEnv>();
 
@@ -253,9 +255,12 @@ const resolveContributor = async (
 };
 
 // POST /admin/migration/submissions — import one legacy submission: its PDF plus
-// flat metadata. Lookups are resolved-or-created, the contributor is
-// find-or-created, the PDF is stored as-is (no watermarking), and `legacyId`
-// records the back-reference (unique → a record migrates only once).
+// flat metadata. The contributor is find-or-created and the `legacyId` records
+// the back-reference (unique across submissions + manual submissions → a record
+// migrates only once). With `autoPublish` true (default) lookups are
+// resolved-or-created and a live submission is published (PDF stored as-is, no
+// watermarking); with `autoPublish` false the import is filed into the review
+// queue as a pending manual submission instead.
 route.post("/submissions", validate("form", migrationSubmissionForm), async (c) => {
   const input = c.req.valid("form");
   const body = await c.req.parseBody();
@@ -264,19 +269,77 @@ route.post("/submissions", validate("form", migrationSubmissionForm), async (c) 
   const db = getDb(c.env.DB);
   const origin = new URL(c.req.url).origin;
 
-  // Pre-check the legacy id for a clear 409 (the unique constraint is the real
-  // guard against a race).
-  const [duplicate] = await db
-    .select({ id: submissions.id })
-    .from(submissions)
-    .where(eq(submissions.legacyId, input.legacyId))
-    .limit(1);
-  if (duplicate) {
+  // Pre-check the legacy id across both tables for a clear 409 (the unique
+  // constraints are the real guard against a race). A legacy record may have
+  // been published directly (submissions) or filed for review (manualSubmissions).
+  const [[publishedDup], [reviewDup]] = await Promise.all([
+    db
+      .select({ id: submissions.id })
+      .from(submissions)
+      .where(eq(submissions.legacyId, input.legacyId))
+      .limit(1),
+    db
+      .select({ id: manualSubmissions.id })
+      .from(manualSubmissions)
+      .where(eq(manualSubmissions.legacyId, input.legacyId))
+      .limit(1),
+  ]);
+  if (publishedDup || reviewDup) {
     throw new HTTPException(409, {
       message: `Legacy id "${input.legacyId}" has already been migrated`,
     });
   }
 
+  // The contributor is attributed in both modes.
+  const userId = await resolveContributor(c, db, {
+    email: input.contributorEmail,
+    username: input.contributorUsername,
+    name: input.contributorName,
+    imageUrl: input.contributorImageUrl,
+  });
+
+  // autoPublish=false → file the import into the review queue as a pending
+  // manual submission. The lookup names are kept verbatim; no department /
+  // course / semester / exam type or question is created. An admin approves it
+  // later, which creates the live submission and carries this legacy id forward.
+  if (!input.autoPublish) {
+    const key = `manual-submissions/${crypto.randomUUID()}.pdf`;
+    await c.env.BUCKET.put(key, pdf.buffer, {
+      httpMetadata: { contentType: pdf.contentType },
+    });
+
+    let createdManual;
+    try {
+      [createdManual] = await db
+        .insert(manualSubmissions)
+        .values({
+          userId,
+          departmentName: input.departmentName,
+          departmentShortName: input.departmentShortName,
+          courseName: input.courseName,
+          semesterName: input.semesterName,
+          examTypeName: input.examTypeName,
+          pdfKey: key,
+          legacyId: input.legacyId,
+          status: "pending_review",
+        })
+        .returning({ id: manualSubmissions.id });
+    } catch (err) {
+      await deleteObject(c.env.BUCKET, key);
+      throw err;
+    }
+
+    const manual = await loadManualSubmission(db, createdManual.id, origin);
+    if (!manual) {
+      throw new HTTPException(500, {
+        message: "Failed to load migrated manual submission",
+      });
+    }
+    return c.json(manual, 201);
+  }
+
+  // autoPublish=true → publish directly: resolve/create lookups + question and
+  // create a live submission.
   const departmentId = await resolveDepartment(
     db,
     input.departmentName,
@@ -294,13 +357,6 @@ route.post("/submissions", validate("form", migrationSubmissionForm), async (c) 
     semesterId,
     examTypeId,
   );
-
-  const userId = await resolveContributor(c, db, {
-    email: input.contributorEmail,
-    username: input.contributorUsername,
-    name: input.contributorName,
-    imageUrl: input.contributorImageUrl,
-  });
 
   const key = `submissions/${crypto.randomUUID()}.pdf`;
   await c.env.BUCKET.put(key, pdf.buffer, {

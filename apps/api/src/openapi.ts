@@ -465,6 +465,12 @@ const componentSchemas = {
       },
       section: { type: "string", description: "Optional section label." },
       batch: { type: "string", description: "Optional batch label." },
+      autoPublish: {
+        type: "boolean",
+        default: true,
+        description:
+          "When true (default) the import is published directly as a live submission (lookups + question are resolved/created). When false it is filed into the review queue as a pending manual submission instead.",
+      },
     },
     required: [
       "pdf",
@@ -1020,7 +1026,9 @@ const adminPaths = {
         content: multipart("MigrationSubmissionForm"),
       },
       responses: {
-        "201": okJson("Migrated", ref("AdminSubmission")),
+        "201": okJson("Migrated — an AdminSubmission when published, or an AdminManualSubmission when filed for review (autoPublish=false)", {
+          oneOf: [ref("AdminSubmission"), ref("AdminManualSubmission")],
+        }),
         "400": commonErrors["400"],
         "401": commonErrors["401"],
         "403": commonErrors["403"],
