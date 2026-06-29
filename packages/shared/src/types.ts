@@ -163,6 +163,26 @@ export type AdminManualSubmission = {
 
 export type AdminUser = User & { submissionCount: number }
 
+/**
+ * Impact of a category merge (departments / courses / semesters / exam types).
+ * Returned both as the `preview` of a `dryRun` request and as the `summary` of
+ * an applied merge. `coursesMerged` is only present for department merges,
+ * where same-named courses across the merged departments are auto-merged.
+ */
+export type MergeSummary = {
+  itemsDeleted: number
+  questionsCombined: number
+  submissionsMoved: number
+  manualSubmissionsMoved: number
+  coursesMerged?: number
+}
+
+/** `dryRun: true` response — the projected impact, nothing written. */
+export type MergePreview<T> = { preview: MergeSummary; keeper: T }
+
+/** Applied-merge response — the surviving entity plus what changed. */
+export type MergeResult<T> = { keeper: T; summary: MergeSummary }
+
 /** A single field-level validation issue (from `validate()` on the API). */
 export type ApiErrorIssue = { field: string; message: string }
 

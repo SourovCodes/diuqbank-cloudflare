@@ -38,6 +38,10 @@ const AdminSemestersPage = lazy(() => import('./pages/admin/AdminSemestersPage')
 const AdminSemesterFormPage = lazy(() => import('./pages/admin/AdminSemesterFormPage').then(m => ({ default: m.AdminSemesterFormPage })))
 const AdminExamTypesPage = lazy(() => import('./pages/admin/AdminExamTypesPage').then(m => ({ default: m.AdminExamTypesPage })))
 const AdminExamTypeFormPage = lazy(() => import('./pages/admin/AdminExamTypeFormPage').then(m => ({ default: m.AdminExamTypeFormPage })))
+const AdminDepartmentsMergePage = lazy(() => import('./pages/admin/AdminMergePage').then(m => ({ default: m.AdminDepartmentsMergePage })))
+const AdminCoursesMergePage = lazy(() => import('./pages/admin/AdminMergePage').then(m => ({ default: m.AdminCoursesMergePage })))
+const AdminSemestersMergePage = lazy(() => import('./pages/admin/AdminMergePage').then(m => ({ default: m.AdminSemestersMergePage })))
+const AdminExamTypesMergePage = lazy(() => import('./pages/admin/AdminMergePage').then(m => ({ default: m.AdminExamTypesMergePage })))
 const AdminQuestionsPage = lazy(() => import('./pages/admin/AdminQuestionsPage').then(m => ({ default: m.AdminQuestionsPage })))
 const AdminQuestionFormPage = lazy(() => import('./pages/admin/AdminQuestionFormPage').then(m => ({ default: m.AdminQuestionFormPage })))
 const AdminSubmissionsPage = lazy(() => import('./pages/admin/AdminSubmissionsPage').then(m => ({ default: m.AdminSubmissionsPage })))
@@ -89,15 +93,19 @@ function AppRoutes() {
               <Route path="/admin" element={<AdminDashboardPage />} />
               <Route path="/admin/departments" element={<AdminDepartmentsPage />} />
               <Route path="/admin/departments/new" element={<AdminDepartmentFormPage />} />
+              <Route path="/admin/departments/merge" element={<AdminDepartmentsMergePage />} />
               <Route path="/admin/departments/:id/edit" element={<AdminDepartmentFormPage />} />
               <Route path="/admin/courses" element={<AdminCoursesPage />} />
               <Route path="/admin/courses/new" element={<AdminCourseFormPage />} />
+              <Route path="/admin/courses/merge" element={<AdminCoursesMergePage />} />
               <Route path="/admin/courses/:id/edit" element={<AdminCourseFormPage />} />
               <Route path="/admin/semesters" element={<AdminSemestersPage />} />
               <Route path="/admin/semesters/new" element={<AdminSemesterFormPage />} />
+              <Route path="/admin/semesters/merge" element={<AdminSemestersMergePage />} />
               <Route path="/admin/semesters/:id/edit" element={<AdminSemesterFormPage />} />
               <Route path="/admin/exam-types" element={<AdminExamTypesPage />} />
               <Route path="/admin/exam-types/new" element={<AdminExamTypeFormPage />} />
+              <Route path="/admin/exam-types/merge" element={<AdminExamTypesMergePage />} />
               <Route path="/admin/exam-types/:id/edit" element={<AdminExamTypeFormPage />} />
               <Route path="/admin/questions" element={<AdminQuestionsPage />} />
               <Route path="/admin/questions/new" element={<AdminQuestionFormPage />} />

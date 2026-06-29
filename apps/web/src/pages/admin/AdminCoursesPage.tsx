@@ -18,6 +18,7 @@ import {
   PageHeader,
   PrimaryLink,
   RowActions,
+  SecondaryLink,
   TableCard,
   TableHead,
   Td,
@@ -60,7 +61,12 @@ export function AdminCoursesPage() {
       <PageHeader
         title="Courses"
         subtitle={data && `${data.meta.total} total`}
-        action={<PrimaryLink to="/admin/courses/new">New Course</PrimaryLink>}
+        action={
+          <div className="flex gap-2">
+            <SecondaryLink to="/admin/courses/merge">Merge</SecondaryLink>
+            <PrimaryLink to="/admin/courses/new">New Course</PrimaryLink>
+          </div>
+        }
       />
 
       <Toolbar>

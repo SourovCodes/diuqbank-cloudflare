@@ -6,12 +6,14 @@ import { getDb } from "../../db/client";
 import { manualSubmissions, questions, semesters } from "../../db/schema";
 import { buildMeta } from "@diuqbank/shared/utils/pagination";
 import { parseId } from "../../lib/parse-id";
+import { planSemesterMerge, runMerge } from "../../lib/merge";
 import { validate } from "../../lib/validator";
 import {
   semesterCreateSchema,
   semestersListQuery,
   semesterUpdateSchema,
 } from "@diuqbank/shared/schemas/admin/semesters";
+import { mergeSchema } from "@diuqbank/shared/schemas/admin/merge";
 import type { AppEnv } from "../../types";
 
 const route = new Hono<AppEnv>();
@@ -49,6 +51,25 @@ route.get("/:id", async (c) => {
   if (!row) throw new HTTPException(404, { message: "Semester not found" });
 
   return c.json(row);
+});
+
+route.post("/merge", validate("json", mergeSchema), async (c) => {
+  const { keepId, mergeIds, dryRun } = c.req.valid("json");
+  const db = getDb(c.env.DB);
+
+  const plan = await planSemesterMerge(c.env.DB, keepId, mergeIds);
+  if (!dryRun) await runMerge(plan);
+
+  const [keeper] = await db
+    .select()
+    .from(semesters)
+    .where(eq(semesters.id, keepId))
+    .limit(1);
+  if (!keeper) throw new HTTPException(404, { message: "Semester not found" });
+
+  return dryRun
+    ? c.json({ preview: plan.counts, keeper })
+    : c.json({ keeper, summary: plan.counts });
 });
 
 route.post("/", validate("json", semesterCreateSchema), async (c) => {

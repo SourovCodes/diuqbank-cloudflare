@@ -21,6 +21,7 @@ import {
   semesterCreateSchema,
   semesterUpdateSchema,
 } from "@diuqbank/shared/schemas/admin/semesters";
+import { mergeSchema } from "@diuqbank/shared/schemas/admin/merge";
 import { submissionUpdateSchema } from "@diuqbank/shared/schemas/admin/submissions";
 import { userUpdateSchema } from "@diuqbank/shared/schemas/admin/users";
 import { googleSignInSchema } from "@diuqbank/shared/schemas/auth";
@@ -90,6 +91,15 @@ const course = z.object({
 
 const semester = z.object({ id: z.number().int(), name: z.string() });
 const examType = z.object({ id: z.number().int(), name: z.string() });
+
+// Impact of a category merge, returned as `preview` (dry run) or `summary`.
+const mergeSummary = z.object({
+  itemsDeleted: z.number().int(),
+  questionsCombined: z.number().int(),
+  submissionsMoved: z.number().int(),
+  manualSubmissionsMoved: z.number().int(),
+  coursesMerged: z.number().int().optional(),
+});
 
 const filterOptions = z.object({
   departments: z.array(department),
@@ -384,6 +394,8 @@ const componentSchemas = {
   },
 
   // Admin request bodies (derived from the route validation schemas).
+  MergeRequest: toSchema(mergeSchema),
+  MergeSummary: toSchema(mergeSummary),
   CreateDepartment: toSchema(departmentCreateSchema),
   UpdateDepartment: toSchema(departmentUpdateSchema),
   CreateCourse: toSchema(courseCreateSchema),
@@ -708,6 +720,45 @@ const lookupResource = (cfg: {
   },
 });
 
+// `POST /admin/<base>/merge` — fold several entities into a keeper.
+const mergeResource = (cfg: {
+  base: string;
+  tag: string;
+  noun: string;
+  nounPlural: string;
+  itemRef: SchemaName;
+}) => ({
+  [`${cfg.base}/merge`]: {
+    post: {
+      tags: [cfg.tag],
+      summary: `Merge ${cfg.nounPlural}`,
+      ...authFields(
+        "Admin",
+        `Folds every ${cfg.noun} in \`mergeIds\` into the \`keepId\` ${cfg.noun}: ` +
+          `all references are repointed to the keeper and the merged ${cfg.nounPlural} are deleted. ` +
+          `Questions that collapse onto the same combination are auto-merged (the lowest-id question survives). ` +
+          `Send \`dryRun: true\` to receive the projected impact without writing.`,
+      ),
+      requestBody: { required: true, content: json(ref("MergeRequest")) },
+      responses: {
+        "200": okJson("Merge applied, or (when `dryRun`) the projected impact", {
+          type: "object",
+          properties: {
+            keeper: ref(cfg.itemRef),
+            summary: ref("MergeSummary"),
+            preview: ref("MergeSummary"),
+          },
+          required: ["keeper"],
+        }),
+        "400": commonErrors["400"],
+        "401": commonErrors["401"],
+        "403": commonErrors["403"],
+        "404": commonErrors["404"],
+      },
+    },
+  },
+});
+
 const submissionFilterParams = [
   {
     name: "questionId",
@@ -794,6 +845,13 @@ const adminPaths = {
     updateRef: "UpdateDepartment",
     listParams: [...pageParams, searchParam("name or short name")],
   }),
+  ...mergeResource({
+    base: "/admin/departments",
+    tag: "admin-departments",
+    noun: "department",
+    nounPlural: "departments",
+    itemRef: "Department",
+  }),
   ...lookupResource({
     base: "/admin/courses",
     tag: "admin-courses",
@@ -804,6 +862,13 @@ const adminPaths = {
     createRef: "CreateCourse",
     updateRef: "UpdateCourse",
     listParams: [...pageParams, departmentIdFilter, searchParam("name")],
+  }),
+  ...mergeResource({
+    base: "/admin/courses",
+    tag: "admin-courses",
+    noun: "course",
+    nounPlural: "courses",
+    itemRef: "Course",
   }),
   ...lookupResource({
     base: "/admin/semesters",
@@ -816,6 +881,13 @@ const adminPaths = {
     updateRef: "UpdateSemester",
     listParams: [...pageParams, searchParam("name")],
   }),
+  ...mergeResource({
+    base: "/admin/semesters",
+    tag: "admin-semesters",
+    noun: "semester",
+    nounPlural: "semesters",
+    itemRef: "Semester",
+  }),
   ...lookupResource({
     base: "/admin/exam-types",
     tag: "admin-exam-types",
@@ -826,6 +898,13 @@ const adminPaths = {
     createRef: "CreateExamType",
     updateRef: "UpdateExamType",
     listParams: [...pageParams, searchParam("name")],
+  }),
+  ...mergeResource({
+    base: "/admin/exam-types",
+    tag: "admin-exam-types",
+    noun: "exam type",
+    nounPlural: "exam types",
+    itemRef: "ExamType",
   }),
   "/admin/questions": {
     get: {

@@ -16,6 +16,7 @@ import {
   PageHeader,
   PrimaryLink,
   RowActions,
+  SecondaryLink,
   TableCard,
   TableHead,
   Td,
@@ -55,7 +56,12 @@ export function AdminExamTypesPage() {
       <PageHeader
         title="Exam Types"
         subtitle={data && `${data.meta.total} total`}
-        action={<PrimaryLink to="/admin/exam-types/new">New Exam Type</PrimaryLink>}
+        action={
+          <div className="flex gap-2">
+            <SecondaryLink to="/admin/exam-types/merge">Merge</SecondaryLink>
+            <PrimaryLink to="/admin/exam-types/new">New Exam Type</PrimaryLink>
+          </div>
+        }
       />
 
       <Toolbar>

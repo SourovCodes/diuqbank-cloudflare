@@ -6,12 +6,14 @@ import { getDb } from "../../db/client";
 import { examTypes, manualSubmissions, questions } from "../../db/schema";
 import { buildMeta } from "@diuqbank/shared/utils/pagination";
 import { parseId } from "../../lib/parse-id";
+import { planExamTypeMerge, runMerge } from "../../lib/merge";
 import { validate } from "../../lib/validator";
 import {
   examTypeCreateSchema,
   examTypesListQuery,
   examTypeUpdateSchema,
 } from "@diuqbank/shared/schemas/admin/exam-types";
+import { mergeSchema } from "@diuqbank/shared/schemas/admin/merge";
 import type { AppEnv } from "../../types";
 
 const route = new Hono<AppEnv>();
@@ -49,6 +51,25 @@ route.get("/:id", async (c) => {
   if (!row) throw new HTTPException(404, { message: "Exam type not found" });
 
   return c.json(row);
+});
+
+route.post("/merge", validate("json", mergeSchema), async (c) => {
+  const { keepId, mergeIds, dryRun } = c.req.valid("json");
+  const db = getDb(c.env.DB);
+
+  const plan = await planExamTypeMerge(c.env.DB, keepId, mergeIds);
+  if (!dryRun) await runMerge(plan);
+
+  const [keeper] = await db
+    .select()
+    .from(examTypes)
+    .where(eq(examTypes.id, keepId))
+    .limit(1);
+  if (!keeper) throw new HTTPException(404, { message: "Exam type not found" });
+
+  return dryRun
+    ? c.json({ preview: plan.counts, keeper })
+    : c.json({ keeper, summary: plan.counts });
 });
 
 route.post("/", validate("json", examTypeCreateSchema), async (c) => {

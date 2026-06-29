@@ -11,12 +11,14 @@ import {
 } from "../../db/schema";
 import { buildMeta } from "@diuqbank/shared/utils/pagination";
 import { parseId } from "../../lib/parse-id";
+import { planDepartmentMerge, runMerge } from "../../lib/merge";
 import { validate } from "../../lib/validator";
 import {
   departmentCreateSchema,
   departmentsListQuery,
   departmentUpdateSchema,
 } from "@diuqbank/shared/schemas/admin/departments";
+import { mergeSchema } from "@diuqbank/shared/schemas/admin/merge";
 import type { AppEnv } from "../../types";
 
 const route = new Hono<AppEnv>();
@@ -59,6 +61,25 @@ route.get("/:id", async (c) => {
   if (!row) throw new HTTPException(404, { message: "Department not found" });
 
   return c.json(row);
+});
+
+route.post("/merge", validate("json", mergeSchema), async (c) => {
+  const { keepId, mergeIds, dryRun } = c.req.valid("json");
+  const db = getDb(c.env.DB);
+
+  const plan = await planDepartmentMerge(c.env.DB, keepId, mergeIds);
+  if (!dryRun) await runMerge(plan);
+
+  const [keeper] = await db
+    .select()
+    .from(departments)
+    .where(eq(departments.id, keepId))
+    .limit(1);
+  if (!keeper) throw new HTTPException(404, { message: "Department not found" });
+
+  return dryRun
+    ? c.json({ preview: plan.counts, keeper })
+    : c.json({ keeper, summary: plan.counts });
 });
 
 route.post("/", validate("json", departmentCreateSchema), async (c) => {

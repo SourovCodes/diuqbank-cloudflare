@@ -3,8 +3,14 @@ import type {
   Submission, Contributor, User, ManualSubmission, ContributorSubmission,
   Department, Course, Semester, ExamType,
   AdminQuestion, AdminSubmission, AdminManualSubmission, AdminUser, WatermarkStatus,
-  ApiErrorResponse, Page,
+  ApiErrorResponse, Page, MergeSummary,
 } from '@diuqbank/shared/types'
+
+/** Body shared by every category-merge endpoint. */
+export type MergeBody = { keepId: number; mergeIds: number[]; dryRun?: boolean }
+
+/** Merge response: `keeper` plus the impact as `summary` (applied) or `preview` (dry run). */
+export type MergeResponse<T> = { keeper: T; summary?: MergeSummary; preview?: MergeSummary }
 
 const BASE = import.meta.env.VITE_API_URL ?? 'https://diuqbank-api-prod.sourov-cse.workers.dev'
 
@@ -206,6 +212,8 @@ export const api = {
     authedPatch<Department>(`/admin/departments/${id}`, token, body),
   deleteDepartment: (token: string, id: number) =>
     authedDelete(`/admin/departments/${id}`, token),
+  mergeDepartments: (token: string, body: MergeBody) =>
+    authedPost<MergeResponse<Department>>('/admin/departments/merge', token, body),
 
   // --- Admin: Courses ---
   adminCourses: (token: string, params: AdminListParams & { departmentId?: number | string; search?: string } = {}) =>
@@ -218,6 +226,8 @@ export const api = {
     authedPatch<Course>(`/admin/courses/${id}`, token, body),
   deleteCourse: (token: string, id: number) =>
     authedDelete(`/admin/courses/${id}`, token),
+  mergeCourses: (token: string, body: MergeBody) =>
+    authedPost<MergeResponse<Course>>('/admin/courses/merge', token, body),
 
   // --- Admin: Semesters ---
   adminSemesters: (token: string, params: AdminListParams & { search?: string } = {}) =>
@@ -230,6 +240,8 @@ export const api = {
     authedPatch<Semester>(`/admin/semesters/${id}`, token, body),
   deleteSemester: (token: string, id: number) =>
     authedDelete(`/admin/semesters/${id}`, token),
+  mergeSemesters: (token: string, body: MergeBody) =>
+    authedPost<MergeResponse<Semester>>('/admin/semesters/merge', token, body),
 
   // --- Admin: Exam Types ---
   adminExamTypes: (token: string, params: AdminListParams & { search?: string } = {}) =>
@@ -242,6 +254,8 @@ export const api = {
     authedPatch<ExamType>(`/admin/exam-types/${id}`, token, body),
   deleteExamType: (token: string, id: number) =>
     authedDelete(`/admin/exam-types/${id}`, token),
+  mergeExamTypes: (token: string, body: MergeBody) =>
+    authedPost<MergeResponse<ExamType>>('/admin/exam-types/merge', token, body),
 
   // --- Admin: Questions ---
   adminQuestions: (

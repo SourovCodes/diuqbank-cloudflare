@@ -60,6 +60,14 @@ export function PrimaryLink({ to, children }: { to: string; children: ReactNode 
   )
 }
 
+export function SecondaryLink({ to, children }: { to: string; children: ReactNode }) {
+  return (
+    <Link to={to} className={clsx(buttonBase, buttonVariants.secondary)}>
+      {children}
+    </Link>
+  )
+}
+
 export function Card({ children, className }: { children: ReactNode; className?: string }) {
   return (
     <div className={clsx('rounded-lg border border-gray-200 bg-white shadow-sm', className)}>
