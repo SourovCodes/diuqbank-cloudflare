@@ -7,11 +7,8 @@
     "dev": "wrangler dev",
     "deploy": "wrangler deploy --minify",
     "db:generate": "drizzle-kit generate",
-    "db:migrate:local": "wrangler d1 migrations apply diuqbank-db --local",
-    "db:migrate:remote": "wrangler d1 migrations apply diuqbank-db --remote",
-    "db:import:build": "tsx scripts/import.ts",
-    "db:import:local": "tsx scripts/import.ts && wrangler d1 execute diuqbank-db --local --file=scripts/import.sql",
-    "db:import:remote": "tsx scripts/import.ts && wrangler d1 execute diuqbank-db --remote --file=scripts/import.sql",
+    "db:migrate:local": "wrangler d1 migrations apply diuqbank-db-prod --local",
+    "db:migrate:remote": "wrangler d1 migrations apply diuqbank-db-prod --remote",
     "cf-typegen": "wrangler types",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit"

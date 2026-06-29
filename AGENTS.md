@@ -114,5 +114,3 @@ For local web→API dev, set `VITE_API_URL=http://localhost:8787` (see `apps/web
 - **Do not** install `@cloudflare/workers-types` — `wrangler types` already generates
   `worker-configuration.d.ts`; both together create duplicate globals.
 - Migrations are applied via `wrangler d1 migrations apply`, **not** the Drizzle client.
-- `scripts/import.ts` (`db:import:*`) DESTRUCTIVELY wipes + reseeds D1 from prod data;
-  `:remote` nukes real prod data — only run intentionally.
