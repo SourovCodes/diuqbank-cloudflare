@@ -32,7 +32,6 @@ type AdminSubmissionRow = Pick<
   | "watermarkError"
   | "pdfKey"
   | "watermarkedPdfKey"
-  | "legacyId"
   | "createdAt"
 > & {
   question: {
@@ -63,7 +62,6 @@ export const toAdminSubmission = (row: AdminSubmissionRow, origin: string): Admi
   watermarkError: row.watermarkError,
   pdfUrl: fileUrlFor(origin, row.pdfKey),
   watermarkedPdfUrl: fileUrlFor(origin, row.watermarkedPdfKey),
-  legacyId: row.legacyId,
   createdAt: row.createdAt,
 });
 

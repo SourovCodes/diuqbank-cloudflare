@@ -393,8 +393,8 @@ route.post("/:id/approve", async (c) => {
   const submissionInsert = c.env.DB.prepare(
     `INSERT INTO submissions
        (question_id, user_id, section, batch, pdf_key, file_size,
-        watermarked_pdf_key, watermark_status, watermark_error, legacy_id)
-     SELECT q.id, m.user_id, NULL, NULL, ?, ?, NULL, 'awaiting', NULL, m.legacy_id
+        watermarked_pdf_key, watermark_status, watermark_error)
+     SELECT q.id, m.user_id, NULL, NULL, ?, ?, NULL, 'awaiting', NULL
      FROM manual_submissions AS m
      JOIN questions AS q
        ON q.department_id = ?

@@ -50,6 +50,13 @@
       "when": 1782670478132,
       "tag": "0006_dazzling_black_bird",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1782709805972,
+      "tag": "0007_foamy_forge",
+      "breakpoints": true
     }
   ]
 }

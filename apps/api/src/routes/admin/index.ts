@@ -6,7 +6,6 @@ import courses from "./courses";
 import departments from "./departments";
 import examTypes from "./exam-types";
 import manualSubmissions from "./manual-submissions";
-import migration from "./migration";
 import questions from "./questions";
 import semesters from "./semesters";
 import submissions from "./submissions";
@@ -24,7 +23,6 @@ admin.route("/exam-types", examTypes);
 admin.route("/manual-submissions", manualSubmissions);
 admin.route("/questions", questions);
 admin.route("/submissions", submissions);
-admin.route("/migration", migration);
 admin.route("/users", users);
 
 export default admin;

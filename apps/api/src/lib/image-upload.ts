@@ -50,7 +50,7 @@ export type ParsedImage = {
 };
 
 // Identify an image format from its leading bytes (first 12), or null if none
-// match. Shared by the multipart upload path and the migration URL fetcher.
+// match.
 export const detectImageFormat = (head: Uint8Array): Format | null =>
   FORMATS.find((f) => f.test(head)) ?? null;
 
