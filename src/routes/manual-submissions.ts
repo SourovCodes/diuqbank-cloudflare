@@ -3,8 +3,9 @@ import { HTTPException } from "hono/http-exception";
 import { and, count, desc, eq } from "drizzle-orm";
 
 import { getDb } from "../db/client";
-import { manualSubmissions, type ManualSubmission } from "../db/schema";
+import { manualSubmissions, type ManualSubmission as ManualSubmissionRow } from "../db/schema";
 import { buildMeta } from "../shared/utils/pagination";
+import type { ManualSubmission } from "../shared/types";
 import { parseId } from "../lib/parse-id";
 import { parsePdfFile } from "../lib/pdf-upload";
 import { fileUrlFor } from "../lib/user-shape";
@@ -21,23 +22,16 @@ const route = new Hono<AppEnv>();
 route.use("*", requireAuth);
 
 const toManualSubmission = (
-  row: ManualSubmission,
+  row: ManualSubmissionRow,
   origin: string,
-) => ({
+): ManualSubmission => ({
   id: row.id,
   userId: row.userId,
-  department: {
-    id: null,
-    name: row.departmentName,
-    shortName: row.departmentShortName,
-  },
-  course: {
-    id: null,
-    departmentId: null,
-    name: row.courseName,
-  },
-  semester: { id: null, name: row.semesterName },
-  examType: { id: null, name: row.examTypeName },
+  departmentName: row.departmentName,
+  departmentShortName: row.departmentShortName,
+  courseName: row.courseName,
+  semesterName: row.semesterName,
+  examTypeName: row.examTypeName,
   note: row.note,
   status: row.status,
   rejectedReason: row.rejectedReason,

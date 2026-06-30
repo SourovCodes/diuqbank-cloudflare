@@ -71,14 +71,18 @@ export type ContributorSubmission = {
 
 export type ManualSubmission = {
   id: number
+  userId: number
   status: 'pending_review' | 'approved' | 'rejected'
-  department: Department
-  course: Course
-  semester: Semester
-  examType: ExamType
+  departmentName: string
+  departmentShortName: string
+  courseName: string
+  semesterName: string
+  examTypeName: string
   note: string | null
   rejectedReason: string | null
+  reviewedBy: number | null
   questionId: number | null
+  submissionId: number | null
   pdfUrl: string | null
   createdAt: number
 }
@@ -173,10 +177,11 @@ export type AdminManualSubmission = {
   id: number
   userId: number
   contributor: User
-  department: { id: number | null; name: string; shortName: string }
-  course: { id: number | null; departmentId: number | null; name: string }
-  semester: { id: number | null; name: string }
-  examType: { id: number | null; name: string }
+  departmentName: string
+  departmentShortName: string
+  courseName: string
+  semesterName: string
+  examTypeName: string
   note: string | null
   status: 'pending_review' | 'approved' | 'rejected'
   rejectedReason: string | null

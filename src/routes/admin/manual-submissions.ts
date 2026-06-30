@@ -10,10 +10,11 @@ import {
   examTypes,
   manualSubmissions,
   semesters,
-  type ManualSubmission,
+  type ManualSubmission as ManualSubmissionRow,
   type User,
 } from "../../db/schema";
 import { buildMeta } from "../../shared/utils/pagination";
+import type { AdminManualSubmission } from "../../shared/types";
 import { parseId } from "../../lib/parse-id";
 import { startWatermark } from "../../lib/pdf-processor";
 import { fileUrlFor, toAuthUser } from "../../lib/user-shape";
@@ -60,7 +61,7 @@ type EmbeddedUser = Pick<
   "id" | "name" | "email" | "username" | "role" | "imageKey" | "createdAt"
 >;
 
-type AdminManualSubmissionRow = ManualSubmission & {
+type AdminManualSubmissionRow = ManualSubmissionRow & {
   user: EmbeddedUser;
   reviewer: EmbeddedUser | null;
   question: { id: number } | null;
@@ -70,22 +71,15 @@ type AdminManualSubmissionRow = ManualSubmission & {
 const toAdminManualSubmission = (
   row: AdminManualSubmissionRow,
   origin: string,
-) => ({
+): AdminManualSubmission => ({
   id: row.id,
   userId: row.userId,
   contributor: toAuthUser(row.user, origin),
-  department: {
-    id: null,
-    name: row.departmentName,
-    shortName: row.departmentShortName,
-  },
-  course: {
-    id: null,
-    departmentId: null,
-    name: row.courseName,
-  },
-  semester: { id: null, name: row.semesterName },
-  examType: { id: null, name: row.examTypeName },
+  departmentName: row.departmentName,
+  departmentShortName: row.departmentShortName,
+  courseName: row.courseName,
+  semesterName: row.semesterName,
+  examTypeName: row.examTypeName,
   note: row.note,
   status: row.status,
   rejectedReason: row.rejectedReason,
@@ -124,7 +118,7 @@ const requireSingleMatch = <T>(rows: T[], label: string): T => {
   return rows[0];
 };
 
-const resolveLookups = async (db: Db, row: ManualSubmission) => {
+const resolveLookups = async (db: Db, row: ManualSubmissionRow) => {
   const [departmentMatches, semesterMatches, examTypeMatches] = await Promise.all([
     db
       .select({

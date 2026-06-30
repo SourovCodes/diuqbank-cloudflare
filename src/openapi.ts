@@ -209,21 +209,18 @@ const questionSubmissions = z.object({
   data: z.array(publicSubmission),
 });
 
-const manualDepartment = department.extend({ id: z.number().int().nullable() });
-const manualCourse = course.extend({
-  id: z.number().int().nullable(),
-  departmentId: z.number().int().nullable(),
-});
-const manualSemester = semester.extend({ id: z.number().int().nullable() });
-const manualExamType = examType.extend({ id: z.number().int().nullable() });
+const manualSubmissionTextFields = {
+  departmentName: z.string(),
+  departmentShortName: z.string(),
+  courseName: z.string(),
+  semesterName: z.string(),
+  examTypeName: z.string(),
+};
 
 const manualSubmission = z.object({
   id: z.number().int(),
   userId: z.number().int(),
-  department: manualDepartment,
-  course: manualCourse,
-  semester: manualSemester,
-  examType: manualExamType,
+  ...manualSubmissionTextFields,
   note: z.string().nullable(),
   status: z.enum(["pending_review", "approved", "rejected"]),
   rejectedReason: z.string().nullable(),
@@ -334,10 +331,7 @@ const adminManualSubmission = z.object({
   id: z.number().int(),
   userId: z.number().int(),
   contributor: user,
-  department: manualDepartment,
-  course: manualCourse,
-  semester: manualSemester,
-  examType: manualExamType,
+  ...manualSubmissionTextFields,
   note: z.string().nullable(),
   status: z.enum(["pending_review", "approved", "rejected"]),
   rejectedReason: z.string().nullable(),
