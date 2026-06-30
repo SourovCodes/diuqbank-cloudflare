@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 
 import { getDb } from "../db/client";
 import { users } from "../db/schema";
+import { withCache, invalidateUser } from "../lib/cache";
 import { GoogleAuthError, verifyGoogleIdToken } from "../lib/google-oauth";
 import { parseImageUpload } from "../lib/image-upload";
 import { signAuthToken } from "../lib/jwt";
@@ -117,22 +118,32 @@ auth.post(
   return c.json({ token, user: toAuthUser(user, origin) }, createdNow ? 201 : 200);
 });
 
-auth.get("/me", requireAuth, async (c) => {
+auth.get("/me", requireAuth, (c) => {
   const payload = c.get("user");
-  const db = getDb(c.env.DB);
 
-  const [me] = await db
-    .select(authUserColumns)
-    .from(users)
-    .where(eq(users.id, payload.sub))
-    .limit(1);
+  // Per-user cache: the key MUST include the user id so one user never reads
+  // another's profile. Invalidated by the profile mutations below and by admin
+  // edits/deletes of the user (`user:<id>` token).
+  return withCache(
+    c,
+    { versions: [`user:${payload.sub}`], key: `auth:me:${payload.sub}` },
+    async () => {
+      const db = getDb(c.env.DB);
 
-  if (!me) {
-    throw new HTTPException(404, { message: "User not found" });
-  }
+      const [me] = await db
+        .select(authUserColumns)
+        .from(users)
+        .where(eq(users.id, payload.sub))
+        .limit(1);
 
-  const origin = new URL(c.req.url).origin;
-  return c.json({ user: toAuthUser(me, origin) });
+      if (!me) {
+        throw new HTTPException(404, { message: "User not found" });
+      }
+
+      const origin = new URL(c.req.url).origin;
+      return { user: toAuthUser(me, origin) };
+    },
+  );
 });
 
 auth.patch("/me", requireAuth, validate("json", profileUpdateSchema), async (c) => {
@@ -154,6 +165,8 @@ auth.patch("/me", requireAuth, validate("json", profileUpdateSchema), async (c) 
   if (!updated) {
     throw new HTTPException(404, { message: "User not found" });
   }
+
+  c.executionCtx.waitUntil(invalidateUser(c.env, payload.sub, updated.username));
 
   const origin = new URL(c.req.url).origin;
   return c.json({ user: toAuthUser(updated, origin) });
@@ -204,6 +217,8 @@ auth.put(
       console.error("R2 delete failed for old image", prev.imageKey, err);
     }
   }
+
+  c.executionCtx.waitUntil(invalidateUser(c.env, payload.sub, updated.username));
 
   const origin = new URL(c.req.url).origin;
   return c.json({ user: toAuthUser(updated, origin) });

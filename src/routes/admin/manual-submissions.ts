@@ -13,6 +13,7 @@ import {
   type ManualSubmission as ManualSubmissionRow,
   type User,
 } from "../../db/schema";
+import { invalidateSubmission } from "../../lib/cache";
 import { buildMeta } from "../../shared/utils/pagination";
 import type { AdminManualSubmission } from "../../shared/types";
 import { parseId } from "../../lib/parse-id";
@@ -479,6 +480,13 @@ route.post("/:id/approve", async (c) => {
   // Watermark the submission the approval just created (status: awaiting).
   if (detail.submissionId !== null) {
     await startWatermark(c.env, detail.submissionId);
+  }
+
+  // Approval published a new submission (+ possibly a new question).
+  if (detail.questionId !== null) {
+    c.executionCtx.waitUntil(
+      invalidateSubmission(c.env, detail.questionId, detail.contributor.username),
+    );
   }
 
   return c.json(detail);

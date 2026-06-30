@@ -8,6 +8,7 @@ import {
   departments,
   questions,
 } from "../../db/schema";
+import { invalidateTaxonomy } from "../../lib/cache";
 import { buildMeta } from "../../shared/utils/pagination";
 import { parseId } from "../../lib/parse-id";
 import { planDepartmentMerge, runMerge } from "../../lib/merge";
@@ -21,6 +22,15 @@ import { mergeSchema } from "../../shared/schemas/admin/merge";
 import type { AppEnv } from "../../types";
 
 const route = new Hono<AppEnv>();
+
+// Any successful write here invalidates the `tax` + `q:list` caches (filter
+// options and question titles both derive from taxonomy).
+route.use("*", async (c, next) => {
+  await next();
+  if (c.req.method !== "GET" && c.res.ok) {
+    c.executionCtx.waitUntil(invalidateTaxonomy(c.env));
+  }
+});
 
 route.get("/", validate("query", departmentsListQuery), async (c) => {
   const { page, perPage, search } = c.req.valid("query");

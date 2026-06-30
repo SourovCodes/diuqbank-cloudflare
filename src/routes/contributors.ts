@@ -4,6 +4,7 @@ import { count, desc, eq, gt } from "drizzle-orm";
 
 import { getDb } from "../db/client";
 import { submissions, users } from "../db/schema";
+import { withCache } from "../lib/cache";
 import { buildMeta } from "../shared/utils/pagination";
 import { buildQuestionTitle } from "../shared/utils/question-title";
 import { fileUrlFor, toContributor } from "../lib/user-shape";
@@ -32,60 +33,74 @@ const submissionWith = {
 } as const;
 
 // Contributors = users with at least one submission, most prolific first.
-contributors.get("/", validate("query", contributorsListQuery), async (c) => {
+contributors.get("/", validate("query", contributorsListQuery), (c) => {
   const { page, perPage } = c.req.valid("query");
-  const db = getDb(c.env.DB);
-  const origin = new URL(c.req.url).origin;
 
-  const rows = await db
-    .select({
-      id: users.id,
-      name: users.name,
-      username: users.username,
-      imageKey: users.imageKey,
-      createdAt: users.createdAt,
-      submissionCount: users.submissionCount,
-    })
-    .from(users)
-    .where(gt(users.submissionCount, 0))
-    .orderBy(desc(users.submissionCount), desc(users.id))
-    .limit(perPage)
-    .offset((page - 1) * perPage);
+  return withCache(
+    c,
+    { versions: ["c:list"], key: `contributors:list:${page}:${perPage}` },
+    async () => {
+      const db = getDb(c.env.DB);
+      const origin = new URL(c.req.url).origin;
 
-  const [{ value: total }] = await db
-    .select({ value: count() })
-    .from(users)
-    .where(gt(users.submissionCount, 0));
+      const rows = await db
+        .select({
+          id: users.id,
+          name: users.name,
+          username: users.username,
+          imageKey: users.imageKey,
+          createdAt: users.createdAt,
+          submissionCount: users.submissionCount,
+        })
+        .from(users)
+        .where(gt(users.submissionCount, 0))
+        .orderBy(desc(users.submissionCount), desc(users.id))
+        .limit(perPage)
+        .offset((page - 1) * perPage);
 
-  return c.json({
-    data: rows.map((row) => toContributor(row, origin)),
-    meta: buildMeta(page, perPage, total),
-  });
+      const [{ value: total }] = await db
+        .select({ value: count() })
+        .from(users)
+        .where(gt(users.submissionCount, 0));
+
+      return {
+        data: rows.map((row) => toContributor(row, origin)),
+        meta: buildMeta(page, perPage, total),
+      };
+    },
+  );
 });
 
-contributors.get("/:username", async (c) => {
+contributors.get("/:username", (c) => {
   const username = c.req.param("username");
-  const db = getDb(c.env.DB);
-  const origin = new URL(c.req.url).origin;
 
-  const [user] = await db
-    .select({
-      id: users.id,
-      name: users.name,
-      username: users.username,
-      imageKey: users.imageKey,
-      createdAt: users.createdAt,
-      submissionCount: users.submissionCount,
-    })
-    .from(users)
-    .where(eq(users.username, username))
-    .limit(1);
+  return withCache(
+    c,
+    { versions: [`c:${username}`], key: `contributors:${username}` },
+    async () => {
+      const db = getDb(c.env.DB);
+      const origin = new URL(c.req.url).origin;
 
-  if (!user) {
-    throw new HTTPException(404, { message: "Contributor not found" });
-  }
+      const [user] = await db
+        .select({
+          id: users.id,
+          name: users.name,
+          username: users.username,
+          imageKey: users.imageKey,
+          createdAt: users.createdAt,
+          submissionCount: users.submissionCount,
+        })
+        .from(users)
+        .where(eq(users.username, username))
+        .limit(1);
 
-  return c.json(toContributor(user, origin));
+      if (!user) {
+        throw new HTTPException(404, { message: "Contributor not found" });
+      }
+
+      return toContributor(user, origin);
+    },
+  );
 });
 
 // A contributor's own submissions, newest first. Unlike the question-scoped
@@ -94,66 +109,79 @@ contributors.get("/:username", async (c) => {
 contributors.get(
   "/:username/submissions",
   validate("query", contributorSubmissionsQuery),
-  async (c) => {
+  (c) => {
     const username = c.req.param("username");
     const { page, perPage } = c.req.valid("query");
-    const db = getDb(c.env.DB);
-    const origin = new URL(c.req.url).origin;
 
-    // Confirm the contributor exists so a bad username is a clear 404, not an
-    // empty list.
-    const [user] = await db
-      .select({ id: users.id })
-      .from(users)
-      .where(eq(users.username, username))
-      .limit(1);
-    if (!user) {
-      throw new HTTPException(404, { message: "Contributor not found" });
-    }
+    // Depends on this contributor's submissions (`c:<username>`) and the
+    // taxonomy names in each parent question's title (`tax`). Question retitles
+    // are bounded by the cache TTL.
+    return withCache(
+      c,
+      {
+        versions: [`c:${username}`, "tax"],
+        key: `contributors:${username}:submissions:${page}:${perPage}`,
+      },
+      async () => {
+        const db = getDb(c.env.DB);
+        const origin = new URL(c.req.url).origin;
 
-    const [rows, [{ value: total }]] = await Promise.all([
-      db.query.submissions.findMany({
-        where: eq(submissions.userId, user.id),
-        columns: {
-          id: true,
-          section: true,
-          batch: true,
-          fileSize: true,
-          createdAt: true,
-          pdfKey: true,
-          watermarkedPdfKey: true,
-        },
-        with: submissionWith,
-        orderBy: desc(submissions.createdAt),
-        limit: perPage,
-        offset: (page - 1) * perPage,
-      }),
-      db
-        .select({ value: count() })
-        .from(submissions)
-        .where(eq(submissions.userId, user.id)),
-    ]);
+        // Confirm the contributor exists so a bad username is a clear 404, not an
+        // empty list.
+        const [user] = await db
+          .select({ id: users.id })
+          .from(users)
+          .where(eq(users.username, username))
+          .limit(1);
+        if (!user) {
+          throw new HTTPException(404, { message: "Contributor not found" });
+        }
 
-    return c.json({
-      data: rows.map((s) => ({
-        id: s.id,
-        question: {
-          id: s.question.id,
-          title: buildQuestionTitle(s.question),
-          department: s.question.department,
-          course: s.question.course,
-          semester: s.question.semester,
-          examType: s.question.examType,
-        },
-        section: s.section,
-        batch: s.batch,
-        fileSize: s.fileSize,
-        createdAt: s.createdAt,
-        // Prefer the watermarked file once it exists; fall back to the original.
-        pdfUrl: fileUrlFor(origin, s.watermarkedPdfKey ?? s.pdfKey),
-      })),
-      meta: buildMeta(page, perPage, total),
-    });
+        const [rows, [{ value: total }]] = await Promise.all([
+          db.query.submissions.findMany({
+            where: eq(submissions.userId, user.id),
+            columns: {
+              id: true,
+              section: true,
+              batch: true,
+              fileSize: true,
+              createdAt: true,
+              pdfKey: true,
+              watermarkedPdfKey: true,
+            },
+            with: submissionWith,
+            orderBy: desc(submissions.createdAt),
+            limit: perPage,
+            offset: (page - 1) * perPage,
+          }),
+          db
+            .select({ value: count() })
+            .from(submissions)
+            .where(eq(submissions.userId, user.id)),
+        ]);
+
+        return {
+          data: rows.map((s) => ({
+            id: s.id,
+            question: {
+              id: s.question.id,
+              title: buildQuestionTitle(s.question),
+              department: s.question.department,
+              course: s.question.course,
+              semester: s.question.semester,
+              examType: s.question.examType,
+            },
+            section: s.section,
+            batch: s.batch,
+            fileSize: s.fileSize,
+            createdAt: s.createdAt,
+            // Prefer the watermarked file once it exists; fall back to the original.
+            pdfUrl: fileUrlFor(origin, s.watermarkedPdfKey ?? s.pdfKey),
+          })),
+          meta: buildMeta(page, perPage, total),
+        };
+      },
+    );
   },
 );
 

@@ -8,6 +8,7 @@ import {
   type AutoSubmission,
   type User,
 } from "../../db/schema";
+import { invalidateSubmission } from "../../lib/cache";
 import { buildMeta } from "../../shared/utils/pagination";
 import type { AdminAutoSubmission } from "../../shared/types";
 import { publishAutoSubmission } from "../../lib/auto-submission";
@@ -236,6 +237,14 @@ route.post("/:id/approve", async (c) => {
       message: "Failed to load approved auto submission",
     });
   }
+
+  // Publishing created a new submission (+ possibly a new question).
+  if (detail.questionId !== null) {
+    c.executionCtx.waitUntil(
+      invalidateSubmission(c.env, detail.questionId, detail.contributor.username),
+    );
+  }
+
   return c.json(detail);
 });
 

@@ -4,6 +4,7 @@ import { and, count, desc, eq, type SQL } from "drizzle-orm";
 
 import { getDb } from "../../db/client";
 import { manualSubmissions, submissions } from "../../db/schema";
+import { invalidateSubmission, invalidateSubmissionEdit } from "../../lib/cache";
 import { toAdminSubmission } from "../../lib/admin-shape";
 import { buildMeta } from "../../shared/utils/pagination";
 import { parseId } from "../../lib/parse-id";
@@ -138,6 +139,12 @@ route.post("/", validate("form", submissionCreateForm), async (c) => {
   });
   if (!row) throw new HTTPException(500, { message: "Failed to load created submission" });
 
+  if (row.user) {
+    c.executionCtx.waitUntil(
+      invalidateSubmission(c.env, row.question.id, row.user.username),
+    );
+  }
+
   return c.json(toAdminSubmission(row, origin), 201);
 });
 
@@ -165,6 +172,12 @@ route.patch("/:id", validate("json", submissionUpdateSchema), async (c) => {
     with: submissionWith,
   });
   if (!row) throw new HTTPException(404, { message: "Submission not found" });
+
+  if (row.user) {
+    c.executionCtx.waitUntil(
+      invalidateSubmissionEdit(c.env, row.question.id, row.user.username),
+    );
+  }
 
   return c.json(toAdminSubmission(row, origin));
 });
@@ -227,6 +240,12 @@ route.put("/:id/pdf", async (c) => {
   });
   if (!row) throw new HTTPException(404, { message: "Submission not found" });
 
+  if (row.user) {
+    c.executionCtx.waitUntil(
+      invalidateSubmissionEdit(c.env, row.question.id, row.user.username),
+    );
+  }
+
   return c.json(toAdminSubmission(row, origin));
 });
 
@@ -235,14 +254,17 @@ route.delete("/:id", async (c) => {
   if (id === null) throw new HTTPException(404, { message: "Submission not found" });
 
   const db = getDb(c.env.DB);
-  const [row] = await db
-    .select({
-      pdfKey: submissions.pdfKey,
-      watermarkedPdfKey: submissions.watermarkedPdfKey,
-    })
-    .from(submissions)
-    .where(eq(submissions.id, id))
-    .limit(1);
+  // Pull the question + contributor too, so we can target cache invalidation
+  // before the row is gone.
+  const row = await db.query.submissions.findFirst({
+    where: eq(submissions.id, id),
+    columns: {
+      questionId: true,
+      pdfKey: true,
+      watermarkedPdfKey: true,
+    },
+    with: { user: { columns: { username: true } } },
+  });
   if (!row) throw new HTTPException(404, { message: "Submission not found" });
 
   const [{ value: manualSubmissionCount }] = await db
@@ -259,6 +281,12 @@ route.delete("/:id", async (c) => {
 
   // Best-effort R2 cleanup after the row is gone.
   await deleteObjects(c.env.BUCKET, [row.pdfKey, row.watermarkedPdfKey]);
+
+  if (row.user) {
+    c.executionCtx.waitUntil(
+      invalidateSubmission(c.env, row.questionId, row.user.username),
+    );
+  }
 
   return c.body(null, 204);
 });

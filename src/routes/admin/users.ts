@@ -4,6 +4,7 @@ import { and, count, desc, eq, like, or, type SQL } from "drizzle-orm";
 
 import { getDb } from "../../db/client";
 import { manualSubmissions, submissions, users } from "../../db/schema";
+import { bumpCache, invalidateUser } from "../../lib/cache";
 import { toAdminUser } from "../../lib/admin-shape";
 import { buildMeta } from "../../shared/utils/pagination";
 import { parseId } from "../../lib/parse-id";
@@ -104,6 +105,8 @@ route.patch("/:id", validate("json", userUpdateSchema), async (c) => {
     .returning(adminUserColumns);
   if (!updated) throw new HTTPException(404, { message: "User not found" });
 
+  c.executionCtx.waitUntil(invalidateUser(c.env, id, updated.username));
+
   return c.json(toAdminUser(updated, origin));
 });
 
@@ -119,7 +122,7 @@ route.delete("/:id", async (c) => {
 
   const db = getDb(c.env.DB);
   const [row] = await db
-    .select({ imageKey: users.imageKey })
+    .select({ imageKey: users.imageKey, username: users.username })
     .from(users)
     .where(eq(users.id, id))
     .limit(1);
@@ -156,6 +159,10 @@ route.delete("/:id", async (c) => {
       console.error("R2 delete failed for user image", row.imageKey, err);
     }
   }
+
+  // Only `/auth/me` (and a never-populated contributor cache, since a deletable
+  // user has 0 submissions) can reference this user.
+  c.executionCtx.waitUntil(bumpCache(c.env, `user:${id}`, `c:${row.username}`));
 
   return c.body(null, 204);
 });

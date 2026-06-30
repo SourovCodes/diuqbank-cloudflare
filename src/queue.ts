@@ -1,4 +1,9 @@
+import { eq } from "drizzle-orm";
+
+import { getDb } from "./db/client";
+import { submissions } from "./db/schema";
 import { markAutoFailed, runAutoExtraction } from "./lib/auto-submission";
+import { invalidateSubmissionEdit } from "./lib/cache";
 import { markWatermarkFailed, runWatermark } from "./lib/pdf-processor";
 import type { Bindings, PdfQueueMessage } from "./types";
 
@@ -22,6 +27,16 @@ export const handleQueue = async (
     try {
       if (body.kind === "watermark") {
         await runWatermark(env, body.submissionId);
+        // The watermarked PDF is now the public download — refresh the caches
+        // that surface this submission's pdfUrl.
+        const row = await getDb(env.DB).query.submissions.findFirst({
+          where: eq(submissions.id, body.submissionId),
+          columns: { questionId: true },
+          with: { user: { columns: { username: true } } },
+        });
+        if (row?.user) {
+          await invalidateSubmissionEdit(env, row.questionId, row.user.username);
+        }
       } else {
         await runAutoExtraction(env, body.autoSubmissionId);
       }

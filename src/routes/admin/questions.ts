@@ -4,6 +4,7 @@ import { and, count, desc, eq, type SQL } from "drizzle-orm";
 
 import { getDb, type Db } from "../../db/client";
 import { questions, submissions } from "../../db/schema";
+import { invalidateQuestion, invalidateQuestionCreate } from "../../lib/cache";
 import { buildMeta } from "../../shared/utils/pagination";
 import { parseId } from "../../lib/parse-id";
 import { buildQuestionTitle } from "../../shared/utils/question-title";
@@ -127,6 +128,8 @@ route.post("/", validate("json", questionCreateSchema), async (c) => {
   const detail = await loadQuestion(db, created.id);
   if (!detail) throw new HTTPException(500, { message: "Failed to load created question" });
 
+  c.executionCtx.waitUntil(invalidateQuestionCreate(c.env));
+
   return c.json(detail, 201);
 });
 
@@ -149,6 +152,8 @@ route.patch("/:id", validate("json", questionUpdateSchema), async (c) => {
 
   const detail = await loadQuestion(db, id);
   if (!detail) throw new HTTPException(404, { message: "Question not found" });
+
+  c.executionCtx.waitUntil(invalidateQuestion(c.env, id));
 
   return c.json(detail);
 });
@@ -177,6 +182,9 @@ route.delete("/:id", async (c) => {
   }
 
   await db.delete(questions).where(eq(questions.id, id));
+
+  c.executionCtx.waitUntil(invalidateQuestion(c.env, id));
+
   return c.body(null, 204);
 });
 

@@ -23,6 +23,17 @@
       "bucket_name": "diuqbank-files-prod"
     }
   ],
+  // KV cache for the public read endpoints (+ /auth/me). Invalidated by
+  // per-resource version tokens written from the mutation routes (see
+  // src/lib/cache.ts). Create the namespace, then paste its id below:
+  //   wrangler kv namespace create CACHE
+  // `wrangler dev` simulates KV locally, so the id only matters for deploy.
+  "kv_namespaces": [
+    {
+      "binding": "CACHE",
+      "id": "REPLACE_WITH_KV_NAMESPACE_ID"
+    }
+  ],
   // Single throttled queue fronting ALL external PDF Processor work — watermark
   // (submissions) and AI auto-submission (compress + Gemini). `max_concurrency`
   // caps how many run at once, bounding concurrent load on the shared service
