@@ -3,7 +3,7 @@ import { HTTPException } from "hono/http-exception";
 import { and, asc, count, eq, like, type SQL } from "drizzle-orm";
 
 import { getDb } from "../../db/client";
-import { courses, manualSubmissions, questions } from "../../db/schema";
+import { courses, questions } from "../../db/schema";
 import { buildMeta } from "../../shared/utils/pagination";
 import { parseId } from "../../lib/parse-id";
 import { planCourseMerge, runMerge } from "../../lib/merge";
@@ -118,16 +118,6 @@ route.delete("/:id", async (c) => {
   if (questionCount > 0) {
     throw new HTTPException(409, {
       message: `Cannot delete: ${questionCount} question(s) reference this course`,
-    });
-  }
-
-  const [{ value: manualSubmissionCount }] = await db
-    .select({ value: count() })
-    .from(manualSubmissions)
-    .where(eq(manualSubmissions.courseId, id));
-  if (manualSubmissionCount > 0) {
-    throw new HTTPException(409, {
-      message: `Cannot delete: ${manualSubmissionCount} manual submission(s) reference this course`,
     });
   }
 

@@ -6,7 +6,6 @@ import { getDb } from "../../db/client";
 import {
   courses,
   departments,
-  manualSubmissions,
   questions,
 } from "../../db/schema";
 import { buildMeta } from "../../shared/utils/pagination";
@@ -138,16 +137,6 @@ route.delete("/:id", async (c) => {
   if (questionCount > 0) {
     throw new HTTPException(409, {
       message: `Cannot delete: ${questionCount} question(s) reference this department`,
-    });
-  }
-
-  const [{ value: manualSubmissionCount }] = await db
-    .select({ value: count() })
-    .from(manualSubmissions)
-    .where(eq(manualSubmissions.departmentId, id));
-  if (manualSubmissionCount > 0) {
-    throw new HTTPException(409, {
-      message: `Cannot delete: ${manualSubmissionCount} manual submission(s) reference this department`,
     });
   }
 

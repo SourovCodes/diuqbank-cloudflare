@@ -141,18 +141,6 @@ export const manualSubmissions = sqliteTable(
     semesterName: text("semester_name").notNull(),
     examTypeName: text("exam_type_name").notNull(),
     note: text("note"),
-    departmentId: integer("department_id").references(() => departments.id, {
-      onDelete: "restrict",
-    }),
-    courseId: integer("course_id").references(() => courses.id, {
-      onDelete: "restrict",
-    }),
-    semesterId: integer("semester_id").references(() => semesters.id, {
-      onDelete: "restrict",
-    }),
-    examTypeId: integer("exam_type_id").references(() => examTypes.id, {
-      onDelete: "restrict",
-    }),
     pdfKey: text("pdf_key").notNull(),
     status: text("status", {
       enum: ["pending_review", "approved", "rejected"],
@@ -182,7 +170,7 @@ export const manualSubmissions = sqliteTable(
     ),
     check(
       "manual_submissions_approval_links_check",
-      sql`(${table.status} = 'approved' AND ${table.departmentId} IS NOT NULL AND ${table.courseId} IS NOT NULL AND ${table.semesterId} IS NOT NULL AND ${table.examTypeId} IS NOT NULL AND ${table.questionId} IS NOT NULL AND ${table.submissionId} IS NOT NULL) OR (${table.status} <> 'approved' AND ${table.departmentId} IS NULL AND ${table.courseId} IS NULL AND ${table.semesterId} IS NULL AND ${table.examTypeId} IS NULL AND ${table.questionId} IS NULL AND ${table.submissionId} IS NULL)`,
+      sql`(${table.status} = 'approved' AND ${table.questionId} IS NOT NULL AND ${table.submissionId} IS NOT NULL) OR (${table.status} <> 'approved' AND ${table.questionId} IS NULL AND ${table.submissionId} IS NULL)`,
     ),
   ],
 );
@@ -318,22 +306,6 @@ export const manualSubmissionsRelations = relations(
       fields: [manualSubmissions.reviewedBy],
       references: [users.id],
       relationName: "manualSubmissionReviewer",
-    }),
-    department: one(departments, {
-      fields: [manualSubmissions.departmentId],
-      references: [departments.id],
-    }),
-    course: one(courses, {
-      fields: [manualSubmissions.courseId],
-      references: [courses.id],
-    }),
-    semester: one(semesters, {
-      fields: [manualSubmissions.semesterId],
-      references: [semesters.id],
-    }),
-    examType: one(examTypes, {
-      fields: [manualSubmissions.examTypeId],
-      references: [examTypes.id],
     }),
     question: one(questions, {
       fields: [manualSubmissions.questionId],

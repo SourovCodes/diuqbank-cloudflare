@@ -75,17 +75,17 @@ const toAdminManualSubmission = (
   userId: row.userId,
   contributor: toAuthUser(row.user, origin),
   department: {
-    id: row.departmentId,
+    id: null,
     name: row.departmentName,
     shortName: row.departmentShortName,
   },
   course: {
-    id: row.courseId,
-    departmentId: row.departmentId,
+    id: null,
+    departmentId: null,
     name: row.courseName,
   },
-  semester: { id: row.semesterId, name: row.semesterName },
-  examType: { id: row.examTypeId, name: row.examTypeName },
+  semester: { id: null, name: row.semesterName },
+  examType: { id: null, name: row.examTypeName },
   note: row.note,
   status: row.status,
   rejectedReason: row.rejectedReason,
@@ -423,10 +423,6 @@ route.post("/:id/approve", async (c) => {
          rejected_reason = NULL,
          reviewed_by = ?,
          pdf_key = ?,
-         department_id = ?,
-         course_id = ?,
-         semester_id = ?,
-         exam_type_id = ?,
          question_id = (
            SELECT q.id FROM questions AS q
            WHERE q.department_id = ?
@@ -445,10 +441,6 @@ route.post("/:id/approve", async (c) => {
   ).bind(
     reviewerId,
     destinationKey,
-    resolved.department.id,
-    resolved.course.id,
-    resolved.semester.id,
-    resolved.examType.id,
     resolved.department.id,
     resolved.course.id,
     resolved.semester.id,
@@ -529,10 +521,6 @@ route.post(
         status: "rejected",
         rejectedReason: reason,
         reviewedBy: c.get("user").sub,
-        departmentId: null,
-        courseId: null,
-        semesterId: null,
-        examTypeId: null,
         questionId: null,
         submissionId: null,
       })

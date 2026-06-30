@@ -172,10 +172,6 @@ export async function planSemesterMerge(
 
   const statements: Stmt[] = [
     ...r.statements,
-    db
-      .update(manualSubmissions)
-      .set({ semesterId: keepId })
-      .where(inArray(manualSubmissions.semesterId, loserIds)),
     db.delete(semesters).where(inArray(semesters.id, loserIds)),
   ];
   return {
@@ -209,10 +205,6 @@ export async function planExamTypeMerge(
 
   const statements: Stmt[] = [
     ...r.statements,
-    db
-      .update(manualSubmissions)
-      .set({ examTypeId: keepId })
-      .where(inArray(manualSubmissions.examTypeId, loserIds)),
     db.delete(examTypes).where(inArray(examTypes.id, loserIds)),
   ];
   return {
@@ -254,10 +246,6 @@ export async function planCourseMerge(
 
   const statements: Stmt[] = [
     ...r.statements,
-    db
-      .update(manualSubmissions)
-      .set({ courseId: keepId })
-      .where(inArray(manualSubmissions.courseId, loserIds)),
     db.delete(courses).where(inArray(courses.id, loserIds)),
   ];
   return {
@@ -302,7 +290,7 @@ export async function planDepartmentMerge(
   }
 
   const courseRemap = new Map<number, number>(); // loser course id → survivor course id
-  const courseCleanup: Stmt[] = []; // snapshot manual course_id + delete loser courses
+  const courseCleanup: Stmt[] = [];
   let coursesMerged = 0;
   for (const group of byName.values()) {
     if (group.length < 2) continue;
@@ -312,12 +300,6 @@ export async function planDepartmentMerge(
     coursesMerged += losers.length;
     const loserCourseIds = losers.map((c) => c.id);
     for (const lid of loserCourseIds) courseRemap.set(lid, survivor.id);
-    courseCleanup.push(
-      db
-        .update(manualSubmissions)
-        .set({ courseId: survivor.id })
-        .where(inArray(manualSubmissions.courseId, loserCourseIds)),
-    );
     courseCleanup.push(db.delete(courses).where(inArray(courses.id, loserCourseIds)));
   }
 
@@ -346,10 +328,6 @@ export async function planDepartmentMerge(
       .update(courses)
       .set({ departmentId: keepId })
       .where(inArray(courses.departmentId, loserIds)),
-    db
-      .update(manualSubmissions)
-      .set({ departmentId: keepId })
-      .where(inArray(manualSubmissions.departmentId, loserIds)),
     db.delete(departments).where(inArray(departments.id, loserIds)),
   ];
   return {
