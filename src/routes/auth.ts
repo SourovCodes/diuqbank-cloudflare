@@ -10,7 +10,6 @@ import { signAuthToken } from "../lib/jwt";
 import { toAuthUser } from "../lib/user-shape";
 import { validate } from "../lib/validator";
 import { requireAuth } from "../middleware/auth";
-import { rateLimit } from "../middleware/rate-limit";
 import { googleSignInSchema } from "../shared/schemas/auth";
 import { profileUpdateSchema } from "../shared/schemas/profile";
 import type { AppEnv } from "../types";
@@ -42,7 +41,6 @@ auth.get("/config", (c) => c.json({ googleClientId: c.env.GOOGLE_CLIENT_ID }));
 
 auth.post(
   "/google",
-  rateLimit((env) => env.AUTH_RATELIMIT),
   validate("json", googleSignInSchema),
   async (c) => {
   const { idToken } = c.req.valid("json");
@@ -164,7 +162,6 @@ auth.patch("/me", requireAuth, validate("json", profileUpdateSchema), async (c) 
 auth.put(
   "/me/image",
   requireAuth,
-  rateLimit((env) => env.AUTH_RATELIMIT),
   async (c) => {
   const { buffer, contentType, ext } = await parseImageUpload(c);
   const payload = c.get("user");

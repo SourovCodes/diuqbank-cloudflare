@@ -23,24 +23,6 @@
       "bucket_name": "diuqbank-files-prod"
     }
   ],
-  // Cloudflare native rate limiting (per-datacenter, fixed window). `period` may
-  // only be 10 or 60 seconds. Counts are scoped per `namespace_id`, so each
-  // limiter needs a distinct one. Wrapped by src/middleware/rate-limit.ts.
-  "ratelimits": [
-    {
-      // Strict limiter for expensive / abuse-prone endpoints (Google sign-in,
-      // file uploads → R2). Keyed per IP or user.
-      "name": "AUTH_RATELIMIT",
-      "namespace_id": "1001",
-      "simple": { "limit": 10, "period": 60 }
-    },
-    {
-      // General per-IP limiter applied to every request as a backstop.
-      "name": "API_RATELIMIT",
-      "namespace_id": "1002",
-      "simple": { "limit": 120, "period": 60 }
-    }
-  ],
   // Single throttled queue fronting ALL external PDF Processor work — watermark
   // (submissions) and AI auto-submission (compress + Gemini). `max_concurrency`
   // caps how many run at once, bounding concurrent load on the shared service

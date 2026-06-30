@@ -12,7 +12,6 @@ import { parsePdfFile } from "../lib/pdf-upload";
 import { fileUrlFor } from "../lib/user-shape";
 import { validate } from "../lib/validator";
 import { requireAuth } from "../middleware/auth";
-import { rateLimit } from "../middleware/rate-limit";
 import {
   autoSubmissionCreateForm,
   autoSubmissionsListQuery,
@@ -79,7 +78,6 @@ route.get("/", validate("query", autoSubmissionsListQuery), async (c) => {
 
 route.post(
   "/",
-  rateLimit((env) => env.AUTH_RATELIMIT),
   validate("form", autoSubmissionCreateForm),
   async (c) => {
     const { extraContext } = c.req.valid("form");

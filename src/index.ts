@@ -6,7 +6,6 @@ import { logger } from "hono/logger";
 import { requestId } from "hono/request-id";
 import { secureHeaders } from "hono/secure-headers";
 
-import { rateLimit } from "./middleware/rate-limit";
 import { openApiDoc } from "./openapi";
 import { handleQueue } from "./queue";
 import admin from "./routes/admin";
@@ -94,15 +93,6 @@ app.use("*", (c, next) =>
   (c.req.header("content-type") ?? "").includes("multipart/form-data")
     ? next()
     : jsonBodyLimit(c, next),
-);
-
-// Global per-IP backstop rate limiter. Skips the health probe and the immutable
-// file route (browser-cached; a page of avatars/PDFs shouldn't burn the budget).
-const globalRateLimit = rateLimit((env) => env.API_RATELIMIT);
-app.use("*", (c, next) =>
-  c.req.path === "/health" || c.req.path.startsWith("/files")
-    ? next()
-    : globalRateLimit(c, next),
 );
 
 app.get("/", (c) =>

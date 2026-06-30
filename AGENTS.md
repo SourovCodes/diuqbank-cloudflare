@@ -28,7 +28,6 @@ src/
     client.ts          getDb(c.env.DB)
   middleware/
     auth.ts            requireAuth / requireAdmin
-    rate-limit.ts      Cloudflare native rate-limit wrapper
   routes/              One file per route domain
     admin/             Admin resources; auth applied once in index.ts
   lib/                 JWT, upload validation, shape helpers, taxonomy, PDF helpers
