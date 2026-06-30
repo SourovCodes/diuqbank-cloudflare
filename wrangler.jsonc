@@ -31,7 +31,7 @@
   "kv_namespaces": [
     {
       "binding": "CACHE",
-      "id": "REPLACE_WITH_KV_NAMESPACE_ID"
+      "id": "17dcd20d1e4843cab7f381ad4b2d9dd4"
     }
   ],
   // Single throttled queue fronting ALL external PDF Processor work — watermark
