@@ -3,6 +3,7 @@ import type {
   Submission, Contributor, User, ManualSubmission, ContributorSubmission,
   Department, Course, Semester, ExamType,
   AdminQuestion, AdminSubmission, AdminManualSubmission, AdminUser, WatermarkStatus,
+  AutoSubmission, AdminAutoSubmission, AutoSubmissionStatus,
   ApiErrorResponse, Page, MergeSummary,
 } from '@diuqbank/shared/types'
 
@@ -201,6 +202,22 @@ export const api = {
   deleteManualSubmission: (token: string, id: number) =>
     authedDelete(`/manual-submissions/${id}`, token),
 
+  // --- Auto Submissions (AI) ---
+  createAutoSubmission: (token: string, formData: FormData) =>
+    authedPost<AutoSubmission>('/auto-submissions', token, formData),
+
+  myAutoSubmissions: (token: string, page = 1) =>
+    authedGet<{ data: AutoSubmission[]; meta: PaginationMeta }>(
+      `/auto-submissions?page=${page}&perPage=20`,
+      token
+    ),
+
+  getAutoSubmission: (token: string, id: number) =>
+    authedGet<AutoSubmission>(`/auto-submissions/${id}`, token),
+
+  deleteAutoSubmission: (token: string, id: number) =>
+    authedDelete(`/auto-submissions/${id}`, token),
+
   // --- Admin: Departments ---
   adminDepartments: (token: string, params: AdminListParams & { search?: string } = {}) =>
     authedGet<Page<Department>>(`/admin/departments${qs({ page: 1, perPage: 20, ...params })}`, token),
@@ -308,6 +325,25 @@ export const api = {
     authedPost<AdminManualSubmission>(`/admin/manual-submissions/${id}/reject`, token, { reason }),
   adminDeleteManualSubmission: (token: string, id: number) =>
     authedDelete(`/admin/manual-submissions/${id}`, token),
+
+  // --- Admin: Auto Submissions ---
+  adminAutoSubmissions: (
+    token: string,
+    params: AdminListParams & { status?: AutoSubmissionStatus | ''; userId?: number | string } = {}
+  ) => authedGet<Page<AdminAutoSubmission>>(`/admin/auto-submissions${qs({ page: 1, perPage: 20, ...params })}`, token),
+  adminAutoSubmission: (token: string, id: number) =>
+    authedGet<AdminAutoSubmission>(`/admin/auto-submissions/${id}`, token),
+  updateAutoSubmission: (
+    token: string,
+    id: number,
+    body: { departmentName?: string; departmentShortName?: string; courseName?: string; semesterName?: string; examTypeName?: string; section?: string; batch?: string }
+  ) => authedPatch<AdminAutoSubmission>(`/admin/auto-submissions/${id}`, token, body),
+  approveAutoSubmission: (token: string, id: number) =>
+    authedPost<AdminAutoSubmission>(`/admin/auto-submissions/${id}/approve`, token, {}),
+  rejectAutoSubmission: (token: string, id: number, reason: string) =>
+    authedPost<AdminAutoSubmission>(`/admin/auto-submissions/${id}/reject`, token, { reason }),
+  adminDeleteAutoSubmission: (token: string, id: number) =>
+    authedDelete(`/admin/auto-submissions/${id}`, token),
 
   // --- Admin: Users ---
   adminUsers: (token: string, params: AdminListParams & { role?: User['role'] | ''; search?: string } = {}) =>

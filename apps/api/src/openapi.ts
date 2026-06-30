@@ -10,6 +10,10 @@ import {
   examTypeUpdateSchema,
 } from "@diuqbank/shared/schemas/admin/exam-types";
 import {
+  adminAutoSubmissionRejectSchema,
+  adminAutoSubmissionUpdateSchema,
+} from "@diuqbank/shared/schemas/admin/auto-submissions";
+import {
   adminManualSubmissionRejectSchema,
   adminManualSubmissionUpdateSchema,
 } from "@diuqbank/shared/schemas/admin/manual-submissions";
@@ -238,6 +242,42 @@ const manualSubmissionList = z.object({
   meta: paginationMeta,
 });
 
+const autoSubmissionStatusEnum = z.enum([
+  "processing",
+  "needs_review",
+  "published",
+  "rejected",
+  "failed",
+]);
+
+const autoSubmission = z.object({
+  id: z.number().int(),
+  status: autoSubmissionStatusEnum,
+  isAcceptable: z.boolean().nullable(),
+  aiReasoning: z.string().nullable(),
+  departmentName: z.string().nullable(),
+  departmentShortName: z.string().nullable(),
+  courseName: z.string().nullable(),
+  semesterName: z.string().nullable(),
+  examTypeName: z.string().nullable(),
+  section: z.string().nullable(),
+  batch: z.string().nullable(),
+  extraContext: z.string().nullable(),
+  rejectedReason: z.string().nullable(),
+  questionId: z.number().int().nullable(),
+  submissionId: z.number().int().nullable(),
+  pdfUrl: z
+    .string()
+    .nullable()
+    .describe("Absolute URL to the uploaded PDF, served by `GET /files/:key`."),
+  createdAt: z.number().int().describe("Unix epoch seconds (UTC)"),
+});
+
+const autoSubmissionList = z.object({
+  data: z.array(autoSubmission),
+  meta: paginationMeta,
+});
+
 // --- Admin read models ----------------------------------------------------
 
 const departmentList = z.object({
@@ -317,6 +357,40 @@ const adminManualSubmissionList = z.object({
   meta: paginationMeta,
 });
 
+const adminAutoSubmission = z.object({
+  id: z.number().int(),
+  userId: z.number().int(),
+  contributor: user,
+  status: autoSubmissionStatusEnum,
+  isAcceptable: z.boolean().nullable(),
+  aiReasoning: z.string().nullable(),
+  departmentName: z.string().nullable(),
+  departmentShortName: z.string().nullable(),
+  courseName: z.string().nullable(),
+  semesterName: z.string().nullable(),
+  examTypeName: z.string().nullable(),
+  section: z.string().nullable(),
+  batch: z.string().nullable(),
+  extraContext: z.string().nullable(),
+  fileSize: z.number().int().describe("Size of the uploaded PDF in bytes."),
+  processingError: z.string().nullable(),
+  rejectedReason: z.string().nullable(),
+  reviewedBy: z.number().int().nullable(),
+  reviewer: user.nullable(),
+  questionId: z.number().int().nullable(),
+  submissionId: z.number().int().nullable(),
+  pdfUrl: z
+    .string()
+    .nullable()
+    .describe("Absolute URL to the uploaded PDF, served by `GET /files/:key`."),
+  createdAt: z.number().int().describe("Unix epoch seconds (UTC)"),
+});
+
+const adminAutoSubmissionList = z.object({
+  data: z.array(adminAutoSubmission),
+  meta: paginationMeta,
+});
+
 const adminUser = z.object({
   id: z.number().int(),
   name: z.string(),
@@ -368,6 +442,25 @@ const componentSchemas = {
   QuestionSubmissions: toSchema(questionSubmissions),
   ManualSubmission: toSchema(manualSubmission),
   ManualSubmissionList: toSchema(manualSubmissionList),
+  AutoSubmission: toSchema(autoSubmission),
+  AutoSubmissionList: toSchema(autoSubmissionList),
+  AutoSubmissionCreateForm: {
+    type: "object",
+    properties: {
+      pdf: {
+        type: "string",
+        format: "binary",
+        description: "PDF file (max 20 MB).",
+      },
+      extraContext: {
+        type: "string",
+        maxLength: 1000,
+        description:
+          "Optional hint for the AI (e.g. department or semester) to resolve ambiguity.",
+      },
+    },
+    required: ["pdf"],
+  },
   ManualSubmissionCreateForm: {
     type: "object",
     properties: {
@@ -408,6 +501,8 @@ const componentSchemas = {
   UpdateQuestion: toSchema(questionUpdateSchema),
   UpdateManualSubmission: toSchema(adminManualSubmissionUpdateSchema),
   RejectManualSubmission: toSchema(adminManualSubmissionRejectSchema),
+  UpdateAutoSubmission: toSchema(adminAutoSubmissionUpdateSchema),
+  RejectAutoSubmission: toSchema(adminAutoSubmissionRejectSchema),
   UpdateSubmission: toSchema(submissionUpdateSchema),
   UpdateUser: toSchema(userUpdateSchema),
   SubmissionCreateForm: {
@@ -450,6 +545,8 @@ const componentSchemas = {
   AdminSubmissionList: toSchema(adminSubmissionList),
   AdminManualSubmission: toSchema(adminManualSubmission),
   AdminManualSubmissionList: toSchema(adminManualSubmissionList),
+  AdminAutoSubmission: toSchema(adminAutoSubmission),
+  AdminAutoSubmissionList: toSchema(adminAutoSubmissionList),
   AdminUser: toSchema(adminUser),
   AdminUserList: toSchema(adminUserList),
 };
@@ -762,6 +859,26 @@ const manualSubmissionFilterParams = [
     schema: { type: "string", minLength: 1, maxLength },
     description: `Case-insensitive exact match on ${name}.`,
   })),
+];
+
+const autoSubmissionFilterParams = [
+  {
+    name: "status",
+    in: "query",
+    required: false,
+    schema: {
+      type: "string",
+      enum: ["processing", "needs_review", "published", "rejected", "failed"],
+    },
+    description: "Filter by processing/review status.",
+  },
+  {
+    name: "userId",
+    in: "query",
+    required: false,
+    schema: { type: "integer", minimum: 1 },
+    description: "Filter by submitting user id.",
+  },
 ];
 
 const userFilterParams = [
@@ -1147,6 +1264,118 @@ const adminPaths = {
       },
     },
   },
+  "/admin/auto-submissions": {
+    get: {
+      tags: ["admin-auto-submissions"],
+      summary: "List AI auto-submissions",
+      ...authFields(
+        "Admin",
+        "Paginated review queue for AI auto-submissions. Filter by status or user. `needs_review`/`failed` rows are the ones awaiting an admin.",
+      ),
+      parameters: [...pageParams, ...autoSubmissionFilterParams],
+      responses: {
+        "200": okJson("OK", ref("AdminAutoSubmissionList")),
+        "400": commonErrors["400"],
+        "401": commonErrors["401"],
+        "403": commonErrors["403"],
+      },
+    },
+  },
+  "/admin/auto-submissions/{id}": {
+    get: {
+      tags: ["admin-auto-submissions"],
+      summary: "Get an auto-submission",
+      ...authFields(
+        "Admin",
+        "Returns the AI extraction snapshot, submitter, reviewer, PDF URL, and linked records once published.",
+      ),
+      parameters: [idPathParam("Auto submission")],
+      responses: {
+        "200": okJson("OK", ref("AdminAutoSubmission")),
+        "401": commonErrors["401"],
+        "403": commonErrors["403"],
+        "404": commonErrors["404"],
+      },
+    },
+    patch: {
+      tags: ["admin-auto-submissions"],
+      summary: "Edit an auto-submission",
+      ...authFields(
+        "Admin",
+        "Corrects the AI-extracted metadata (department, course, semester, exam type, section, batch) before approving. Published rows are immutable.",
+      ),
+      parameters: [idPathParam("Auto submission")],
+      requestBody: {
+        required: true,
+        content: json(ref("UpdateAutoSubmission")),
+      },
+      responses: {
+        "200": okJson("Updated", ref("AdminAutoSubmission")),
+        "400": commonErrors["400"],
+        "401": commonErrors["401"],
+        "403": commonErrors["403"],
+        "404": commonErrors["404"],
+        "409": errResp("Published auto submissions cannot be edited"),
+      },
+    },
+    delete: {
+      tags: ["admin-auto-submissions"],
+      summary: "Delete an auto-submission",
+      ...authFields(
+        "Admin",
+        "Deletes the auto-submission record and its original uploaded PDF. The published live submission (with its own copied PDF) is unaffected.",
+      ),
+      parameters: [idPathParam("Auto submission")],
+      responses: {
+        "204": noContent,
+        "401": commonErrors["401"],
+        "403": commonErrors["403"],
+        "404": commonErrors["404"],
+      },
+    },
+  },
+  "/admin/auto-submissions/{id}/approve": {
+    post: {
+      tags: ["admin-auto-submissions"],
+      summary: "Approve an auto-submission",
+      ...authFields(
+        "Admin",
+        "Uses the (possibly edited) extracted metadata to race-safely find-or-create the department/course/semester/exam-type and question, copies the PDF into `submissions/`, creates the real submission, links it, and records the reviewing admin.",
+      ),
+      parameters: [idPathParam("Auto submission")],
+      responses: {
+        "200": okJson("Approved", ref("AdminAutoSubmission")),
+        "400": errResp("Required metadata is missing — fill it in before approving"),
+        "401": commonErrors["401"],
+        "403": commonErrors["403"],
+        "404": commonErrors["404"],
+        "409": errResp("Already published, or the PDF is missing from storage"),
+      },
+    },
+  },
+  "/admin/auto-submissions/{id}/reject": {
+    post: {
+      tags: ["admin-auto-submissions"],
+      summary: "Reject an auto-submission",
+      ...authFields(
+        "Admin",
+        "Rejects an unpublished auto-submission with a required reason and records the reviewing admin.",
+      ),
+      parameters: [idPathParam("Auto submission")],
+      requestBody: {
+        required: true,
+        content: json(ref("RejectAutoSubmission")),
+      },
+      responses: {
+        "200": okJson("Rejected", ref("AdminAutoSubmission")),
+        "400": commonErrors["400"],
+        "401": commonErrors["401"],
+        "403": commonErrors["403"],
+        "404": commonErrors["404"],
+        "409": errResp("Published auto submissions cannot be rejected"),
+      },
+    },
+  },
   "/admin/users": {
     get: {
       tags: ["admin-users"],
@@ -1286,6 +1515,11 @@ export const buildOpenApiDoc = () => ({
       name: "manual-submissions",
       description: "Signed-in users: upload and manage PDFs submitted for review.",
     },
+    {
+      name: "auto-submissions",
+      description:
+        "Signed-in users: upload a PDF for AI extraction and auto-publishing.",
+    },
     { name: "admin-departments", description: "Admin: manage departments." },
     { name: "admin-courses", description: "Admin: manage courses." },
     { name: "admin-semesters", description: "Admin: manage semesters." },
@@ -1295,6 +1529,10 @@ export const buildOpenApiDoc = () => ({
     {
       name: "admin-manual-submissions",
       description: "Admin: review and manage manual submissions.",
+    },
+    {
+      name: "admin-auto-submissions",
+      description: "Admin: review and manage AI auto-submissions.",
     },
     { name: "admin-users", description: "Admin: manage users." },
   ],
@@ -1308,6 +1546,7 @@ export const buildOpenApiDoc = () => ({
         "questions",
         "filter-options",
         "manual-submissions",
+        "auto-submissions",
       ],
     },
     {
@@ -1320,6 +1559,7 @@ export const buildOpenApiDoc = () => ({
         "admin-questions",
         "admin-submissions",
         "admin-manual-submissions",
+        "admin-auto-submissions",
         "admin-users",
       ],
     },
@@ -1641,6 +1881,71 @@ export const buildOpenApiDoc = () => ({
           "401": commonErrors["401"],
           "404": commonErrors["404"],
           "409": errResp("Approved manual submissions cannot be deleted by users"),
+        },
+      },
+    },
+    "/auto-submissions": {
+      get: {
+        tags: ["auto-submissions"],
+        summary: "List your auto-submissions",
+        ...authFields(
+          "User",
+          "Returns only AI auto-submissions owned by the authenticated user, newest first.",
+        ),
+        parameters: pageParams,
+        responses: {
+          "200": okJson("OK", ref("AutoSubmissionList")),
+          "400": commonErrors["400"],
+          "401": commonErrors["401"],
+        },
+      },
+      post: {
+        tags: ["auto-submissions"],
+        summary: "Create an auto-submission",
+        ...authFields(
+          "User",
+          "Uploads just a PDF (plus an optional context hint). Returns immediately with `status: processing`; an AI pipeline then extracts the metadata and either auto-publishes a live submission or routes it to admin review. Poll `GET /auto-submissions/{id}` for the outcome.",
+        ),
+        requestBody: {
+          required: true,
+          content: multipart("AutoSubmissionCreateForm"),
+        },
+        responses: {
+          "201": okJson("Created", ref("AutoSubmission")),
+          "400": commonErrors["400"],
+          "401": commonErrors["401"],
+          "413": errResp("PDF exceeds the 20 MB size limit"),
+        },
+      },
+    },
+    "/auto-submissions/{id}": {
+      get: {
+        tags: ["auto-submissions"],
+        summary: "Get one of your auto-submissions",
+        ...authFields(
+          "User",
+          "A single auto-submission you own, including its processing status, the AI's extracted metadata/reasoning, and the linked submission once published.",
+        ),
+        parameters: [idPathParam("Auto submission")],
+        responses: {
+          "200": okJson("OK", ref("AutoSubmission")),
+          "401": commonErrors["401"],
+          "404": commonErrors["404"],
+        },
+      },
+      delete: {
+        tags: ["auto-submissions"],
+        summary: "Delete your auto-submission",
+        ...authFields(
+          "User",
+          "Deletes an auto-submission only when it belongs to the authenticated user, then removes its PDF from storage. Published auto-submissions cannot be deleted by users.",
+        ),
+        parameters: [idPathParam("Auto submission")],
+        responses: {
+          "204": noContent,
+          "401": commonErrors["401"],
+          "404": commonErrors["404"],
+          "409": errResp("Published auto submissions cannot be deleted by users"),
         },
       },
     },

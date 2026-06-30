@@ -85,6 +85,36 @@ export type ManualSubmission = {
   createdAt: number
 }
 
+export type AutoSubmissionStatus =
+  | 'processing'
+  | 'needs_review'
+  | 'published'
+  | 'rejected'
+  | 'failed'
+
+// AI auto-submission (user uploads only a PDF; Gemini extracts the metadata).
+// Extracted fields are flat + nullable because they're filled asynchronously by
+// the queue consumer and may be partial when the AI isn't confident.
+export type AutoSubmission = {
+  id: number
+  status: AutoSubmissionStatus
+  isAcceptable: boolean | null
+  aiReasoning: string | null
+  departmentName: string | null
+  departmentShortName: string | null
+  courseName: string | null
+  semesterName: string | null
+  examTypeName: string | null
+  section: string | null
+  batch: string | null
+  extraContext: string | null
+  rejectedReason: string | null
+  questionId: number | null
+  submissionId: number | null
+  pdfUrl: string | null
+  createdAt: number
+}
+
 export type PaginationMeta = {
   page: number
   perPage: number
@@ -151,6 +181,32 @@ export type AdminManualSubmission = {
   examType: { id: number | null; name: string }
   note: string | null
   status: 'pending_review' | 'approved' | 'rejected'
+  rejectedReason: string | null
+  reviewedBy: number | null
+  reviewer: User | null
+  questionId: number | null
+  submissionId: number | null
+  pdfUrl: string | null
+  createdAt: number
+}
+
+export type AdminAutoSubmission = {
+  id: number
+  userId: number
+  contributor: User
+  status: AutoSubmissionStatus
+  isAcceptable: boolean | null
+  aiReasoning: string | null
+  departmentName: string | null
+  departmentShortName: string | null
+  courseName: string | null
+  semesterName: string | null
+  examTypeName: string | null
+  section: string | null
+  batch: string | null
+  extraContext: string | null
+  fileSize: number
+  processingError: string | null
   rejectedReason: string | null
   reviewedBy: number | null
   reviewer: User | null

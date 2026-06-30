@@ -1,6 +1,6 @@
 import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { api } from '../lib/api'
-import type { WatermarkStatus, ManualSubmission, User } from '@diuqbank/shared/types'
+import type { WatermarkStatus, ManualSubmission, User, AutoSubmissionStatus } from '@diuqbank/shared/types'
 
 type Filters = Record<string, string | number | undefined>
 
@@ -58,6 +58,22 @@ export function useAdminManualSubmissions(
 ) {
   return useListQuery('admin-manual-submissions', token, { page, ...filters }, () =>
     api.adminManualSubmissions(token!, { page, ...filters }))
+}
+
+export function useAdminAutoSubmissions(
+  token: string | null,
+  page = 1,
+  filters: { status?: AutoSubmissionStatus | ''; userId?: string } = {}
+) {
+  return useQuery({
+    queryKey: ['admin-auto-submissions', page, filters.status, filters.userId],
+    queryFn: () => api.adminAutoSubmissions(token!, { page, ...filters }),
+    enabled: !!token,
+    placeholderData: keepPreviousData,
+    // Keep refreshing while any row is still being processed by the AI pipeline.
+    refetchInterval: query =>
+      query.state.data?.data.some(s => s.status === 'processing') ? 4000 : false,
+  })
 }
 
 export function useAdminUsers(

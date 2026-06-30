@@ -187,6 +187,55 @@ export const manualSubmissions = sqliteTable(
   ],
 );
 
+export const autoSubmissions = sqliteTable(
+  "auto_submissions",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    pdfKey: text("pdf_key").notNull(),
+    fileSize: integer("file_size").notNull(),
+    status: text("status", {
+      enum: ["processing", "needs_review", "published", "rejected", "failed"],
+    })
+      .notNull()
+      .default("processing"),
+    // AI extraction snapshot — null until the queue consumer runs.
+    isAcceptable: integer("is_acceptable", { mode: "boolean" }),
+    aiReasoning: text("ai_reasoning"),
+    extractedDepartmentName: text("extracted_department_name"),
+    extractedDepartmentShortName: text("extracted_department_short_name"),
+    extractedCourseName: text("extracted_course_name"),
+    extractedSemesterName: text("extracted_semester_name"),
+    extractedExamTypeName: text("extracted_exam_type_name"),
+    section: text("section"),
+    batch: text("batch"),
+    // Optional hint the uploader provides to help the model resolve ambiguity.
+    extraContext: text("extra_context"),
+    // Review / linkage.
+    rejectedReason: text("rejected_reason"),
+    reviewedBy: integer("reviewed_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    questionId: integer("question_id").references(() => questions.id, {
+      onDelete: "restrict",
+    }),
+    submissionId: integer("submission_id").references(() => submissions.id, {
+      onDelete: "restrict",
+    }),
+    // Infra-failure detail for the `failed` status.
+    processingError: text("processing_error"),
+    createdAt: integer("created_at")
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (table) => [
+    index("auto_submissions_user_id_idx").on(table.userId),
+    index("auto_submissions_status_idx").on(table.status),
+  ],
+);
+
 export const coursesRelations = relations(courses, ({ one, many }) => ({
   department: one(departments, {
     fields: [courses.departmentId],
@@ -227,6 +276,7 @@ export const questionsRelations = relations(questions, ({ one, many }) => ({
   }),
   submissions: many(submissions),
   manualSubmissions: many(manualSubmissions),
+  autoSubmissions: many(autoSubmissions),
 }));
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -236,6 +286,12 @@ export const usersRelations = relations(users, ({ many }) => ({
   }),
   reviewedManualSubmissions: many(manualSubmissions, {
     relationName: "manualSubmissionReviewer",
+  }),
+  autoSubmissions: many(autoSubmissions, {
+    relationName: "autoSubmissionOwner",
+  }),
+  reviewedAutoSubmissions: many(autoSubmissions, {
+    relationName: "autoSubmissionReviewer",
   }),
 }));
 
@@ -290,6 +346,30 @@ export const manualSubmissionsRelations = relations(
   }),
 );
 
+export const autoSubmissionsRelations = relations(
+  autoSubmissions,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [autoSubmissions.userId],
+      references: [users.id],
+      relationName: "autoSubmissionOwner",
+    }),
+    reviewer: one(users, {
+      fields: [autoSubmissions.reviewedBy],
+      references: [users.id],
+      relationName: "autoSubmissionReviewer",
+    }),
+    question: one(questions, {
+      fields: [autoSubmissions.questionId],
+      references: [questions.id],
+    }),
+    submission: one(submissions, {
+      fields: [autoSubmissions.submissionId],
+      references: [submissions.id],
+    }),
+  }),
+);
+
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type Department = typeof departments.$inferSelect;
@@ -299,3 +379,5 @@ export type ExamType = typeof examTypes.$inferSelect;
 export type Question = typeof questions.$inferSelect;
 export type Submission = typeof submissions.$inferSelect;
 export type ManualSubmission = typeof manualSubmissions.$inferSelect;
+export type AutoSubmission = typeof autoSubmissions.$inferSelect;
+export type NewAutoSubmission = typeof autoSubmissions.$inferInsert;

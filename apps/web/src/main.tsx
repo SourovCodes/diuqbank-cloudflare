@@ -20,10 +20,13 @@ import { QuestionDetailPage } from './pages/QuestionDetailPage'
 import { AuthPage } from './pages/AuthPage'
 import { EditProfilePage } from './pages/EditProfilePage'
 import { ManualSubmissionPage } from './pages/ManualSubmissionPage'
+import { AutoSubmissionPage } from './pages/AutoSubmissionPage'
 import { ContributorsPage } from './pages/ContributorsPage'
 import { ContributorProfilePage } from './pages/ContributorProfilePage'
 import { MyManualSubmissionsPage } from './pages/MyManualSubmissionsPage'
 import { ManualSubmissionDetailPage } from './pages/ManualSubmissionDetailPage'
+import { MyAutoSubmissionsPage } from './pages/MyAutoSubmissionsPage'
+import { AutoSubmissionDetailPage } from './pages/AutoSubmissionDetailPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { ErrorBoundary } from './components/ErrorBoundary'
 
@@ -48,6 +51,8 @@ const AdminSubmissionsPage = lazy(() => import('./pages/admin/AdminSubmissionsPa
 const AdminSubmissionFormPage = lazy(() => import('./pages/admin/AdminSubmissionFormPage').then(m => ({ default: m.AdminSubmissionFormPage })))
 const AdminManualSubmissionsPage = lazy(() => import('./pages/admin/AdminManualSubmissionsPage').then(m => ({ default: m.AdminManualSubmissionsPage })))
 const AdminManualSubmissionDetailPage = lazy(() => import('./pages/admin/AdminManualSubmissionDetailPage').then(m => ({ default: m.AdminManualSubmissionDetailPage })))
+const AdminAutoSubmissionsPage = lazy(() => import('./pages/admin/AdminAutoSubmissionsPage').then(m => ({ default: m.AdminAutoSubmissionsPage })))
+const AdminAutoSubmissionDetailPage = lazy(() => import('./pages/admin/AdminAutoSubmissionDetailPage').then(m => ({ default: m.AdminAutoSubmissionDetailPage })))
 const AdminUsersPage = lazy(() => import('./pages/admin/AdminUsersPage').then(m => ({ default: m.AdminUsersPage })))
 const AdminUserFormPage = lazy(() => import('./pages/admin/AdminUserFormPage').then(m => ({ default: m.AdminUserFormPage })))
 import { api } from './lib/api'
@@ -84,8 +89,11 @@ function AppRoutes() {
             <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
               <Route path="/profile/edit" element={<EditProfilePage />} />
               <Route path="/submit/manual" element={<ManualSubmissionPage />} />
+              <Route path="/submit/auto" element={<AutoSubmissionPage />} />
               <Route path="/my/manual-submissions" element={<MyManualSubmissionsPage />} />
               <Route path="/my/manual-submissions/:id" element={<ManualSubmissionDetailPage />} />
+              <Route path="/my/auto-submissions" element={<MyAutoSubmissionsPage />} />
+              <Route path="/my/auto-submissions/:id" element={<AutoSubmissionDetailPage />} />
             </Route>
 
             {/* Admin routes, role-guarded with dedicated admin workspace */}
@@ -115,6 +123,8 @@ function AppRoutes() {
               <Route path="/admin/submissions/:id/edit" element={<AdminSubmissionFormPage />} />
               <Route path="/admin/manual-submissions" element={<AdminManualSubmissionsPage />} />
               <Route path="/admin/manual-submissions/:id" element={<AdminManualSubmissionDetailPage />} />
+              <Route path="/admin/auto-submissions" element={<AdminAutoSubmissionsPage />} />
+              <Route path="/admin/auto-submissions/:id" element={<AdminAutoSubmissionDetailPage />} />
               <Route path="/admin/users" element={<AdminUsersPage />} />
               <Route path="/admin/users/:id/edit" element={<AdminUserFormPage />} />
             </Route>

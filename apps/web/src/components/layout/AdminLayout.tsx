@@ -24,7 +24,10 @@ const navSections: { label: string; links: NavLinkItem[] }[] = [
   },
   {
     label: 'Moderation',
-    links: [{ to: '/admin/manual-submissions', icon: 'MR', text: 'Manual Submissions' }],
+    links: [
+      { to: '/admin/manual-submissions', icon: 'MR', text: 'Manual Submissions' },
+      { to: '/admin/auto-submissions', icon: 'AI', text: 'Auto Submissions' },
+    ],
   },
   {
     label: 'People',

@@ -8,8 +8,10 @@ import { secureHeaders } from "hono/secure-headers";
 
 import { rateLimit } from "./middleware/rate-limit";
 import { openApiDoc } from "./openapi";
+import { handleQueue } from "./queue";
 import admin from "./routes/admin";
 import auth from "./routes/auth";
+import autoSubmissions from "./routes/auto-submissions";
 import contributors from "./routes/contributors";
 import files from "./routes/files";
 import filterOptions from "./routes/filter-options";
@@ -132,6 +134,7 @@ app.route("/contributors", contributors);
 app.route("/questions", questions);
 app.route("/filter-options", filterOptions);
 app.route("/manual-submissions", manualSubmissions);
+app.route("/auto-submissions", autoSubmissions);
 app.route("/admin", admin);
 
 // ---------------------------------------------------------------------------
@@ -187,8 +190,10 @@ app.onError((err, c) => {
 
 app.notFound((c) => c.json({ error: "Not found" }, 404));
 
-// Cloudflare Workflow class — referenced by `class_name` in wrangler.jsonc and
-// instantiated via the WATERMARK_WORKFLOW binding.
-export { WatermarkWorkflow } from "./workflows/watermark";
-
-export default app;
+// The Worker exports both the HTTP handler and the queue consumer. The consumer
+// drains the throttled PDF_QUEUE (watermarking + AI auto-submission); its
+// max_concurrency bounds concurrent load on the external PDF Processor.
+export default {
+  fetch: app.fetch,
+  queue: handleQueue,
+};

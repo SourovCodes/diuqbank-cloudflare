@@ -12,12 +12,14 @@ const navSections = [
   {
     label: 'Submit Paper',
     links: [
+      { to: '/submit/auto', icon: '🤖', text: 'AI Auto Submission' },
       { to: '/submit/manual', icon: '✋', text: 'Manual Submission' },
     ],
   },
   {
     label: 'My Submissions',
     links: [
+      { to: '/my/auto-submissions', icon: '⚡', text: 'Auto Submissions' },
       { to: '/my/manual-submissions', icon: '📄', text: 'Manual Submissions' },
     ],
   },

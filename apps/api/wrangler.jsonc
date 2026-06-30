@@ -41,16 +41,25 @@
       "simple": { "limit": 120, "period": 60 }
     }
   ],
-  // Durable watermarking pipeline. Started from the submission routes with
-  // env.WATERMARK_WORKFLOW.create({ params: { submissionId } }); the
-  // `submissions.watermarkStatus` column is the source of truth.
-  "workflows": [
-    {
-      "name": "diuqbank-watermark",
-      "binding": "WATERMARK_WORKFLOW",
-      "class_name": "WatermarkWorkflow"
-    }
-  ],
+  // Single throttled queue fronting ALL external PDF Processor work — watermark
+  // (submissions) and AI auto-submission (compress + Gemini). `max_concurrency`
+  // caps how many run at once, bounding concurrent load on the shared service
+  // (which degrades past ~5–15 concurrent requests). Consumer = src/queue.ts.
+  // Create the queues before first deploy:
+  //   wrangler queues create diuqbank-pdf
+  //   wrangler queues create diuqbank-pdf-dlq
+  "queues": {
+    "producers": [{ "queue": "diuqbank-pdf", "binding": "PDF_QUEUE" }],
+    "consumers": [
+      {
+        "queue": "diuqbank-pdf",
+        "max_batch_size": 1,
+        "max_concurrency": 5,
+        "max_retries": 3,
+        "dead_letter_queue": "diuqbank-pdf-dlq"
+      }
+    ]
+  },
   "vars": {
     // Google OAuth client id (public value — fine to commit). The ID token's
     // `aud` claim must match this. Replace with your own from the Google Cloud
@@ -68,7 +77,10 @@
       "JWT_SECRET",
       "ADMIN_EMAIL",
       // X-API-Key for the PDF Processor service (local dev: `.dev.vars`).
-      "PDF_PROCESSOR_API_KEY"
+      "PDF_PROCESSOR_API_KEY",
+      // Google AI Studio key for Gemini (auto-submission extraction). Sent as
+      // the `x-goog-api-key` header. Local dev: `.dev.vars`.
+      "GEMINI_API_KEY"
     ]
   }
 }
