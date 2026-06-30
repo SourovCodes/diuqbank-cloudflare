@@ -1,116 +1,88 @@
-# DIU Question Bank — monorepo agent guide
+# DIU Question Bank API — Agent Guide
 
-Onboarding notes for AI coding agents (Claude Code, Codex, etc.). See [README.md](README.md)
-for the human-facing overview.
+Onboarding notes for AI coding agents. See [README.md](README.md) for the
+human-facing overview.
 
-## What this is
+## What This Is
 
-A **pnpm-workspace monorepo** with deployable apps under `apps/` and shared libraries under
-`packages/`, all deployed to Cloudflare:
+A single Cloudflare Worker API:
 
-- **`apps/api/`** — a Hono API on Cloudflare **Workers**: D1 + Drizzle, R2 for files, stateless JWT
-  auth, hand-written OpenAPI. Worker name `diuqbank`. Mirrors the production reference repo
-  `github.com/SourovCodes/diuqbank-backend-api`.
-- **`apps/web/`** — a Vite + React 19 SPA (React Router 7, TanStack Query, Tailwind 4) deployed as a
-  Cloudflare **Workers static-assets** site (worker name `diuqbank-web`, SPA fallback). Calls the
-  API over `fetch`; base URL from `import.meta.env.VITE_API_URL` (defaults to the deployed Worker).
-- **`packages/shared/`** — `@diuqbank/shared`: the API↔web contract. Response DTO **types**
-  (`packages/shared/src/types.ts`), Zod request **schemas** (`packages/shared/src/schemas/**`), and
-  pure **utils** (`pagination`, `question-title`). Ships raw TS (no build); both bundlers transpile
-  it. The API's shape helpers are annotated to return these DTO types, so `tsc` fails on contract drift.
+- Hono API on Cloudflare Workers: D1 + Drizzle, R2 for files, stateless JWT auth,
+  hand-written OpenAPI, and a throttled PDF processing queue.
+- Worker name: `diuqbank-api-prod`.
+- `src/shared/` contains local API DTO types, Zod request schemas, constants, and
+  pure helpers that used to live in the old shared package.
 
-Package manager: **pnpm 10.33.2** (pinned at the root `packageManager`). Run `pnpm install` once
-at the repo root. The detailed API conventions below describe files **under `apps/api/`**.
+Package manager: **pnpm 10.33.2** (pinned in `package.json`).
 
 ## Layout
 
-```
-apps/
-  api/
-    src/
-      index.ts             App entry: builds Hono<AppEnv>, mounts routes, global onError, CORS
-      types.ts             AppEnv / Bindings (DB, BUCKET, GOOGLE_CLIENT_ID, JWT_SECRET…)
-      openapi.ts           Hand-written OpenAPI 3 doc (imports Zod schemas from @diuqbank/shared)
-      db/
-        schema.ts          Drizzle schema — source of truth for the DB (tables + relations)
-        client.ts          getDb(c.env.DB)
-      middleware/auth.ts   requireAuth (sets c.var.user) / requireAdmin
-      routes/              One file per domain: auth, questions, contributors, filter-options, files
-        admin/             One file per admin resource + index.ts (auth applied once)
-      lib/                 validator, jwt, google-oauth, image-upload, pdf-upload, parse-id,
-                           user-shape, admin-shape (pagination + question-title now in packages/shared/)
-    drizzle/               Generated SQL migrations (applied via wrangler, not the Drizzle client)
-    wrangler.jsonc         Worker config: D1 binding DB, R2 binding BUCKET, vars, etc.
-  web/
-    src/                   React SPA; lib/api.ts is the API client (imports types from @diuqbank/shared)
-    wrangler.jsonc         Static-assets Worker (assets dir ./dist, SPA not_found_handling)
-packages/
+```text
+src/
+  index.ts             App entry: builds Hono<AppEnv>, mounts routes, global onError, CORS
+  types.ts             AppEnv / Bindings (DB, BUCKET, GOOGLE_CLIENT_ID, JWT_SECRET...)
+  openapi.ts           Hand-written OpenAPI 3 doc
+  queue.ts             PDF queue consumer
+  db/
+    schema.ts          Drizzle schema, source of truth for DB tables + relations
+    client.ts          getDb(c.env.DB)
+  middleware/
+    auth.ts            requireAuth / requireAdmin
+    rate-limit.ts      Cloudflare native rate-limit wrapper
+  routes/              One file per route domain
+    admin/             Admin resources; auth applied once in index.ts
+  lib/                 JWT, upload validation, shape helpers, taxonomy, PDF helpers
   shared/
-    src/types.ts           Canonical response DTOs (single source of truth)
-    src/schemas/           Zod request schemas (admin/ mirrors api routes/admin/)
-    src/utils/             pagination (pageFields, buildMeta), question-title (buildQuestionTitle)
+    types.ts           Canonical response DTOs
+    schemas/           Zod request schemas
+    utils/             pagination and question-title helpers
+drizzle/               Generated SQL migrations, applied by Wrangler
+wrangler.jsonc         Worker config: D1, R2, queues, rate limits, vars, secrets
 ```
-
-**Imports from shared:** types via `@diuqbank/shared/types`, schemas via
-`@diuqbank/shared/schemas/<name>` (e.g. `.../schemas/admin/courses`), utils via
-`@diuqbank/shared/utils/pagination`. The barrel `@diuqbank/shared` re-exports types + utils.
 
 ## Conventions
 
 - **Routing:** plain `Hono<AppEnv>` (no `@hono/zod-openapi`). Validate with
-  `validate(target, schema)` from `src/lib/validator.ts` (wraps `@hono/zod-validator`,
-  returns `400 { error, issues[] }`). One file per route domain.
-- **OpenAPI is hand-written** in `src/openapi.ts` (request schemas via Zod 4
-  `z.toJSONSchema()`); served with Scalar via CDN at `/docs`, spec at `/openapi.json`.
-  Update it when you add/change endpoints.
-- **DB:** Drizzle + D1. `schema.ts` is the source of truth. **Timestamps are Unix epoch
-  seconds** (integer `unixepoch()`, returned as numbers). `submissionCount` on `users`/
-  `questions` is maintained by SQLite triggers on `submissions` insert/delete/update (see
-  `drizzle/0003_submission_count_triggers.sql`) — never write it from app code; read
-  endpoints select the stored column.
-- **Errors:** throw `HTTPException`; the global `onError` in `index.ts` maps D1 constraint
-  failures (UNIQUE → 409 "<col> already exists", FK → 400, NOT NULL → 400).
-- **Delete-safety:** admin DELETEs pre-count dependents and return **409 with a count**
-  instead of a misleading FK-400.
-- **Auth:** Google OAuth only (no passwords). `POST /auth/google` verifies the Google ID token
-  (`src/lib/google-oauth.ts`: checks `aud == GOOGLE_CLIENT_ID`, `email_verified`, `exp`),
-  find-or-creates by email, returns a JWT. JWT is HS256, 7-day, payload `{ sub, username,
-  role }` stored client-side. **`hono/jwt` `verify` needs the alg as the 3rd arg:**
-  `verify(t, secret, "HS256")`. Role is baked into the JWT — promoting a user requires them to
-  re-auth. `GET /auth/config` (public) returns `{ googleClientId }` to bootstrap sign-in.
-- **Files:** R2 binding `BUCKET`. The Worker serves objects itself at `GET /files/:key{.+}`
-  (immutable cache); there is no public bucket. Uploads are magic-byte validated
-  (`image-upload.ts` for images ≤5MB, `pdf-upload.ts` `%PDF` ≤20MB).
+  `validate(target, schema)` from `src/lib/validator.ts`; it returns
+  `400 { error, issues[] }`.
+- **OpenAPI:** hand-written in `src/openapi.ts`; served at `/openapi.json` and
+  rendered at `/docs`. Update it when endpoints change.
+- **DB:** Drizzle + D1. `src/db/schema.ts` is the source of truth. Timestamps are
+  Unix epoch seconds. `submissionCount` is maintained by SQLite triggers; do not
+  write it from app code.
+- **Errors:** throw `HTTPException`; global `onError` maps common D1 constraint
+  failures to clean client errors.
+- **Delete safety:** admin DELETE routes pre-count dependents and return `409`
+  with a count rather than a misleading FK error.
+- **Auth:** Google OAuth only. `POST /auth/google` verifies the Google ID token,
+  find-or-creates the user by email, and returns a 7-day HS256 JWT. `verify`
+  from `hono/jwt` needs the algorithm as the third argument:
+  `verify(t, secret, "HS256")`.
+- **Files:** R2 binding `BUCKET`. The Worker serves objects at
+  `GET /files/:key{.+}`. Uploads are magic-byte validated.
 
-## Common commands
+## Commands
 
 ```bash
-# From the repo root (workspace-wide):
-pnpm install             # install all packages (one lockfile)
-pnpm dev:api             # wrangler dev (port 8787) — the API
-pnpm dev:web             # vite dev server — the web SPA
-pnpm typecheck           # tsc --noEmit across api, web, shared
-pnpm lint                # eslint (api)
-pnpm build               # production build (web)
-pnpm deploy:api          # wrangler deploy --minify (the API Worker)
-pnpm deploy:web          # vite build && wrangler deploy (the static-assets Worker)
+pnpm install
+pnpm dev
+pnpm typecheck
+pnpm lint
+pnpm deploy
 
-# API-only tasks — run from apps/api/ (or `pnpm --filter @diuqbank/api <script>`):
-pnpm db:generate         # generate a Drizzle migration after editing schema.ts
-pnpm db:migrate:local    # apply migrations to local D1
-pnpm db:migrate:remote   # apply migrations to remote D1
-pnpm cf-typegen          # regenerate worker-configuration.d.ts after wrangler.jsonc changes
+pnpm db:generate
+pnpm db:migrate:local
+pnpm db:migrate:remote
+pnpm cf-typegen
 ```
-
-For local web→API dev, set `VITE_API_URL=http://localhost:8787` (see `apps/web/.env.example`).
 
 ## Gotchas
 
-- **Verify before declaring done:** `pnpm typecheck && pnpm lint`. There is no test runner
-  configured yet.
-- **Secrets** (`JWT_SECRET`, `ADMIN_EMAIL`) are Worker secrets — never committed; set with
-  `pnpm exec wrangler secret put <NAME>`. Local dev uses `.dev.vars`. `ADMIN_EMAIL` decides
-  which newly created Google account receives the admin role.
-- **Do not** install `@cloudflare/workers-types` — `wrangler types` already generates
-  `worker-configuration.d.ts`; both together create duplicate globals.
-- Migrations are applied via `wrangler d1 migrations apply`, **not** the Drizzle client.
+- Verify before declaring done: `pnpm typecheck && pnpm lint`.
+- Secrets (`JWT_SECRET`, `ADMIN_EMAIL`, `PDF_PROCESSOR_API_KEY`,
+  `GEMINI_API_KEY`) are Worker secrets; do not commit them. Local dev uses
+  `.dev.vars`.
+- Do not install `@cloudflare/workers-types`; `wrangler types` generates
+  `worker-configuration.d.ts`.
+- Migrations are applied via `wrangler d1 migrations apply`, not the Drizzle
+  client.
