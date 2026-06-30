@@ -1,10 +1,26 @@
-import { MAX_PDF_BYTES, PDF_MIME_TYPE } from "../shared/constants";
+import type { MiddlewareHandler } from "hono";
 import { HTTPException } from "hono/http-exception";
+
+import { MAX_PDF_BYTES, PDF_MIME_TYPE } from "../shared/constants";
+import type { AppEnv } from "../types";
+
+const MAX_MULTIPART_OVERHEAD_BYTES = 256 * 1024;
 
 export type ParsedPdf = {
   buffer: ArrayBuffer;
   contentType: typeof PDF_MIME_TYPE;
   ext: "pdf";
+};
+
+export const pdfUploadBodyLimit: MiddlewareHandler<AppEnv> = async (c, next) => {
+  const size = Number(c.req.header("content-length") ?? 0);
+  // ponytail: Content-Length catches normal oversized uploads before parseBody buffers them.
+  if (Number.isFinite(size) && size > MAX_PDF_BYTES + MAX_MULTIPART_OVERHEAD_BYTES) {
+    throw new HTTPException(413, {
+      message: `multipart upload exceeds limit of ${MAX_PDF_BYTES} bytes`,
+    });
+  }
+  await next();
 };
 
 /**

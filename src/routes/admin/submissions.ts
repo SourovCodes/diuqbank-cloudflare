@@ -4,12 +4,16 @@ import { and, count, desc, eq, type SQL } from "drizzle-orm";
 
 import { getDb } from "../../db/client";
 import { manualSubmissions, submissions } from "../../db/schema";
-import { invalidateSubmission, invalidateSubmissionEdit } from "../../lib/cache";
+import {
+  invalidateSubmission,
+  invalidateSubmissionEdit,
+  invalidateSubmissionMove,
+} from "../../lib/cache";
 import { toAdminSubmission } from "../../lib/admin-shape";
 import { buildMeta } from "../../shared/utils/pagination";
 import { parseId } from "../../lib/parse-id";
 import { startWatermark } from "../../lib/pdf-processor";
-import { parsePdfFile } from "../../lib/pdf-upload";
+import { parsePdfFile, pdfUploadBodyLimit } from "../../lib/pdf-upload";
 import { validate } from "../../lib/validator";
 import {
   submissionCreateForm,
@@ -97,7 +101,7 @@ route.get("/:id", async (c) => {
 });
 
 // Multipart: `pdf` file + text fields (validated by `submissionCreateForm`).
-route.post("/", validate("form", submissionCreateForm), async (c) => {
+route.post("/", pdfUploadBodyLimit, validate("form", submissionCreateForm), async (c) => {
   const { questionId, userId, section, batch } = c.req.valid("form");
   const body = await c.req.parseBody();
   const pdf = await parsePdfFile(body["pdf"]);
@@ -159,6 +163,12 @@ route.patch("/:id", validate("json", submissionUpdateSchema), async (c) => {
 
   const db = getDb(c.env.DB);
   const origin = new URL(c.req.url).origin;
+  const previous = await db.query.submissions.findFirst({
+    where: eq(submissions.id, id),
+    columns: { questionId: true },
+    with: { user: { columns: { username: true } } },
+  });
+  if (!previous) throw new HTTPException(404, { message: "Submission not found" });
 
   const [updated] = await db
     .update(submissions)
@@ -173,10 +183,17 @@ route.patch("/:id", validate("json", submissionUpdateSchema), async (c) => {
   });
   if (!row) throw new HTTPException(404, { message: "Submission not found" });
 
-  if (row.user) {
-    c.executionCtx.waitUntil(
-      invalidateSubmissionEdit(c.env, row.question.id, row.user.username),
-    );
+  if (row.user && previous.user) {
+    const invalidation =
+      previous.questionId !== row.question.id ||
+      previous.user.username !== row.user.username
+        ? invalidateSubmissionMove(
+            c.env,
+            { questionId: previous.questionId, username: previous.user.username },
+            { questionId: row.question.id, username: row.user.username },
+          )
+        : invalidateSubmissionEdit(c.env, row.question.id, row.user.username);
+    c.executionCtx.waitUntil(invalidation);
   }
 
   return c.json(toAdminSubmission(row, origin));
@@ -184,7 +201,7 @@ route.patch("/:id", validate("json", submissionUpdateSchema), async (c) => {
 
 // Replace the PDF. A new file resets watermarking (status → awaiting, old
 // watermarked object cleared).
-route.put("/:id/pdf", async (c) => {
+route.put("/:id/pdf", pdfUploadBodyLimit, async (c) => {
   const id = parseId(c.req.param("id"));
   if (id === null) throw new HTTPException(404, { message: "Submission not found" });
 

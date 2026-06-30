@@ -27,7 +27,7 @@ const route = new Hono<AppEnv>();
 // options and question titles both derive from taxonomy).
 route.use("*", async (c, next) => {
   await next();
-  if (c.req.method !== "GET" && c.res.ok) {
+  if (c.req.method !== "GET" && c.res.ok && !c.get("skipTaxonomyInvalidation")) {
     c.executionCtx.waitUntil(invalidateTaxonomy(c.env));
   }
 });
@@ -77,7 +77,8 @@ route.post("/merge", validate("json", mergeSchema), async (c) => {
   const db = getDb(c.env.DB);
 
   const plan = await planDepartmentMerge(c.env.DB, keepId, mergeIds);
-  if (!dryRun) await runMerge(plan);
+  if (dryRun) c.set("skipTaxonomyInvalidation", true);
+  else await runMerge(plan);
 
   const [keeper] = await db
     .select()

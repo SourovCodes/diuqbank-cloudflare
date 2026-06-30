@@ -20,5 +20,7 @@ export type AppEnv = {
     user: AuthPayload;
     // Set by the requestId() middleware; echoed as the X-Request-Id header.
     requestId: string;
+    // Set by taxonomy dry-run merge handlers so shared write middleware skips cache bumps.
+    skipTaxonomyInvalidation?: boolean;
   };
 };

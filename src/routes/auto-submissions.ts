@@ -8,7 +8,7 @@ import { buildMeta } from "../shared/utils/pagination";
 import type { AutoSubmission } from "../shared/types";
 import { startAutoSubmission } from "../lib/auto-submission";
 import { parseId } from "../lib/parse-id";
-import { parsePdfFile } from "../lib/pdf-upload";
+import { parsePdfFile, pdfUploadBodyLimit } from "../lib/pdf-upload";
 import { fileUrlFor } from "../lib/user-shape";
 import { validate } from "../lib/validator";
 import { requireAuth } from "../middleware/auth";
@@ -78,6 +78,7 @@ route.get("/", validate("query", autoSubmissionsListQuery), async (c) => {
 
 route.post(
   "/",
+  pdfUploadBodyLimit,
   validate("form", autoSubmissionCreateForm),
   async (c) => {
     const { extraContext } = c.req.valid("form");

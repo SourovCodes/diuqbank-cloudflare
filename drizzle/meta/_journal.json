@@ -71,6 +71,13 @@
       "when": 1782843063725,
       "tag": "0009_lyrical_shinobi_shaw",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1782849942038,
+      "tag": "0010_watery_phantom_reporter",
+      "breakpoints": true
     }
   ]
 }

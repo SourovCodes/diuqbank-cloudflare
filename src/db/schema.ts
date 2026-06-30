@@ -8,20 +8,26 @@ import {
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
 
-export const users = sqliteTable("users", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
-  name: text("name").notNull(),
-  email: text("email").notNull().unique(),
-  username: text("username").notNull().unique(),
-  role: text("role", { enum: ["admin", "user"] }).notNull().default("user"),
-  imageKey: text("image_key"),
-  // Maintained by SQLite triggers on submissions insert/delete — never write
-  // this directly from application code.
-  submissionCount: integer("submission_count").notNull().default(0),
-  createdAt: integer("created_at")
-    .notNull()
-    .default(sql`(unixepoch())`),
-});
+export const users = sqliteTable(
+  "users",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    name: text("name").notNull(),
+    email: text("email").notNull().unique(),
+    username: text("username").notNull().unique(),
+    role: text("role", { enum: ["admin", "user"] }).notNull().default("user"),
+    imageKey: text("image_key"),
+    // Maintained by SQLite triggers on submissions insert/delete — never write
+    // this directly from application code.
+    submissionCount: integer("submission_count").notNull().default(0),
+    createdAt: integer("created_at")
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (table) => [
+    check("users_role_check", sql`${table.role} IN ('admin', 'user')`),
+  ],
+);
 
 export const departments = sqliteTable("departments", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -125,6 +131,10 @@ export const submissions = sqliteTable(
     // `submissions.user_id` on ?userId= (contributor profile pages).
     index("submissions_question_id_idx").on(table.questionId),
     index("submissions_user_id_idx").on(table.userId),
+    check(
+      "submissions_watermark_status_check",
+      sql`${table.watermarkStatus} IN ('awaiting', 'completed', 'failed')`,
+    ),
   ],
 );
 
@@ -221,6 +231,10 @@ export const autoSubmissions = sqliteTable(
   (table) => [
     index("auto_submissions_user_id_idx").on(table.userId),
     index("auto_submissions_status_idx").on(table.status),
+    check(
+      "auto_submissions_status_check",
+      sql`${table.status} IN ('processing', 'needs_review', 'published', 'rejected', 'failed')`,
+    ),
   ],
 );
 

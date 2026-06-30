@@ -6,6 +6,7 @@ import { courses, departments, examTypes, semesters } from "../db/schema";
 import type { Bindings } from "../types";
 
 const GEMINI_MODEL = "gemini-2.5-flash";
+const GEMINI_TIMEOUT_MS = 120_000;
 
 /**
  * What the model returns for one uploaded PDF. `isAcceptable` is a self-grading
@@ -224,6 +225,7 @@ export const extractQuestionMetadata = async (args: {
       "x-goog-api-key": env.GEMINI_API_KEY,
     },
     body: JSON.stringify(requestBody),
+    signal: AbortSignal.timeout(GEMINI_TIMEOUT_MS),
   });
 
   if (!res.ok) {

@@ -6,6 +6,7 @@ import type { Bindings } from "../types";
 
 /** Max length the PDF Processor accepts for the `watermark_text` field. */
 const MAX_WATERMARK_TEXT = 255;
+const PDF_PROCESSOR_TIMEOUT_MS = 120_000;
 
 /**
  * Compress a PDF via the external PDF Processor service (Ghostscript "ebook"
@@ -25,6 +26,7 @@ export const compressPdf = async (
     method: "POST",
     headers: { "X-API-Key": env.PDF_PROCESSOR_API_KEY },
     body: form,
+    signal: AbortSignal.timeout(PDF_PROCESSOR_TIMEOUT_MS),
   });
 
   if (!res.ok) {
@@ -73,6 +75,7 @@ export const watermarkPdf = async (
       method: "POST",
       headers: { "X-API-Key": env.PDF_PROCESSOR_API_KEY },
       body: form,
+      signal: AbortSignal.timeout(PDF_PROCESSOR_TIMEOUT_MS),
     },
   );
 

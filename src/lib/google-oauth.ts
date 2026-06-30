@@ -4,6 +4,7 @@
 // — the endpoint does NOT enforce those itself.
 
 const TOKENINFO_URL = "https://oauth2.googleapis.com/tokeninfo";
+const TOKENINFO_TIMEOUT_MS = 10_000;
 
 export type GoogleClaims = {
   sub: string;
@@ -47,6 +48,7 @@ export const verifyGoogleIdToken = async (
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({ id_token: idToken }).toString(),
+    signal: AbortSignal.timeout(TOKENINFO_TIMEOUT_MS),
   });
   if (!res.ok) {
     throw new GoogleAuthError(`tokeninfo rejected token (${res.status})`);

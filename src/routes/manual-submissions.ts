@@ -7,7 +7,7 @@ import { manualSubmissions, type ManualSubmission as ManualSubmissionRow } from 
 import { buildMeta } from "../shared/utils/pagination";
 import type { ManualSubmission } from "../shared/types";
 import { parseId } from "../lib/parse-id";
-import { parsePdfFile } from "../lib/pdf-upload";
+import { parsePdfFile, pdfUploadBodyLimit } from "../lib/pdf-upload";
 import { fileUrlFor } from "../lib/user-shape";
 import { validate } from "../lib/validator";
 import { requireAuth } from "../middleware/auth";
@@ -75,6 +75,7 @@ route.get("/", validate("query", manualSubmissionsListQuery), async (c) => {
 
 route.post(
   "/",
+  pdfUploadBodyLimit,
   validate("form", manualSubmissionCreateForm),
   async (c) => {
     const {

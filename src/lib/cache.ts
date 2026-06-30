@@ -95,6 +95,24 @@ export const invalidateSubmissionEdit = (
   username: string,
 ): Promise<unknown> => bumpCache(env, `q:${questionId}`, `c:${username}`);
 
+/** A submission moved to another question or contributor: old + new lists/counts changed. */
+export const invalidateSubmissionMove = (
+  env: Env,
+  from: { questionId: number; username: string },
+  to: { questionId: number; username: string },
+): Promise<unknown> =>
+  bumpCache(
+    env,
+    ...new Set([
+      `q:${from.questionId}`,
+      `q:${to.questionId}`,
+      "q:list",
+      "c:list",
+      `c:${from.username}`,
+      `c:${to.username}`,
+    ]),
+  );
+
 /** A user's profile edited (own or by admin): /auth/me + their contributor pages + the list. */
 export const invalidateUser = (
   env: Env,
