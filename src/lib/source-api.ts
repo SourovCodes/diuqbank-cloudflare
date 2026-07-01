@@ -45,10 +45,10 @@ export const fetchSourcePage: FetchSourcePage = async (page) => {
 
 /**
  * Collect up to `limit` legacy submissions not already imported (by `id`),
- * walking the feed **oldest-first** (from `last_page` down). Oldest-first keeps a
- * repeated backfill's per-call work bounded to ~1-2 pages as the frontier
- * advances, instead of re-scanning every page once most of the catalog is
- * imported. `pageCap` bounds the fetches per call so it can never run away.
+ * walking the feed **newest-first** (page 1 upward) so the most recent
+ * submissions are imported first. New legacy items always surface on page 1, so
+ * steady-state backfill only ever scans a page or two; `pageCap` bounds the
+ * fetches per call so a deep initial backfill can never run away.
  *
  * `fetchPage` is injected so this is unit-testable without network.
  */
@@ -63,13 +63,13 @@ export const selectUnimported = async (
 
   const picked: SourceSubmission[] = [];
   let scanned = 0;
-  let reachedFirstPage = false;
+  let reachedLastPage = false;
 
-  for (let page = lastPage; page >= 1 && scanned < pageCap; page--) {
+  for (let page = 1; page <= lastPage && scanned < pageCap; page++) {
     // Reuse page 1 we already fetched instead of requesting it twice.
     const body = page === 1 ? first : await fetchPage(page);
     scanned++;
-    if (page === 1) reachedFirstPage = true;
+    if (page === lastPage) reachedLastPage = true;
 
     for (const item of body.data) {
       if (importedIds.has(item.id)) continue;
@@ -81,5 +81,5 @@ export const selectUnimported = async (
   }
 
   // More may remain only if we stopped before scanning the whole feed.
-  return { items: picked, remaining: !reachedFirstPage };
+  return { items: picked, remaining: !reachedLastPage };
 };
