@@ -53,6 +53,32 @@
       }
     ]
   },
+  // Per-caller rate limiters (colo-local, no infra to provision). They cap how
+  // fast a single user/IP can flood the shared PDF queue, the paid Gemini path,
+  // and the login endpoint. `period` supports 10 or 60 seconds; `namespace_id`
+  // just has to be unique per limiter. See src/lib/rate-limit.ts.
+  "unsafe": {
+    "bindings": [
+      {
+        "name": "AUTO_SUBMISSION_RATE_LIMITER",
+        "type": "ratelimit",
+        "namespace_id": "1001",
+        "simple": { "limit": 15, "period": 60 }
+      },
+      {
+        "name": "SUBMISSION_UPLOAD_RATE_LIMITER",
+        "type": "ratelimit",
+        "namespace_id": "1002",
+        "simple": { "limit": 20, "period": 60 }
+      },
+      {
+        "name": "AUTH_RATE_LIMITER",
+        "type": "ratelimit",
+        "namespace_id": "1003",
+        "simple": { "limit": 20, "period": 60 }
+      }
+    ]
+  },
   "vars": {
     // Google OAuth client id (public value — fine to commit). The ID token's
     // `aud` claim must match this. Replace with your own from the Google Cloud

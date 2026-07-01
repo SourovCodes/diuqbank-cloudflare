@@ -1423,7 +1423,7 @@ const adminPaths = {
       summary: "Delete a user",
         ...authFields(
           "Admin",
-          "Deletes a user only when no question-bank or manual submissions reference them. You cannot delete your own account.",
+          "Deletes a user only when no question-bank, manual, or auto submissions reference them. You cannot delete your own account.",
       ),
       parameters: [idPathParam("User")],
       responses: {
@@ -1598,6 +1598,7 @@ export const buildOpenApiDoc = () => ({
           "400": commonErrors["400"],
           "401": errResp("Invalid or expired Google ID token"),
           "403": errResp("Only @diu.edu.bd email addresses can sign in"),
+          "429": errResp("Too many sign-in attempts from this IP"),
         },
       },
     },
@@ -1844,6 +1845,7 @@ export const buildOpenApiDoc = () => ({
           "400": commonErrors["400"],
           "401": commonErrors["401"],
           "413": errResp("PDF exceeds the 20 MB size limit"),
+          "429": errResp("Upload rate limit exceeded"),
         },
       },
     },
@@ -1909,6 +1911,7 @@ export const buildOpenApiDoc = () => ({
           "400": commonErrors["400"],
           "401": commonErrors["401"],
           "413": errResp("PDF exceeds the 20 MB size limit"),
+          "429": errResp("Upload rate limit exceeded"),
         },
       },
     },

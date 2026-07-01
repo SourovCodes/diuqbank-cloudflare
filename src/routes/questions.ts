@@ -109,11 +109,13 @@ questionRoutes.get("/:id/submissions", (c) => {
     throw new HTTPException(404, { message: "Question not found" });
   }
 
-  // Depends only on this question's submissions (`q:<id>`). Contributor
-  // name/avatar drift in this list is bounded by the cache TTL.
+  // Depends on this question's submissions (`q:<id>`) and on `tax`: a taxonomy
+  // merge can move submissions between questions (or delete this question)
+  // without touching the `q:<id>` token, so `tax` closes that staleness gap.
+  // Contributor name/avatar drift in this list is bounded by the cache TTL.
   return withCache(
     c,
-    { versions: [`q:${id}`], key: `questions:${id}:submissions` },
+    { versions: [`q:${id}`, "tax"], key: `questions:${id}:submissions` },
     async () => {
       const db = getDb(c.env.DB);
       const origin = new URL(c.req.url).origin;

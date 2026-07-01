@@ -55,6 +55,12 @@ export const withCache = async <T>(
  * Replace each named version token with a fresh value, making every cache key
  * that depends on it unreachable. A random value (not a counter) means
  * concurrent bumps never race — we only need the token to change.
+ *
+ * Propagation is not instantaneous: `withCache` reads version tokens with
+ * `cacheTtl: 60`, so a bump can take up to ~60s to be seen at an edge PoP that
+ * recently cached the old token. Mutations return the fresh entity in their own
+ * response, so the writer sees their change immediately; only cross-PoP reads
+ * lag, and by at most that window.
  */
 export const bumpCache = (env: Env, ...names: string[]): Promise<unknown> =>
   Promise.all(names.map((name) => env.CACHE.put(`v:${name}`, crypto.randomUUID())));

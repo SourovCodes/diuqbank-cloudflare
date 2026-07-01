@@ -8,6 +8,7 @@ import { buildMeta } from "../shared/utils/pagination";
 import type { ManualSubmission } from "../shared/types";
 import { parseId } from "../lib/parse-id";
 import { parsePdfFile, pdfUploadBodyLimit } from "../lib/pdf-upload";
+import { enforceRateLimit } from "../lib/rate-limit";
 import { fileUrlFor } from "../lib/user-shape";
 import { validate } from "../lib/validator";
 import { requireAuth } from "../middleware/auth";
@@ -86,9 +87,11 @@ route.post(
       examTypeName,
       note,
     } = c.req.valid("form");
+    const userId = c.get("user").sub;
+    // Cap per-user upload rate before writing the PDF to R2.
+    await enforceRateLimit(c.env.SUBMISSION_UPLOAD_RATE_LIMITER, `user:${userId}`);
     const body = await c.req.parseBody();
     const pdf = await parsePdfFile(body["pdf"]);
-    const userId = c.get("user").sub;
     const db = getDb(c.env.DB);
     const origin = new URL(c.req.url).origin;
 

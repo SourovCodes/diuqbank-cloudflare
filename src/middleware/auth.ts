@@ -26,8 +26,10 @@ export const requireAuth = createMiddleware<AppEnv>(async (c, next) => {
 /** Require the authenticated user to have `role: "admin"`. Use after requireAuth. */
 export const requireAdmin = createMiddleware<AppEnv>(async (c, next) => {
   const user = c.get("user");
+  // Defensive: requireAuth must run first and populate `user`. If it didn't,
+  // that's a missing/invalid token (401), not an authorization failure.
   if (!user) {
-    throw new HTTPException(403, { message: "Admin access required" });
+    throw new HTTPException(401, { message: "Missing bearer token" });
   }
 
   const [currentUser] = await getDb(c.env.DB)

@@ -8,6 +8,7 @@ import { secureHeaders } from "hono/secure-headers";
 
 import { openApiDoc } from "./openapi";
 import { handleQueue } from "./queue";
+import { MAX_PDF_BYTES } from "./shared/constants";
 import admin from "./routes/admin";
 import auth from "./routes/auth";
 import autoSubmissions from "./routes/auto-submissions";
@@ -83,15 +84,21 @@ app.use(
   }),
 );
 
-// Cap JSON (and other non-multipart) bodies at 256 KB. Multipart uploads are
-// skipped — they legitimately reach 20 MB and self-validate their own size.
+// Body size guards. JSON (and other non-multipart) bodies are capped at 256 KB.
+// Multipart uploads legitimately reach 20 MB (and self-validate their own size
+// per field), but still get a hard ceiling so a spoofed `multipart/form-data`
+// content-type can't stream an unbounded body into a JSON route.
 const jsonBodyLimit = bodyLimit({
   maxSize: 256 * 1024,
   onError: (c) => c.json({ error: "Payload too large" }, 413),
 });
+const multipartBodyLimit = bodyLimit({
+  maxSize: MAX_PDF_BYTES + 512 * 1024, // largest upload + multipart overhead
+  onError: (c) => c.json({ error: "Payload too large" }, 413),
+});
 app.use("*", (c, next) =>
   (c.req.header("content-type") ?? "").includes("multipart/form-data")
-    ? next()
+    ? multipartBodyLimit(c, next)
     : jsonBodyLimit(c, next),
 );
 

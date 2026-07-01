@@ -8,6 +8,7 @@ import { withCache, invalidateUser } from "../lib/cache";
 import { GoogleAuthError, verifyGoogleIdToken } from "../lib/google-oauth";
 import { parseImageUpload } from "../lib/image-upload";
 import { signAuthToken } from "../lib/jwt";
+import { clientIp, enforceRateLimit } from "../lib/rate-limit";
 import { toAuthUser } from "../lib/user-shape";
 import { validate } from "../lib/validator";
 import { requireAuth } from "../middleware/auth";
@@ -44,6 +45,9 @@ auth.post(
   "/google",
   validate("json", googleSignInSchema),
   async (c) => {
+  // Throttle per IP so an attacker can't spin the Google tokeninfo round-trip
+  // and user-creation path with a flood of tokens.
+  await enforceRateLimit(c.env.AUTH_RATE_LIMITER, `ip:${clientIp(c)}`);
   const { idToken } = c.req.valid("json");
   const db = getDb(c.env.DB);
 

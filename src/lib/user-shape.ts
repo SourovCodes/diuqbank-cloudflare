@@ -42,8 +42,9 @@ type ContributorRow = Pick<
 
 /**
  * Public-safe contributor shape (no email, no role). Used by the public
- * `/contributors` list and detail endpoints. `submissionCount` is computed
- * dynamically by the caller (the denormalized column is not trigger-maintained).
+ * `/contributors` list and detail endpoints. `submissionCount` comes from the
+ * `users.submission_count` column, which SQLite triggers keep in sync on every
+ * submission insert/delete/move.
  */
 export const toContributor = (row: ContributorRow, origin: string): ContributorDTO => ({
   id: row.id,

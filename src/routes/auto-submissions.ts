@@ -9,6 +9,7 @@ import type { AutoSubmission } from "../shared/types";
 import { startAutoSubmission } from "../lib/auto-submission";
 import { parseId } from "../lib/parse-id";
 import { parsePdfFile, pdfUploadBodyLimit } from "../lib/pdf-upload";
+import { enforceRateLimit } from "../lib/rate-limit";
 import { fileUrlFor } from "../lib/user-shape";
 import { validate } from "../lib/validator";
 import { requireAuth } from "../middleware/auth";
@@ -82,9 +83,11 @@ route.post(
   validate("form", autoSubmissionCreateForm),
   async (c) => {
     const { extraContext } = c.req.valid("form");
+    const userId = c.get("user").sub;
+    // Cap per-user upload rate before touching R2 or the paid Gemini path.
+    await enforceRateLimit(c.env.AUTO_SUBMISSION_RATE_LIMITER, `user:${userId}`);
     const body = await c.req.parseBody();
     const pdf = await parsePdfFile(body["pdf"]);
-    const userId = c.get("user").sub;
     const db = getDb(c.env.DB);
     const origin = new URL(c.req.url).origin;
 
