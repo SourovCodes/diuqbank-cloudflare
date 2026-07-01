@@ -186,15 +186,15 @@ type SubmissionRowProps = {
 
 function SubmissionRow({ submission }: SubmissionRowProps) {
   return (
-    <article className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
+    <Link
+      to={`/questions/${submission.question.id}`}
+      className="group rounded-lg border border-gray-200 bg-white p-4 transition hover:border-blue-300 hover:bg-blue-50/40 dark:border-gray-800 dark:bg-gray-900 dark:hover:border-blue-500 dark:hover:bg-blue-500/5"
+    >
       <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
         <div className="min-w-0">
-          <Link
-            to={`/questions/${submission.question.id}`}
-            className="text-sm font-semibold leading-6 text-gray-900 hover:text-blue-700 dark:text-gray-100 dark:hover:text-blue-400"
-          >
+          <h3 className="text-sm font-semibold leading-6 text-gray-900 group-hover:text-blue-700 dark:text-gray-100 dark:group-hover:text-blue-400">
             {submission.question.title}
-          </Link>
+          </h3>
 
           <div className="mt-3 flex flex-wrap gap-1.5">
             <Badge label={submission.question.department.shortName} variant="blue" />
@@ -206,16 +206,9 @@ function SubmissionRow({ submission }: SubmissionRowProps) {
         <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 sm:justify-end dark:text-gray-400">
           <span>{formatDate(submission.createdAt)}</span>
           <span>{formatBytes(submission.fileSize)}</span>
-          {submission.pdfUrl && (
-            <a
-              href={submission.pdfUrl}
-              target="_blank"
-              rel="noreferrer noopener"
-              className="font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400"
-            >
-              Open PDF
-            </a>
-          )}
+          <span className="font-semibold text-blue-600 group-hover:text-blue-700 dark:text-blue-400">
+            View
+          </span>
         </div>
       </div>
 
@@ -227,7 +220,7 @@ function SubmissionRow({ submission }: SubmissionRowProps) {
           {submission.batch && <Meta label="Batch" value={submission.batch} />}
         </dl>
       )}
-    </article>
+    </Link>
   );
 }
 
