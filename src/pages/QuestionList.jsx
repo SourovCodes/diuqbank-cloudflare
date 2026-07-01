@@ -1,14 +1,23 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { getFilterOptions, getQuestions } from "../api";
-import SearchableSelect from "../components/SearchableSelect";
-
-const noFilters = { department: null, course: null, semester: null, examType: null };
+import { FilterBar } from "../components/questions/FilterBar";
+import { QuestionCard } from "../components/questions/QuestionCard";
+import { Pagination } from "../components/ui/Pagination";
+import { cx } from "../lib/cx";
 
 export default function QuestionList() {
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const filters = {
+    page: Number(searchParams.get("page")) || 1,
+    departmentId: searchParams.get("departmentId") ?? "",
+    courseId: searchParams.get("courseId") ?? "",
+    semesterId: searchParams.get("semesterId") ?? "",
+    examTypeId: searchParams.get("examTypeId") ?? "",
+  };
+
   const [options, setOptions] = useState(null);
-  const [filters, setFilters] = useState(noFilters);
-  const [page, setPage] = useState(1);
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -17,17 +26,18 @@ export default function QuestionList() {
     getFilterOptions().then(setOptions).catch(() => {});
   }, []);
 
+  // Filters live in the URL, so refetch whenever the query string changes.
   useEffect(() => {
     let active = true;
     setLoading(true);
     setError(null);
     getQuestions({
-      departmentId: filters.department?.id,
-      courseId: filters.course?.id,
-      semesterId: filters.semester?.id,
-      examTypeId: filters.examType?.id,
-      page,
+      page: Number(searchParams.get("page")) || 1,
       perPage: 20,
+      departmentId: searchParams.get("departmentId") ?? "",
+      courseId: searchParams.get("courseId") ?? "",
+      semesterId: searchParams.get("semesterId") ?? "",
+      examTypeId: searchParams.get("examTypeId") ?? "",
     })
       .then((r) => active && setResult(r))
       .catch((e) => active && setError(e.message))
@@ -35,137 +45,98 @@ export default function QuestionList() {
     return () => {
       active = false;
     };
-  }, [filters, page]);
+  }, [searchParams]);
 
-  function setFilter(key, option) {
-    setPage(1);
-    setFilters((f) => {
-      const next = { ...f, [key]: option };
-      // changing department invalidates the chosen course
-      if (key === "department") next.course = null;
+  function updateFilter(key, value) {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (value) next.set(key, value);
+        else next.delete(key);
+        next.set("page", "1");
+        return next;
+      },
+      { replace: true }
+    );
+  }
+
+  function handleDepartmentChange(deptId) {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (deptId) next.set("departmentId", deptId);
+        else next.delete("departmentId");
+        next.delete("courseId"); // department change invalidates course
+        next.set("page", "1");
+        return next;
+      },
+      { replace: true }
+    );
+  }
+
+  function clearFilters() {
+    setSearchParams({}, { replace: true });
+  }
+
+  function goToPage(page) {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set("page", String(page));
       return next;
     });
   }
 
-  const courses =
-    options?.courses.filter((c) => c.departmentId === filters.department?.id) ??
-    [];
-
-  const meta = result?.meta;
-  const byName = (o) => o.name;
-
   return (
-    <main className="container mx-auto flex-1 px-4 py-10">
-      <h1 className="mb-6 text-3xl font-bold tracking-tight">Questions</h1>
-
-      <div className="mb-7 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <SearchableSelect
-          options={options?.departments ?? []}
-          value={filters.department}
-          onChange={(o) => setFilter("department", o)}
-          getLabel={byName}
-          placeholder="All departments"
-        />
-        <SearchableSelect
-          options={courses}
-          value={filters.course}
-          onChange={(o) => setFilter("course", o)}
-          getLabel={byName}
-          placeholder="All courses"
-          disabled={!filters.department}
-        />
-        <SearchableSelect
-          options={options?.semesters ?? []}
-          value={filters.semester}
-          onChange={(o) => setFilter("semester", o)}
-          getLabel={byName}
-          placeholder="All semesters"
-        />
-        <SearchableSelect
-          options={options?.examTypes ?? []}
-          value={filters.examType}
-          onChange={(o) => setFilter("examType", o)}
-          getLabel={byName}
-          placeholder="All exam types"
-        />
+    <main className="container mx-auto flex-1 px-4 py-8">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold tracking-tight">Browse Questions</h1>
+        {result && (
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            {result.meta.total.toLocaleString()} questions found
+          </p>
+        )}
       </div>
 
-      {error && (
-        <p className="py-6 text-red-600 dark:text-red-400">
-          Couldn’t load questions: {error}
-        </p>
-      )}
-      {loading && <p className="py-6 text-gray-500 dark:text-gray-400">Loading…</p>}
-      {!loading && !error && result?.data.length === 0 && (
-        <p className="py-6 text-gray-500 dark:text-gray-400">
-          No questions match these filters.
-        </p>
-      )}
-
-      {!loading && !error && result?.data.length > 0 && (
-        <ul className="flex flex-col gap-3">
-          {result.data.map((q) => (
-            <li key={q.id}>
-              <Link
-                to={`/questions/${q.id}`}
-                className="flex flex-col gap-3 rounded-xl border border-gray-200 bg-gray-50 p-5 transition hover:border-blue-500 hover:shadow-sm sm:flex-row sm:items-center sm:justify-between dark:border-gray-800 dark:bg-gray-900 dark:hover:border-blue-500"
-              >
-                <div className="flex flex-col gap-2">
-                  <h2 className="text-base font-semibold">{q.course.name}</h2>
-                  <div className="flex flex-wrap gap-2">
-                    <Tag>{q.department.shortName}</Tag>
-                    <Tag>{q.semester.name}</Tag>
-                    <Tag>{q.examType.name}</Tag>
-                  </div>
-                </div>
-                <span className="shrink-0 text-sm text-gray-500 dark:text-gray-400">
-                  {q.submissionCount} submission{q.submissionCount === 1 ? "" : "s"}
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {meta && meta.totalPages > 1 && (
-        <div className="mt-9 flex items-center justify-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-          <PageButton
-            disabled={meta.page <= 1 || loading}
-            onClick={() => setPage((p) => p - 1)}
-          >
-            ← Prev
-          </PageButton>
-          <span>
-            Page {meta.page} of {meta.totalPages}
-          </span>
-          <PageButton
-            disabled={meta.page >= meta.totalPages || loading}
-            onClick={() => setPage((p) => p + 1)}
-          >
-            Next →
-          </PageButton>
+      {options && (
+        <div className="mb-6">
+          <FilterBar
+            options={options}
+            filters={filters}
+            onFilterChange={updateFilter}
+            onDepartmentChange={handleDepartmentChange}
+            onClear={clearFilters}
+          />
         </div>
       )}
+
+      {error ? (
+        <p className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
+          Failed to load questions: {error}
+        </p>
+      ) : loading && !result ? (
+        <p className="py-10 text-center text-sm text-gray-500 dark:text-gray-400">
+          Loading…
+        </p>
+      ) : (
+        <>
+          <div
+            className={cx(
+              "flex flex-col gap-3 transition-opacity",
+              loading && "opacity-60"
+            )}
+          >
+            {result?.data.length === 0 ? (
+              <div className="rounded-xl border-2 border-dashed border-gray-200 py-16 text-center text-sm text-gray-500 dark:border-gray-800 dark:text-gray-400">
+                No questions match your filters.
+              </div>
+            ) : (
+              result?.data.map((q) => <QuestionCard key={q.id} question={q} />)
+            )}
+          </div>
+
+          {result && <Pagination meta={result.meta} onPageChange={goToPage} />}
+        </>
+      )}
     </main>
-  );
-}
-
-function Tag({ children }) {
-  return (
-    <span className="rounded-full border border-gray-200 bg-white px-2.5 py-0.5 text-xs font-medium text-gray-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400">
-      {children}
-    </span>
-  );
-}
-
-function PageButton({ disabled, onClick, children }) {
-  return (
-    <button
-      disabled={disabled}
-      onClick={onClick}
-      className="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-900 enabled:hover:border-blue-500 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-700 dark:text-gray-100"
-    >
-      {children}
-    </button>
   );
 }

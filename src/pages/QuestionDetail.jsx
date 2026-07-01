@@ -1,18 +1,15 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { getQuestion, getSubmissions } from "../api";
-
-function formatSize(bytes) {
-  if (!bytes) return "";
-  const mb = bytes / (1024 * 1024);
-  return mb >= 1 ? `${mb.toFixed(1)} MB` : `${Math.round(bytes / 1024)} KB`;
-}
+import { Badge } from "../components/ui/Badge";
+import { cx } from "../lib/cx";
+import { formatBytes, formatDate } from "../lib/format";
 
 export default function QuestionDetail() {
   const { id } = useParams();
   const [question, setQuestion] = useState(null);
-  const [submissions, setSubmissions] = useState(null);
-  const [activeId, setActiveId] = useState(null);
+  const [submissions, setSubmissions] = useState([]);
+  const [selectedId, setSelectedId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -24,8 +21,9 @@ export default function QuestionDetail() {
       .then(([q, s]) => {
         if (!active) return;
         setQuestion(q);
-        setSubmissions(s.data);
-        setActiveId(s.data[0]?.id ?? null);
+        const sorted = s.data.slice().sort((a, b) => b.createdAt - a.createdAt);
+        setSubmissions(sorted);
+        setSelectedId(sorted.find((x) => x.pdfUrl)?.id ?? null);
       })
       .catch((e) => active && setError(e.message))
       .finally(() => active && setLoading(false));
@@ -36,107 +34,178 @@ export default function QuestionDetail() {
 
   if (loading)
     return (
-      <main className="container mx-auto flex-1 px-4 py-10">
-        <p className="text-gray-500 dark:text-gray-400">Loading…</p>
-      </main>
+      <div className="container mx-auto flex-1 px-4 py-16 text-center text-sm text-gray-500 dark:text-gray-400">
+        Loading…
+      </div>
     );
 
-  if (error)
+  if (error || !question)
     return (
-      <main className="container mx-auto flex-1 px-4 py-10">
-        <p className="text-red-600 dark:text-red-400">
-          Couldn’t load this question: {error}
+      <div className="container mx-auto flex-1 px-4 py-12">
+        <p className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
+          Question not found or failed to load.
         </p>
         <Link
           to="/questions"
-          className="mt-4 inline-block text-sm font-medium text-blue-600 hover:underline dark:text-blue-400"
+          className="mt-4 inline-block text-sm text-blue-600 hover:underline dark:text-blue-400"
         >
           ← Back to questions
         </Link>
-      </main>
+      </div>
     );
 
-  const active = submissions?.find((s) => s.id === activeId) ?? null;
+  const selected = submissions.find((s) => s.id === selectedId);
 
   return (
-    <main className="container mx-auto flex flex-1 flex-col px-4 py-5">
-      <div className="mb-4">
-        <Link
-          to="/questions"
-          className="text-sm font-medium text-blue-600 hover:underline dark:text-blue-400"
-        >
-          ← All questions
-        </Link>
-        <h1 className="mt-2 text-xl font-bold tracking-tight sm:text-2xl">
-          {question.course.name}
+    <main className="container mx-auto flex-1 px-4 py-8">
+      <Link
+        to="/questions"
+        className="mb-4 inline-flex items-center text-sm text-blue-600 hover:underline dark:text-blue-400"
+      >
+        ← Back to questions
+      </Link>
+
+      {/* Question header */}
+      <div className="mb-6 rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+        <h1 className="mb-3 text-lg font-bold text-gray-900 dark:text-gray-100">
+          {question.title}
         </h1>
-        <div className="mt-2 flex flex-wrap gap-2">
-          <Tag>{question.department.shortName}</Tag>
-          <Tag>{question.semester.name}</Tag>
-          <Tag>{question.examType.name}</Tag>
+        <div className="flex flex-wrap gap-2">
+          <Badge label={question.department.name} variant="blue" />
+          <Badge label={question.course.name} variant="gray" />
+          <Badge label={question.semester.name} variant="gray" />
+          <Badge label={question.examType.name} variant="green" />
         </div>
       </div>
 
-      {submissions.length > 1 && (
-        <div className="mb-4 flex flex-wrap gap-2">
-          {submissions.map((s) => (
-            <button
-              key={s.id}
-              onClick={() => setActiveId(s.id)}
-              className={`flex flex-col items-start rounded-lg border px-3.5 py-2 text-left ${
-                s.id === activeId
-                  ? "border-blue-500 bg-gray-50 dark:bg-gray-900"
-                  : "border-gray-200 dark:border-gray-800"
-              }`}
+      {/* PDF (main focus) + right sidebar */}
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+        <div className="min-w-0 flex-1">
+          {selected?.pdfUrl ? (
+            <iframe
+              key={selected.id}
+              src={selected.pdfUrl}
+              title="Question paper"
+              className="w-full rounded-xl border border-gray-200 shadow-sm dark:border-gray-800"
+              style={{ height: "calc(100vh - 260px)", minHeight: "400px" }}
+            />
+          ) : (
+            <div
+              className="flex items-center justify-center rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900/60"
+              style={{ minHeight: "600px" }}
             >
-              <span className="text-sm">{s.contributor?.name ?? "Anonymous"}</span>
-              <span className="text-xs text-gray-500 dark:text-gray-400">
-                {[s.section, s.batch].filter(Boolean).join(" · ")}
-                {s.fileSize ? ` · ${formatSize(s.fileSize)}` : ""}
-              </span>
-            </button>
-          ))}
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                {submissions.length === 0
+                  ? "No submissions yet."
+                  : "No PDF available for this question."}
+              </p>
+            </div>
+          )}
         </div>
-      )}
 
-      {!active || !active.pdfUrl ? (
-        <p className="text-gray-500 dark:text-gray-400">
-          No PDF available for this question yet.
-        </p>
-      ) : (
-        <div className="flex min-h-[70vh] flex-1 flex-col overflow-hidden rounded-xl border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900">
-          <div className="flex items-center justify-between gap-3 border-b border-gray-200 px-4 py-2.5 dark:border-gray-800">
-            <span className="text-sm text-gray-500 dark:text-gray-400">
-              {active.contributor?.name
-                ? `Submitted by ${active.contributor.name}`
-                : "Submission"}
-              {active.fileSize ? ` · ${formatSize(active.fileSize)}` : ""}
-            </span>
-            <a
-              href={active.pdfUrl}
-              target="_blank"
-              rel="noopener"
-              className="shrink-0 rounded-lg bg-blue-600 px-3.5 py-1.5 text-sm font-semibold text-white hover:bg-blue-700"
-            >
-              Open PDF ↗
-            </a>
+        <aside className="w-full shrink-0 lg:sticky lg:top-20 lg:w-80">
+          <div className="flex flex-col gap-4">
+            {/* Submission picker */}
+            <div>
+              <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                {submissions.length} Submission
+                {submissions.length !== 1 ? "s" : ""}
+              </h2>
+
+              {submissions.length === 0 ? (
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  No submissions yet.
+                </p>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {submissions.map((sub) => {
+                    const canView = !!sub.pdfUrl;
+                    const isSelected = sub.id === selectedId;
+                    return (
+                      <button
+                        key={sub.id}
+                        type="button"
+                        disabled={!canView}
+                        onClick={() => canView && setSelectedId(sub.id)}
+                        className={cx(
+                          "w-full rounded-lg border p-3 text-left transition",
+                          canView
+                            ? "cursor-pointer hover:border-blue-300"
+                            : "cursor-not-allowed opacity-50",
+                          isSelected
+                            ? "border-blue-500 bg-blue-50 ring-1 ring-blue-500 dark:bg-blue-500/10"
+                            : "border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900"
+                        )}
+                      >
+                        <p className="truncate text-sm font-medium text-gray-800 dark:text-gray-200">
+                          {sub.contributor?.name ?? "Anonymous"}
+                        </p>
+                        <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                          {formatDate(sub.createdAt)}
+                        </p>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Selected submission details */}
+            {selected && (
+              <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
+                <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                  Contributor
+                </h3>
+                <div className="mb-4 flex items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-100 text-sm font-bold text-blue-700 dark:bg-blue-500/20 dark:text-blue-300">
+                    {selected.contributor?.name?.[0]?.toUpperCase() ?? "?"}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-gray-900 dark:text-gray-100">
+                      {selected.contributor?.name ?? "Anonymous"}
+                    </p>
+                    {selected.contributor?.username && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        @{selected.contributor.username}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                  Details
+                </h3>
+                <dl className="space-y-1.5 text-sm">
+                  <Row label="Date" value={formatDate(selected.createdAt)} />
+                  <Row label="File size" value={formatBytes(selected.fileSize)} />
+                  {selected.section && <Row label="Section" value={selected.section} />}
+                  {selected.batch && <Row label="Batch" value={selected.batch} />}
+                </dl>
+
+                {selected.pdfUrl && (
+                  <a
+                    href={selected.pdfUrl}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    className="mt-4 flex w-full items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+                  >
+                    Open in new tab ↗
+                  </a>
+                )}
+              </div>
+            )}
           </div>
-          <iframe
-            key={active.id}
-            src={active.pdfUrl}
-            title={`${question.course.name} question PDF`}
-            className="min-h-[65vh] w-full flex-1 bg-white"
-          />
-        </div>
-      )}
+        </aside>
+      </div>
     </main>
   );
 }
 
-function Tag({ children }) {
+function Row({ label, value }) {
   return (
-    <span className="rounded-full border border-gray-200 bg-white px-2.5 py-0.5 text-xs font-medium text-gray-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400">
-      {children}
-    </span>
+    <div className="flex justify-between">
+      <dt className="text-gray-500 dark:text-gray-400">{label}</dt>
+      <dd className="font-medium text-gray-800 dark:text-gray-200">{value}</dd>
+    </div>
   );
 }
