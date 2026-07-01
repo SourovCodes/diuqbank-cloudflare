@@ -8,10 +8,12 @@ import {
   type AutoSubmission,
   type User,
 } from "../../db/schema";
-import { invalidateSubmission } from "../../lib/cache";
 import { buildMeta } from "../../shared/utils/pagination";
 import type { AdminAutoSubmission } from "../../shared/types";
-import { publishAutoSubmission } from "../../lib/auto-submission";
+import {
+  publishAutoSubmission,
+  startAutoSubmission,
+} from "../../lib/auto-submission";
 import { parseId } from "../../lib/parse-id";
 import { fileUrlFor, toAuthUser } from "../../lib/user-shape";
 import { validate } from "../../lib/validator";
@@ -232,6 +234,7 @@ route.post("/:id/approve", async (c) => {
     });
   }
 
+  // publishAutoSubmission busts the relevant caches (taxonomy + submission).
   const detail = await loadAutoSubmission(db, id, new URL(c.req.url).origin);
   if (!detail) {
     throw new HTTPException(500, {
@@ -239,13 +242,44 @@ route.post("/:id/approve", async (c) => {
     });
   }
 
-  // Publishing created a new submission (+ possibly a new question).
-  if (detail.questionId !== null) {
-    c.executionCtx.waitUntil(
-      invalidateSubmission(c.env, detail.questionId, detail.contributor.username),
-    );
+  return c.json(detail);
+});
+
+route.post("/:id/reprocess", async (c) => {
+  const id = parseId(c.req.param("id"));
+  if (id === null) {
+    throw new HTTPException(404, { message: "Auto submission not found" });
   }
 
+  // Race-safe: only a terminally `failed` row can be reset. Clearing
+  // is_acceptable forces a fresh Gemini run (runAutoExtraction reuses the
+  // snapshot when it's already set).
+  const reset = await c.env.DB.prepare(
+    `UPDATE auto_submissions
+     SET status = 'processing', processing_error = NULL, is_acceptable = NULL
+     WHERE id = ? AND status = 'failed'`,
+  )
+    .bind(id)
+    .run();
+  if ((reset.meta.changes ?? 0) === 0) {
+    throw new HTTPException(409, {
+      message: "Only failed auto submissions can be reprocessed",
+    });
+  }
+
+  // Re-enqueue on the throttled queue (self-marks failed if the enqueue throws).
+  await startAutoSubmission(c.env, id);
+
+  const detail = await loadAutoSubmission(
+    getDb(c.env.DB),
+    id,
+    new URL(c.req.url).origin,
+  );
+  if (!detail) {
+    throw new HTTPException(500, {
+      message: "Failed to load reprocessed auto submission",
+    });
+  }
   return c.json(detail);
 });
 

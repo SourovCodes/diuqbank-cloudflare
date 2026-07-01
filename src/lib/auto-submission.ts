@@ -9,6 +9,7 @@ import {
   extractQuestionMetadata,
   type AiExtraction,
 } from "./ai-extraction";
+import { invalidateSubmission, invalidateTaxonomy } from "./cache";
 import { compressPdf, startWatermark } from "./pdf-processor";
 import {
   findOrCreateCourse,
@@ -172,6 +173,7 @@ export const publishAutoSubmission = async (
 ): Promise<number | null> => {
   const row = await db.query.autoSubmissions.findFirst({
     where: eq(autoSubmissions.id, autoSubmissionId),
+    with: { user: { columns: { username: true } } },
   });
   if (!row) {
     throw new HTTPException(404, { message: "Auto submission not found" });
@@ -269,6 +271,14 @@ export const publishAutoSubmission = async (
 
   if (newSubmissionId !== null) {
     await startWatermark(env, newSubmissionId);
+    // Bust caches for both publish paths (queue auto-publish + admin approve).
+    // `tax` is bumped unconditionally: publishing may have introduced new
+    // taxonomy via findOrCreate*, and an extra bump is one cheap KV write.
+    // ponytail: always bump tax vs. detecting new taxonomy — 1 KV write
+    await Promise.all([
+      invalidateTaxonomy(env),
+      invalidateSubmission(env, questionId, row.user.username),
+    ]);
   }
   return newSubmissionId;
 };
