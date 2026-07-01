@@ -251,19 +251,19 @@ route.post("/:id/reprocess", async (c) => {
     throw new HTTPException(404, { message: "Auto submission not found" });
   }
 
-  // Race-safe: only a terminally `failed` row can be reset. Clearing
+  // Race-safe: any row that isn't terminally `published` can be reset. Clearing
   // is_acceptable forces a fresh Gemini run (runAutoExtraction reuses the
   // snapshot when it's already set).
   const reset = await c.env.DB.prepare(
     `UPDATE auto_submissions
      SET status = 'processing', processing_error = NULL, is_acceptable = NULL
-     WHERE id = ? AND status = 'failed'`,
+     WHERE id = ? AND status <> 'published'`,
   )
     .bind(id)
     .run();
   if ((reset.meta.changes ?? 0) === 0) {
     throw new HTTPException(409, {
-      message: "Only failed auto submissions can be reprocessed",
+      message: "Published auto submissions cannot be reprocessed",
     });
   }
 

@@ -1397,10 +1397,10 @@ const adminPaths = {
   "/admin/auto-submissions/{id}/reprocess": {
     post: {
       tags: ["admin-auto-submissions"],
-      summary: "Reprocess a failed auto-submission",
+      summary: "Reprocess an auto-submission",
       ...authFields(
         "Admin",
-        "Resets a terminally `failed` auto-submission back to `processing` and re-enqueues it on the throttled PDF queue for a fresh AI extraction (e.g. after fixing the Gemini key). Only `failed` rows are eligible.",
+        "Resets any non-`published` auto-submission back to `processing` and re-enqueues it on the throttled PDF queue for a fresh AI extraction (e.g. after fixing the Gemini key). Only `published` rows are ineligible.",
       ),
       parameters: [idPathParam("Auto submission")],
       responses: {
@@ -1408,7 +1408,7 @@ const adminPaths = {
         "401": commonErrors["401"],
         "403": commonErrors["403"],
         "404": commonErrors["404"],
-        "409": errResp("Only failed auto submissions can be reprocessed"),
+        "409": errResp("Published auto submissions cannot be reprocessed"),
       },
     },
   },
