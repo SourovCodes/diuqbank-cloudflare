@@ -49,7 +49,7 @@ export default function ManualSubmissionDetail() {
   }
 
   return (
-    <main className="container mx-auto max-w-5xl flex-1 px-4 py-10 sm:py-12">
+    <main className="container mx-auto flex-1 px-4 py-10 sm:py-12">
       <Link
         to="/submissions/manual"
         className="mb-6 inline-flex text-sm font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400"

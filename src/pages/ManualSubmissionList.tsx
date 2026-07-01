@@ -2,10 +2,9 @@ import { useEffect } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useManualSubmissions } from "../hooks/queries";
 import { Pagination } from "../components/ui/Pagination";
-import { SubmissionStatusBadge } from "../components/ui/SubmissionStatusBadge";
 import { SubmissionTabs } from "../components/submissions/SubmissionTabs";
+import { SubmissionCard } from "../components/submissions/SubmissionCard";
 import { cx } from "../lib/cx";
-import { formatDate } from "../lib/format";
 import { parsePositiveIntParam } from "../lib/searchParams";
 
 export default function ManualSubmissionList() {
@@ -13,7 +12,7 @@ export default function ManualSubmissionList() {
   const page = parsePositiveIntParam(searchParams, "page");
   const { data, isPending, isError, error, isFetching } = useManualSubmissions({
     page,
-    perPage: 10,
+    perPage: 12,
   });
 
   useEffect(() => {
@@ -29,11 +28,17 @@ export default function ManualSubmissionList() {
   }
 
   return (
-    <main className="container mx-auto max-w-4xl flex-1 px-4 py-8 sm:py-10">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100 sm:text-3xl">
-          My submissions
-        </h1>
+    <main className="container mx-auto flex-1 px-4 py-8 sm:py-10">
+      <div className="mb-6 flex flex-wrap items-end justify-between gap-3 border-b border-gray-200 pb-6 dark:border-gray-800">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100 sm:text-3xl">
+            Your submissions
+          </h1>
+          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+            Papers you've submitted for review.
+            {data?.meta.total ? ` ${data.meta.total} total.` : ""}
+          </p>
+        </div>
         <Link
           to="/submissions/manual/new"
           className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
@@ -42,7 +47,7 @@ export default function ManualSubmissionList() {
         </Link>
       </div>
 
-      <div className="mb-6">
+      <div className="mb-6 max-w-md">
         <SubmissionTabs />
       </div>
 
@@ -72,28 +77,21 @@ export default function ManualSubmissionList() {
         </div>
       ) : (
         <>
-          <div className={cx("flex flex-col gap-3 transition-opacity", isFetching && "opacity-60")}>
+          <div
+            className={cx(
+              "grid gap-4 transition-opacity sm:grid-cols-2 xl:grid-cols-3",
+              isFetching && "opacity-60"
+            )}
+          >
             {data.data.map((sub) => (
-              <Link
+              <SubmissionCard
                 key={sub.id}
                 to={`/submissions/manual/${sub.id}`}
-                className="group grid gap-3 rounded-lg border border-gray-200 bg-white p-4 transition hover:border-blue-300 hover:bg-blue-50/40 dark:border-gray-800 dark:bg-gray-900 dark:hover:border-blue-500 dark:hover:bg-blue-500/5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
-              >
-                <div className="min-w-0">
-                  <h3 className="truncate text-sm font-semibold text-gray-900 group-hover:text-blue-700 dark:text-gray-100 dark:group-hover:text-blue-400">
-                    {sub.courseName}
-                  </h3>
-                  <p className="mt-1 truncate text-xs text-gray-500 dark:text-gray-400">
-                    {sub.departmentShortName} · {sub.semesterName} · {sub.examTypeName}
-                  </p>
-                </div>
-                <div className="flex items-center gap-3 sm:justify-end">
-                  <SubmissionStatusBadge status={sub.status} />
-                  <span className="text-xs text-gray-500 dark:text-gray-400">
-                    {formatDate(sub.createdAt)}
-                  </span>
-                </div>
-              </Link>
+                title={sub.courseName}
+                meta={`${sub.departmentShortName} · ${sub.semesterName} · ${sub.examTypeName}`}
+                status={sub.status}
+                createdAt={sub.createdAt}
+              />
             ))}
           </div>
           <Pagination meta={data.meta} onPageChange={goToPage} />

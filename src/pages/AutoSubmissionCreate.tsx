@@ -3,8 +3,15 @@ import { Link, useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createAutoSubmission } from "../api";
 import { Button, Field, inputClass } from "../components/ui/form";
+import { Card, CardTitle } from "../components/ui/Card";
 
 const MAX_PDF_BYTES = 20 * 1024 * 1024;
+
+const steps = [
+  "You upload just the PDF.",
+  "The AI reads it and extracts the course, semester, and exam type.",
+  "Clear papers publish automatically; ambiguous ones go to a reviewer.",
+];
 
 export default function AutoSubmissionCreate() {
   const navigate = useNavigate();
@@ -36,7 +43,7 @@ export default function AutoSubmissionCreate() {
   }
 
   return (
-    <main className="container mx-auto max-w-2xl flex-1 px-4 py-10 sm:py-12">
+    <main className="container mx-auto flex-1 px-4 py-10 sm:py-12">
       <Link
         to="/submissions/auto"
         className="mb-6 inline-flex text-sm font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400"
@@ -44,64 +51,103 @@ export default function AutoSubmissionCreate() {
         Back to submissions
       </Link>
 
-      <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100 sm:text-3xl">
-        AI-assisted upload
-      </h1>
-      <p className="mt-2 text-sm leading-6 text-gray-500 dark:text-gray-400">
-        Upload just the PDF. Our AI reads it and extracts the department,
-        course, semester, and exam type. You can watch the result on the next
-        screen.
-      </p>
+      <div className="mb-7 border-b border-gray-200 pb-6 dark:border-gray-800">
+        <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100 sm:text-3xl">
+          AI-assisted upload
+        </h1>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-gray-500 dark:text-gray-400">
+          Upload just the PDF. Our AI reads it and extracts the department,
+          course, semester, and exam type. You can watch the result on the next
+          screen.
+        </p>
+      </div>
 
-      <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
-        <Field label="Question paper (PDF)" htmlFor="pdf" hint="Max 20 MB.">
-          <input
-            id="pdf"
-            name="pdf"
-            type="file"
-            accept="application/pdf"
-            required
-            className={inputClass}
-            onChange={(e) => {
-              const file = e.target.files?.[0] ?? null;
-              if (file && file.size > MAX_PDF_BYTES) {
-                setFileError("PDF exceeds the 20 MB limit.");
-                setPdf(null);
-              } else {
-                setFileError(null);
-                setPdf(file);
-              }
-            }}
-          />
-          {fileError && (
-            <p className="mt-1 text-xs text-red-600 dark:text-red-400">{fileError}</p>
-          )}
-        </Field>
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
+        <Card className="p-6">
+          <form className="space-y-5" onSubmit={handleSubmit}>
+            <Field label="Question paper (PDF)" htmlFor="pdf" hint="Max 20 MB.">
+              <input
+                id="pdf"
+                name="pdf"
+                type="file"
+                accept="application/pdf"
+                required
+                className={inputClass}
+                onChange={(e) => {
+                  const file = e.target.files?.[0] ?? null;
+                  if (file && file.size > MAX_PDF_BYTES) {
+                    setFileError("PDF exceeds the 20 MB limit.");
+                    setPdf(null);
+                  } else {
+                    setFileError(null);
+                    setPdf(file);
+                  }
+                }}
+              />
+              {fileError && (
+                <p className="mt-1 text-xs text-red-600 dark:text-red-400">{fileError}</p>
+              )}
+            </Field>
 
-        <Field
-          label="Context hint (optional)"
-          htmlFor="extraContext"
-          hint="Helps the AI when the paper is ambiguous — e.g. department or semester."
-        >
-          <textarea
-            id="extraContext"
-            name="extraContext"
-            rows={3}
-            className={inputClass}
-            placeholder="e.g. This is a CSE Data Structures midterm from Summer 2026."
-          />
-        </Field>
+            <Field
+              label="Context hint (optional)"
+              htmlFor="extraContext"
+              hint="Helps the AI when the paper is ambiguous — e.g. department or semester."
+            >
+              <textarea
+                id="extraContext"
+                name="extraContext"
+                rows={3}
+                className={inputClass}
+                placeholder="e.g. This is a CSE Data Structures midterm from Summer 2026."
+              />
+            </Field>
 
-        {create.isError && (
-          <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
-            {(create.error as Error).message}
-          </p>
-        )}
+            {create.isError && (
+              <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
+                {(create.error as Error).message}
+              </p>
+            )}
 
-        <Button type="submit" loading={create.isPending}>
-          Upload &amp; process
-        </Button>
-      </form>
+            <div className="border-t border-gray-100 pt-5 dark:border-gray-800">
+              <Button type="submit" loading={create.isPending}>
+                Upload &amp; process
+              </Button>
+            </div>
+          </form>
+        </Card>
+
+        <aside className="space-y-4">
+          <Card className="p-5">
+            <CardTitle>How it works</CardTitle>
+            <ol className="mt-4 space-y-4">
+              {steps.map((step, i) => (
+                <li key={i} className="flex gap-3">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700 dark:bg-blue-500/20 dark:text-blue-300">
+                    {i + 1}
+                  </span>
+                  <span className="text-sm leading-6 text-gray-600 dark:text-gray-300">
+                    {step}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </Card>
+          <Card className="p-5">
+            <CardTitle>Prefer full control?</CardTitle>
+            <p className="mt-3 text-sm leading-6 text-gray-600 dark:text-gray-300">
+              Enter the department, course, and exam details yourself with a
+              manual submission.
+            </p>
+            <Link
+              to="/submissions/manual/new"
+              className="mt-3 inline-flex text-sm font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400"
+            >
+              Switch to manual →
+            </Link>
+          </Card>
+        </aside>
+      </div>
     </main>
   );
 }
