@@ -89,7 +89,7 @@
     "PDF_PROCESSOR_URL": "https://pdf-processor.diuqbank.com",
     // Comma-separated CORS allowlist. Requests from any other Origin are
     // rejected (no CORS headers). Add your production/custom domains here.
-    "WEB_ORIGINS": "https://diuqbank-web-prod.sourov-cse.workers.dev,http://localhost:5173"
+    "WEB_ORIGINS": "https://diuqbank-web-prod.sourov-cse.workers.dev,https://diuqbank-web.sourov-cse.workers.dev,http://localhost:5173"
   },
   "secrets": {
     "required": [
