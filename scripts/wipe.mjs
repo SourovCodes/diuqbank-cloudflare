@@ -32,10 +32,15 @@ if (remote && !args.has("--yes")) {
 }
 
 // Run wrangler, streaming its output. `pnpm exec` resolves the pinned wrangler
-// whether this file is run via `node` or `pnpm wipe`.
+// whether this file is run via `node` or `pnpm wipe`. Non-capture (mutating)
+// calls get a piped "y" so `d1 migrations apply` — which has no --yes flag —
+// doesn't stall/abort on its confirmation prompt in a non-interactive shell.
 const wrangler = (a, capture = false) =>
   execFileSync("pnpm", ["exec", "wrangler", ...a], {
-    stdio: capture ? ["ignore", "pipe", "inherit"] : "inherit",
+    input: capture ? undefined : "y\n",
+    stdio: capture
+      ? ["ignore", "pipe", "inherit"]
+      : ["pipe", "inherit", "inherit"],
     encoding: "utf8",
   });
 

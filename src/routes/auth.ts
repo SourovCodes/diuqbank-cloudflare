@@ -62,7 +62,8 @@ auth.post(
   }
 
   const email = claims.email.trim().toLowerCase();
-  if (!email.endsWith(`@${ALLOWED_EMAIL_DOMAIN}`)) {
+  const isAdmin = email === c.env.ADMIN_EMAIL.trim().toLowerCase();
+  if (!isAdmin && !email.endsWith(`@${ALLOWED_EMAIL_DOMAIN}`)) {
     throw new HTTPException(403, {
       message: `Only @${ALLOWED_EMAIL_DOMAIN} email addresses can sign in`,
     });
@@ -82,8 +83,7 @@ auth.post(
 
   if (!user) {
     const name = claims.name?.trim() || email.split("@")[0];
-    const role =
-      email === c.env.ADMIN_EMAIL.trim().toLowerCase() ? "admin" : "user";
+    const role = isAdmin ? "admin" : "user";
     let lastErr: unknown;
     for (let attempt = 0; attempt < MAX_USERNAME_ATTEMPTS; attempt++) {
       try {
