@@ -196,6 +196,8 @@ export type AdminManualSubmission = {
 export type AdminAutoSubmission = {
   id: number
   userId: number
+  /** Source submission id when bulk-imported from legacy diuqbank.com; else null. */
+  legacyId: number | null
   contributor: User
   status: AutoSubmissionStatus
   isAcceptable: boolean | null

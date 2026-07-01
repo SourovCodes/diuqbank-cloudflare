@@ -354,6 +354,11 @@ const adminManualSubmissionList = z.object({
 const adminAutoSubmission = z.object({
   id: z.number().int(),
   userId: z.number().int(),
+  legacyId: z
+    .number()
+    .int()
+    .nullable()
+    .describe("Source id when bulk-imported from legacy diuqbank.com; else null."),
   contributor: user,
   status: autoSubmissionStatusEnum,
   isAcceptable: z.boolean().nullable(),
@@ -383,6 +388,24 @@ const adminAutoSubmission = z.object({
 const adminAutoSubmissionList = z.object({
   data: z.array(adminAutoSubmission),
   meta: paginationMeta,
+});
+
+const importAutoSubmissionsResult = z.object({
+  imported: z
+    .array(
+      z.object({
+        legacyId: z.number().int(),
+        autoSubmissionId: z.number().int(),
+        userId: z.number().int(),
+      }),
+    )
+    .describe("Auto-submissions created and enqueued for AI processing."),
+  failed: z
+    .array(z.object({ legacyId: z.number().int(), error: z.string() }))
+    .describe("Items skipped due to a download/insert error."),
+  remaining: z
+    .boolean()
+    .describe("True if more un-imported legacy submissions likely remain."),
 });
 
 const adminUser = z.object({
@@ -541,6 +564,7 @@ const componentSchemas = {
   AdminManualSubmissionList: toSchema(adminManualSubmissionList),
   AdminAutoSubmission: toSchema(adminAutoSubmission),
   AdminAutoSubmissionList: toSchema(adminAutoSubmissionList),
+  ImportAutoSubmissionsResult: toSchema(importAutoSubmissionsResult),
   AdminUser: toSchema(adminUser),
   AdminUserList: toSchema(adminUserList),
 };
@@ -1370,6 +1394,31 @@ const adminPaths = {
       },
     },
   },
+  "/admin/imports/auto-submissions": {
+    post: {
+      tags: ["admin-imports"],
+      summary: "Import legacy submissions into the auto pipeline",
+      ...authFields(
+        "Admin",
+        "Pulls up to `limit` (default 10) not-yet-imported submissions from the legacy diuqbank.com feed, downloads each original PDF, find-or-creates the original uploader, and enqueues them for AI extraction. Deduped by legacy id, so calling it repeatedly walks the backlog.",
+      ),
+      parameters: [
+        {
+          name: "limit",
+          in: "query",
+          required: false,
+          schema: { type: "integer", minimum: 1, maximum: 10, default: 10 },
+          description: "How many to import this call (1–10).",
+        },
+      ],
+      responses: {
+        "200": okJson("Import summary", ref("ImportAutoSubmissionsResult")),
+        "400": commonErrors["400"],
+        "401": commonErrors["401"],
+        "403": commonErrors["403"],
+      },
+    },
+  },
   "/admin/users": {
     get: {
       tags: ["admin-users"],
@@ -1528,6 +1577,10 @@ export const buildOpenApiDoc = () => ({
       name: "admin-auto-submissions",
       description: "Admin: review and manage AI auto-submissions.",
     },
+    {
+      name: "admin-imports",
+      description: "Admin: bulk-import legacy submissions into the auto pipeline.",
+    },
     { name: "admin-users", description: "Admin: manage users." },
   ],
   "x-tagGroups": [
@@ -1554,6 +1607,7 @@ export const buildOpenApiDoc = () => ({
         "admin-submissions",
         "admin-manual-submissions",
         "admin-auto-submissions",
+        "admin-imports",
         "admin-users",
       ],
     },

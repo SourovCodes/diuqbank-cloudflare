@@ -192,6 +192,10 @@ export const autoSubmissions = sqliteTable(
     userId: integer("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "restrict" }),
+    // Set only for rows bulk-imported from the legacy diuqbank.com site; null for
+    // normal user uploads. Unique so an import can't pull the same source twice
+    // (SQLite allows many NULLs, so normal uploads are unaffected).
+    legacyId: integer("legacy_id").unique(),
     pdfKey: text("pdf_key").notNull(),
     fileSize: integer("file_size").notNull(),
     status: text("status", {
