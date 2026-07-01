@@ -186,6 +186,243 @@
   font-size: 0.85rem;
 }
 
+/* active nav link */
+.nav-links a.active {
+  color: var(--fg);
+  font-weight: 600;
+}
+.nav-cta.active {
+  color: #fff;
+}
+
+/* ---------- Questions: shared ---------- */
+.container {
+  flex: 1;
+  width: 100%;
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 40px 24px 64px;
+}
+
+.page-title {
+  font-size: 2rem;
+  letter-spacing: -0.02em;
+  margin: 0 0 24px;
+}
+
+.state {
+  color: var(--muted);
+  padding: 24px 0;
+}
+.state-error {
+  color: #dc2626;
+}
+
+.tag {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+.back-link {
+  color: var(--accent);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+.back-link:hover {
+  text-decoration: underline;
+}
+
+/* ---------- Question list ---------- */
+.filter-bar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.filter-bar select {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.filter-bar select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.question-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.question-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  transition: border-color 0.15s, transform 0.15s;
+}
+.question-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+
+.question-course {
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.3;
+  margin: 0;
+  color: var(--fg);
+}
+
+.question-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.question-count {
+  color: var(--muted);
+  font-size: 0.82rem;
+  margin-top: auto;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 36px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.pagination button {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.pagination button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.pagination button:not(:disabled):hover {
+  border-color: var(--accent);
+}
+
+/* ---------- Question detail (PDF is the focus) ---------- */
+.detail {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 20px 24px 24px;
+}
+
+.detail-header {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.detail-title {
+  font-size: 1.4rem;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+.submission-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.submission-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--fg);
+  cursor: pointer;
+  text-align: left;
+}
+.submission-chip small {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+.submission-chip.active {
+  border-color: var(--accent);
+  background: var(--surface);
+}
+
+.pdf-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--surface);
+  min-height: 70svh;
+}
+
+.pdf-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.pdf-by {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.pdf-fallback {
+  padding: 7px 14px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.pdf-fallback:hover {
+  opacity: 0.9;
+}
+
+.pdf-frame {
+  flex: 1;
+  width: 100%;
+  border: 0;
+  min-height: 65svh;
+  background: #fff;
+}
+
 /* ---------- Mobile ---------- */
 @media (max-width: 720px) {
   .nav-toggle {
@@ -232,5 +469,13 @@
   .footer-inner {
     flex-direction: column;
     text-align: center;
+  }
+
+  .filter-bar {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .question-grid {
+    grid-template-columns: 1fr;
   }
 }

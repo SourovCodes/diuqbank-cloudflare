@@ -5,7 +5,9 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
-    // respect PORT env (used by preview harness); fall back to Vite default
-    port: process.env.PORT ? Number(process.env.PORT) : undefined,
+    // The API whitelists http://localhost:5173 for CORS, so pin to it and
+    // fail loudly rather than drifting to a non-allowed port.
+    port: 5173,
+    strictPort: true,
   },
 })

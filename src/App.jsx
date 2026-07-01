@@ -1,11 +1,13 @@
 import { useState } from "react";
+import { Link, NavLink, Outlet, Routes, Route } from "react-router-dom";
 import "./App.css";
+import Home from "./pages/Home";
+import QuestionList from "./pages/QuestionList";
+import QuestionDetail from "./pages/QuestionDetail";
 
 const navLinks = [
-  { label: "Home", href: "#home" },
-  { label: "Features", href: "#features" },
-  { label: "About", href: "#about" },
-  { label: "Contact", href: "#contact" },
+  { label: "Home", to: "/" },
+  { label: "Questions", to: "/questions" },
 ];
 
 function Navbar() {
@@ -15,9 +17,9 @@ function Navbar() {
   return (
     <header className="nav">
       <div className="nav-inner">
-        <a href="#home" className="nav-logo" onClick={close}>
+        <Link to="/" className="nav-logo" onClick={close}>
           DIUQBank
-        </a>
+        </Link>
 
         <button
           className="nav-toggle"
@@ -32,37 +34,16 @@ function Navbar() {
 
         <nav className={`nav-links ${open ? "open" : ""}`}>
           {navLinks.map((link) => (
-            <a key={link.href} href={link.href} onClick={close}>
+            <NavLink key={link.to} to={link.to} end onClick={close}>
               {link.label}
-            </a>
+            </NavLink>
           ))}
-          <a href="#contact" className="nav-cta" onClick={close}>
-            Get Started
-          </a>
+          <Link to="/questions" className="nav-cta" onClick={close}>
+            Browse Questions
+          </Link>
         </nav>
       </div>
     </header>
-  );
-}
-
-function Hero() {
-  return (
-    <main id="home" className="hero">
-      <p className="hero-eyebrow">Welcome</p>
-      <h1>Build something clean and simple.</h1>
-      <p className="hero-sub">
-        A minimal, mobile-responsive starting point for your next project. No
-        clutter — just the essentials, ready to grow.
-      </p>
-      <div className="hero-actions">
-        <a href="#features" className="btn btn-primary">
-          Get Started
-        </a>
-        <a href="#about" className="btn btn-ghost">
-          Learn More
-        </a>
-      </div>
-    </main>
   );
 }
 
@@ -73,9 +54,9 @@ function Footer() {
         <span className="footer-logo">DIUQBank</span>
         <nav className="footer-links">
           {navLinks.map((link) => (
-            <a key={link.href} href={link.href}>
+            <Link key={link.to} to={link.to}>
               {link.label}
-            </a>
+            </Link>
           ))}
         </nav>
         <span className="footer-copy">
@@ -86,12 +67,24 @@ function Footer() {
   );
 }
 
-export default function App() {
+function Layout() {
   return (
     <div className="page">
       <Navbar />
-      <Hero />
+      <Outlet />
       <Footer />
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <Routes>
+      <Route element={<Layout />}>
+        <Route path="/" element={<Home />} />
+        <Route path="/questions" element={<QuestionList />} />
+        <Route path="/questions/:id" element={<QuestionDetail />} />
+      </Route>
+    </Routes>
   );
 }
