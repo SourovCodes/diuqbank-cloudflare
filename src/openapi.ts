@@ -1400,7 +1400,7 @@ const adminPaths = {
       summary: "Reprocess an auto-submission",
       ...authFields(
         "Admin",
-        "Resets any non-`published` auto-submission back to `processing` and re-enqueues it on the throttled PDF queue for a fresh AI extraction (e.g. after fixing the Gemini key). Only `published` rows are ineligible.",
+        "Resets an auto-submission that isn't already `processing` or `published` back to `processing` and re-enqueues it on the throttled PDF queue for a fresh AI extraction (e.g. after fixing the Gemini key). `processing` and `published` rows are ineligible.",
       ),
       parameters: [idPathParam("Auto submission")],
       responses: {
@@ -1408,7 +1408,9 @@ const adminPaths = {
         "401": commonErrors["401"],
         "403": commonErrors["403"],
         "404": commonErrors["404"],
-        "409": errResp("Published auto submissions cannot be reprocessed"),
+        "409": errResp(
+          "Only non-processing, unpublished auto submissions can be reprocessed",
+        ),
       },
     },
   },
