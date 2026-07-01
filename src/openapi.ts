@@ -1425,8 +1425,8 @@ const adminPaths = {
           name: "limit",
           in: "query",
           required: false,
-          schema: { type: "integer", minimum: 1, maximum: 10, default: 10 },
-          description: "How many to import this call (1–10).",
+          schema: { type: "integer", minimum: 1, maximum: 500, default: 10 },
+          description: "How many to import this call (1–500).",
         },
       ],
       responses: {
