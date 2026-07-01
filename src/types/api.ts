@@ -13,6 +13,14 @@ export type ContributorSubmission =
   components["schemas"]["ContributorSubmission"];
 export type ContributorSubmissionList =
   components["schemas"]["ContributorSubmissionList"];
+export type AuthConfig = components["schemas"]["AuthConfig"];
+export type AuthResponse = components["schemas"]["AuthResponse"];
+export type User = components["schemas"]["User"];
+export type ManualSubmission = components["schemas"]["ManualSubmission"];
+export type ManualSubmissionList =
+  components["schemas"]["ManualSubmissionList"];
+export type AutoSubmission = components["schemas"]["AutoSubmission"];
+export type AutoSubmissionList = components["schemas"]["AutoSubmissionList"];
 
 export type QuestionFilters = {
   page: number;

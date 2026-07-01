@@ -1,7 +1,14 @@
 @import "tailwindcss";
 
+/* Drive `dark:` from a class on <html> instead of the OS media query, so the
+   navbar toggle can override the system preference. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 html {
   scroll-behavior: smooth;
-  /* let native form controls, scrollbars and the PDF viewer follow the theme */
-  color-scheme: light dark;
+  color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
 }

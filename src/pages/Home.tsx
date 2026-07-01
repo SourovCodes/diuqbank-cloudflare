@@ -26,12 +26,12 @@ export default function Home() {
           >
             Browse Questions
           </Link>
-          <a
-            href="#about"
+          <Link
+            to="/submissions/manual/new"
             className="rounded-lg border border-gray-300 px-6 py-3 text-sm font-semibold hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-900"
           >
-            Learn More
-          </a>
+            Contribute a paper
+          </Link>
         </div>
       </section>
 

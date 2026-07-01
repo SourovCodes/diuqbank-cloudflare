@@ -5,10 +5,14 @@ import {
   type QueryClient,
 } from "@tanstack/react-query";
 import {
+  getAutoSubmission,
+  getAutoSubmissions,
   getContributor,
   getContributors,
   getContributorSubmissions,
   getFilterOptions,
+  getManualSubmission,
+  getManualSubmissions,
   getQuestions,
   getQuestion,
   getSubmissions,
@@ -134,5 +138,40 @@ export function useContributorSubmissions(
     queryFn: () => getContributorSubmissions(username as string, params),
     enabled: !!username,
     placeholderData: keepPreviousData,
+  });
+}
+
+export function useManualSubmissions(params: PaginationParams) {
+  return useQuery({
+    queryKey: ["manual-submissions", params],
+    queryFn: () => getManualSubmissions(params),
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useManualSubmission(id?: string) {
+  return useQuery({
+    queryKey: ["manual-submission", id],
+    queryFn: () => getManualSubmission(id as string),
+    enabled: !!id,
+  });
+}
+
+export function useAutoSubmissions(params: PaginationParams) {
+  return useQuery({
+    queryKey: ["auto-submissions", params],
+    queryFn: () => getAutoSubmissions(params),
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useAutoSubmission(id?: string) {
+  return useQuery({
+    queryKey: ["auto-submission", id],
+    queryFn: () => getAutoSubmission(id as string),
+    enabled: !!id,
+    // Auto-submissions are processed async by an AI pipeline — poll while it works.
+    refetchInterval: (query) =>
+      query.state.data?.status === "processing" ? 3000 : false,
   });
 }
