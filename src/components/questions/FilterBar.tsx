@@ -7,11 +7,12 @@ const labelClass =
 type FilterKey = Exclude<keyof QuestionFilters, "page" | "perPage">;
 
 type FilterBarProps = {
-  options: FilterOptions;
+  options?: FilterOptions;
   filters: QuestionFilters;
   onFilterChange: (key: FilterKey, value: string) => void;
   onDepartmentChange: (deptId: string) => void;
   onClear: () => void;
+  disabled?: boolean;
 };
 
 export function FilterBar({
@@ -20,18 +21,39 @@ export function FilterBar({
   onFilterChange,
   onDepartmentChange,
   onClear,
+  disabled = false,
 }: FilterBarProps) {
-  const visibleCourses = filters.departmentId
-    ? options.courses.filter((c) => c.departmentId === Number(filters.departmentId))
-    : options.courses;
+  const departments = options?.departments ?? [];
+  const courses = options?.courses ?? [];
+  const semesters = options?.semesters ?? [];
+  const examTypes = options?.examTypes ?? [];
 
-  const deptShort = new Map(options.departments.map((d) => [d.id, d.shortName]));
+  const visibleCourses = filters.departmentId
+    ? courses.filter((c) => c.departmentId === Number(filters.departmentId))
+    : courses;
+
+  const deptShort = new Map(departments.map((d) => [d.id, d.shortName]));
   const courseOptions: SelectOption[] = visibleCourses.map((c) => ({
     value: String(c.id),
     label: filters.departmentId
       ? c.name
       : `${c.name} (${deptShort.get(c.departmentId) ?? "?"})`,
   }));
+  const semesterOptions: SelectOption[] = semesters.map((s) => ({
+    value: String(s.id),
+    label: s.name,
+  }));
+  const hasInvalidSemester =
+    !!options &&
+    !!filters.semesterId &&
+    !semesterOptions.some((s) => s.value === filters.semesterId);
+
+  if (hasInvalidSemester) {
+    semesterOptions.unshift({
+      value: filters.semesterId,
+      label: "Invalid semester",
+    });
+  }
 
   const hasFilters = !!(
     filters.departmentId ||
@@ -46,10 +68,11 @@ export function FilterBar({
         <div>
           <label className={labelClass}>Department</label>
           <SearchableSelect
-            options={options.departments.map((d) => ({ value: String(d.id), label: d.name }))}
+            options={departments.map((d) => ({ value: String(d.id), label: d.name }))}
             value={filters.departmentId}
             onChange={onDepartmentChange}
             placeholder="All departments"
+            disabled={disabled}
           />
         </div>
         <div>
@@ -59,24 +82,27 @@ export function FilterBar({
             value={filters.courseId}
             onChange={(v) => onFilterChange("courseId", v)}
             placeholder="All courses"
+            disabled={disabled}
           />
         </div>
         <div>
           <label className={labelClass}>Semester</label>
           <SearchableSelect
-            options={options.semesters.map((s) => ({ value: String(s.id), label: s.name }))}
+            options={semesterOptions}
             value={filters.semesterId}
             onChange={(v) => onFilterChange("semesterId", v)}
             placeholder="All semesters"
+            disabled={disabled}
           />
         </div>
         <div>
           <label className={labelClass}>Exam Type</label>
           <SearchableSelect
-            options={options.examTypes.map((e) => ({ value: String(e.id), label: e.name }))}
+            options={examTypes.map((e) => ({ value: String(e.id), label: e.name }))}
             value={filters.examTypeId}
             onChange={(v) => onFilterChange("examTypeId", v)}
             placeholder="All types"
+            disabled={disabled}
           />
         </div>
       </div>

@@ -25,6 +25,12 @@ export default function QuestionDetail() {
     setSelectedId(submissions.find((s) => s.pdfUrl)?.id ?? null);
   }, [submissions]);
 
+  useEffect(() => {
+    document.title = question?.title
+      ? `${question.title} | DIUQBank`
+      : "Question | DIUQBank";
+  }, [question?.title]);
+
   if (isPending)
     return (
       <div className="container mx-auto flex-1 px-4 py-16">
@@ -61,11 +67,8 @@ export default function QuestionDetail() {
       </Link>
 
       <div className="mb-7 flex flex-col gap-4 border-b border-gray-200 pb-6 dark:border-gray-800">
-        <p className="text-xs font-semibold uppercase tracking-widest text-blue-600 dark:text-blue-400">
-          Question Paper
-        </p>
         <h1 className="max-w-4xl text-2xl font-bold leading-tight tracking-tight text-gray-900 dark:text-gray-100 sm:text-3xl">
-          {question.title}
+          {question.course.name}
         </h1>
         <div className="flex flex-wrap gap-2">
           <Badge label={question.department.name} variant="blue" />

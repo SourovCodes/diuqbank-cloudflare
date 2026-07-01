@@ -14,10 +14,10 @@ export function QuestionCard({ question }: QuestionCardProps) {
     >
       <div className="min-w-0">
         <h3 className="text-sm font-semibold leading-6 text-gray-900 group-hover:text-blue-700 dark:text-gray-100 dark:group-hover:text-blue-400">
-          {question.title}
+          {question.course.name}
         </h3>
         <p className="mt-1 truncate text-sm text-gray-500 dark:text-gray-400">
-          {question.course.name}
+          {question.semester.name} - {question.examType.name}
         </p>
         <div className="mt-3 flex flex-wrap gap-1.5">
           <Badge label={question.department.shortName} variant="blue" />
