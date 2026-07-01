@@ -17,7 +17,11 @@ export default function QuestionDetail() {
   const initialQuestion = (location.state as QuestionDetailLocationState | null)
     ?.question;
   const { data: question, isPending, isError } = useQuestion(id, initialQuestion);
-  const { data: submissionsData } = useSubmissions(id);
+  const {
+    data: submissionsData,
+    isPending: isSubmissionsPending,
+    isError: isSubmissionsError,
+  } = useSubmissions(id);
 
   const submissions = useMemo(
     () =>
@@ -65,7 +69,9 @@ export default function QuestionDetail() {
     );
 
   const selected = submissions.find((s) => s.id === selectedId);
-  const showSubmissionSelector = submissions.length > 1;
+  const showSubmissionSelector = !isSubmissionsPending && submissions.length > 1;
+  const showSubmissionSidebar =
+    isSubmissionsPending || showSubmissionSelector || selected;
 
   return (
     <main className="container mx-auto flex-1 px-4 py-10 sm:py-12">
@@ -90,7 +96,16 @@ export default function QuestionDetail() {
 
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
         <div className="min-w-0 flex-1">
-          {selected?.pdfUrl ? (
+          {isSubmissionsPending ? (
+            <div
+              className="flex items-center justify-center rounded-lg border border-dashed border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900"
+              style={{ minHeight: "560px" }}
+            >
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Loading submissions...
+              </p>
+            </div>
+          ) : selected?.pdfUrl ? (
             <iframe
               key={selected.id}
               src={selected.pdfUrl}
@@ -104,17 +119,30 @@ export default function QuestionDetail() {
               style={{ minHeight: "560px" }}
             >
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                {submissions.length === 0
-                  ? "No submissions yet."
-                  : "No PDF available for this question."}
+                {isSubmissionsError
+                  ? "Failed to load submissions."
+                  : submissions.length === 0
+                    ? "No submissions yet."
+                    : "No PDF available for this question."}
               </p>
             </div>
           )}
         </div>
 
-        {(showSubmissionSelector || selected) && (
+        {showSubmissionSidebar && (
           <aside className="w-full shrink-0 lg:sticky lg:top-20 lg:w-80">
             <div className="flex flex-col gap-4">
+              {isSubmissionsPending && (
+                <section className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
+                  <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                    Submissions
+                  </h2>
+                  <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">
+                    Loading submissions...
+                  </p>
+                </section>
+              )}
+
               {showSubmissionSelector && (
                 <section className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
                   <div className="mb-3 flex items-center justify-between gap-3">
