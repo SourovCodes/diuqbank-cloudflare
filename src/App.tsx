@@ -23,6 +23,7 @@ import AutoSubmissionCreate from "./pages/AutoSubmissionCreate";
 import AutoSubmissionDetail from "./pages/AutoSubmissionDetail";
 import NotFound from "./pages/NotFound";
 import { RequireAuth } from "./components/RequireAuth";
+import { DashboardLayout } from "./components/DashboardLayout";
 import { ThemeToggle } from "./components/ThemeToggle";
 import { UserMenu } from "./components/UserMenu";
 import { useAuth } from "./auth";
@@ -197,14 +198,16 @@ export default function App() {
         <Route path="/login" element={<Login />} />
 
         <Route element={<RequireAuth />}>
-          <Route path="/profile" element={<Profile />} />
           <Route path="/submissions" element={<Navigate to="/submissions/manual" replace />} />
-          <Route path="/submissions/manual" element={<ManualSubmissionList />} />
-          <Route path="/submissions/manual/new" element={<ManualSubmissionCreate />} />
-          <Route path="/submissions/manual/:id" element={<ManualSubmissionDetail />} />
-          <Route path="/submissions/auto" element={<AutoSubmissionList />} />
-          <Route path="/submissions/auto/new" element={<AutoSubmissionCreate />} />
-          <Route path="/submissions/auto/:id" element={<AutoSubmissionDetail />} />
+          <Route element={<DashboardLayout />}>
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/submissions/manual" element={<ManualSubmissionList />} />
+            <Route path="/submissions/manual/new" element={<ManualSubmissionCreate />} />
+            <Route path="/submissions/manual/:id" element={<ManualSubmissionDetail />} />
+            <Route path="/submissions/auto" element={<AutoSubmissionList />} />
+            <Route path="/submissions/auto/new" element={<AutoSubmissionCreate />} />
+            <Route path="/submissions/auto/:id" element={<AutoSubmissionDetail />} />
+          </Route>
         </Route>
 
         <Route path="*" element={<NotFound />} />

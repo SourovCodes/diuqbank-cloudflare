@@ -36,7 +36,7 @@ export default function Profile() {
   const dirty = name.trim() !== user.name || username.trim() !== user.username;
 
   return (
-    <main className="container mx-auto flex-1 px-4 py-10 sm:py-12">
+    <div>
       <div className="mb-7 border-b border-gray-200 pb-6 dark:border-gray-800">
         <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100 sm:text-3xl">
           Your profile
@@ -154,7 +154,7 @@ export default function Profile() {
           </form>
         </Card>
       </div>
-    </main>
+    </div>
   );
 }
 

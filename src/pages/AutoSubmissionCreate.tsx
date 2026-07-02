@@ -43,7 +43,7 @@ export default function AutoSubmissionCreate() {
   }
 
   return (
-    <main className="container mx-auto flex-1 px-4 py-10 sm:py-12">
+    <div>
       <Link
         to="/submissions/auto"
         className="mb-6 inline-flex text-sm font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400"
@@ -148,6 +148,6 @@ export default function AutoSubmissionCreate() {
           </Card>
         </aside>
       </div>
-    </main>
+    </div>
   );
 }

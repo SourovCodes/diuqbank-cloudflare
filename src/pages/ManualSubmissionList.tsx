@@ -2,7 +2,6 @@ import { useEffect } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useManualSubmissions } from "../hooks/queries";
 import { Pagination } from "../components/ui/Pagination";
-import { SubmissionTabs } from "../components/submissions/SubmissionTabs";
 import { SubmissionCard } from "../components/submissions/SubmissionCard";
 import { SkeletonCard } from "../components/ui/Card";
 import { cx } from "../lib/cx";
@@ -29,7 +28,7 @@ export default function ManualSubmissionList() {
   }
 
   return (
-    <main className="container mx-auto flex-1 px-4 py-8 sm:py-10">
+    <div>
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3 border-b border-gray-200 pb-6 dark:border-gray-800">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100 sm:text-3xl">
@@ -46,10 +45,6 @@ export default function ManualSubmissionList() {
         >
           New submission
         </Link>
-      </div>
-
-      <div className="mb-6 max-w-md">
-        <SubmissionTabs />
       </div>
 
       {isError ? (
@@ -100,6 +95,6 @@ export default function ManualSubmissionList() {
           <Pagination meta={data.meta} onPageChange={goToPage} />
         </>
       )}
-    </main>
+    </div>
   );
 }

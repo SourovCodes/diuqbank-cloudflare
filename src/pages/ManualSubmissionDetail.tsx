@@ -5,7 +5,6 @@ import { deleteManualSubmission } from "../api";
 import { useManualSubmission } from "../hooks/queries";
 import { Button } from "../components/ui/form";
 import { SubmissionStatusBadge } from "../components/ui/SubmissionStatusBadge";
-import { StatusPage } from "../components/ui/StatusPage";
 import { DetailRow, PdfPreview } from "../components/submissions/SubmissionParts";
 import { formatDate } from "../lib/format";
 
@@ -29,27 +28,33 @@ export default function ManualSubmissionDetail() {
 
   if (isPending) {
     return (
-      <div className="container mx-auto flex-1 px-4 py-16">
-        <div className="rounded-lg border border-dashed border-gray-200 py-14 text-center text-sm text-gray-500 dark:border-gray-800 dark:text-gray-400">
-          Loading submission…
-        </div>
+      <div className="rounded-lg border border-dashed border-gray-200 py-14 text-center text-sm text-gray-500 dark:border-gray-800 dark:text-gray-400">
+        Loading submission…
       </div>
     );
   }
 
   if (isError || !sub) {
     return (
-      <StatusPage
-        eyebrow="Submission unavailable"
-        title="Submission not found"
-        description="This submission may have been removed, or the link may be incorrect."
-        actions={[{ label: "Back to submissions", to: "/submissions/manual" }]}
-      />
+      <div className="rounded-xl border border-dashed border-gray-200 py-16 text-center dark:border-gray-800">
+        <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+          Submission not found
+        </h2>
+        <p className="mx-auto mt-1 max-w-sm text-sm text-gray-500 dark:text-gray-400">
+          This submission may have been removed, or the link may be incorrect.
+        </p>
+        <Link
+          to="/submissions/manual"
+          className="mt-5 inline-flex rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+        >
+          Back to submissions
+        </Link>
+      </div>
     );
   }
 
   return (
-    <main className="container mx-auto flex-1 px-4 py-10 sm:py-12">
+    <div>
       <Link
         to="/submissions/manual"
         className="mb-6 inline-flex text-sm font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400"
@@ -129,6 +134,6 @@ export default function ManualSubmissionDetail() {
           </div>
         </aside>
       </div>
-    </main>
+    </div>
   );
 }
