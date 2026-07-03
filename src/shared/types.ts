@@ -10,6 +10,7 @@ export type Question = {
   id: number
   title: string
   submissionCount: number
+  viewCount: number
   department: Department
   course: Course
   semester: Semester
@@ -21,6 +22,7 @@ export type Submission = {
   section: string | null
   batch: string | null
   fileSize: number
+  viewCount: number
   createdAt: number
   pdfUrl: string | null
   contributor: {
@@ -64,6 +66,7 @@ export type ContributorSubmission = {
   section: string | null
   batch: string | null
   fileSize: number
+  viewCount: number
   createdAt: number
   pdfUrl: string | null
   question: Question
@@ -153,6 +156,7 @@ export type AdminQuestion = {
   semesterId: number
   examTypeId: number
   submissionCount: number
+  viewCount: number
   department: Department
   course: Course
   semester: Semester
@@ -166,6 +170,7 @@ export type AdminSubmission = {
   section: string | null
   batch: string | null
   fileSize: number
+  viewCount: number
   watermarkStatus: WatermarkStatus
   watermarkError: string | null
   pdfUrl: string | null

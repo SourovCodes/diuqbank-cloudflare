@@ -145,6 +145,7 @@ contributors.get(
               section: true,
               batch: true,
               fileSize: true,
+              viewCount: true,
               createdAt: true,
               pdfKey: true,
               watermarkedPdfKey: true,
@@ -174,6 +175,7 @@ contributors.get(
             section: s.section,
             batch: s.batch,
             fileSize: s.fileSize,
+            viewCount: s.viewCount,
             createdAt: s.createdAt,
             // Prefer the watermarked file once it exists; fall back to the original.
             pdfUrl: fileUrlFor(origin, s.watermarkedPdfKey ?? s.pdfKey),

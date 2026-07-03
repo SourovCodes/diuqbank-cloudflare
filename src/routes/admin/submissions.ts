@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
-import { and, count, desc, eq, type SQL } from "drizzle-orm";
+import { and, count, desc, eq, sql, type SQL } from "drizzle-orm";
 
 import { getDb } from "../../db/client";
 import { manualSubmissions, submissions } from "../../db/schema";
@@ -8,6 +8,7 @@ import {
   invalidateSubmission,
   invalidateSubmissionEdit,
   invalidateSubmissionMove,
+  invalidateSubmissionView,
 } from "../../lib/cache";
 import { toAdminSubmission } from "../../lib/admin-shape";
 import { buildMeta } from "../../shared/utils/pagination";
@@ -19,6 +20,7 @@ import {
   submissionCreateForm,
   submissionsListQuery,
   submissionUpdateSchema,
+  submissionViewIncrementSchema,
 } from "../../shared/schemas/admin/submissions";
 import type { AppEnv } from "../../types";
 
@@ -194,6 +196,53 @@ route.patch("/:id", validate("json", submissionUpdateSchema), async (c) => {
           )
         : invalidateSubmissionEdit(c.env, row.question.id, row.user.username);
     c.executionCtx.waitUntil(invalidation);
+  }
+
+  return c.json(toAdminSubmission(row, origin));
+});
+
+// Increment a submission's view count. The parent question's `view_count` (a
+// summed running total) is kept in sync by an AFTER UPDATE trigger on
+// `submissions`. The body is optional: `{ by?: number }` defaults to +1.
+route.post("/:id/views", async (c) => {
+  const id = parseId(c.req.param("id"));
+  if (id === null) throw new HTTPException(404, { message: "Submission not found" });
+
+  // A bare POST means +1. Parse defensively so a missing/empty body doesn't 400
+  // the way `validate("json", …)` would on an absent JSON payload.
+  const raw = await c.req.json().catch(() => ({}));
+  const parsed = submissionViewIncrementSchema.safeParse(raw);
+  if (!parsed.success) {
+    const issues = parsed.error.issues.map((issue) => ({
+      field: issue.path.length ? issue.path.join(".") : "(root)",
+      message: issue.message,
+    }));
+    return c.json({ error: "Validation failed", issues }, 400);
+  }
+  const by = parsed.data.by ?? 1;
+
+  const db = getDb(c.env.DB);
+  const origin = new URL(c.req.url).origin;
+
+  // Atomic bump (no read-modify-write race); the AFTER UPDATE OF view_count
+  // trigger adjusts the question's summed view_count.
+  const [updated] = await db
+    .update(submissions)
+    .set({ viewCount: sql`${submissions.viewCount} + ${by}` })
+    .where(eq(submissions.id, id))
+    .returning({ id: submissions.id });
+  if (!updated) throw new HTTPException(404, { message: "Submission not found" });
+
+  const row = await db.query.submissions.findFirst({
+    where: eq(submissions.id, id),
+    with: submissionWith,
+  });
+  if (!row) throw new HTTPException(404, { message: "Submission not found" });
+
+  if (row.user) {
+    c.executionCtx.waitUntil(
+      invalidateSubmissionView(c.env, row.question.id, row.user.username),
+    );
   }
 
   return c.json(toAdminSubmission(row, origin));

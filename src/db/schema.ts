@@ -81,6 +81,10 @@ export const questions = sqliteTable(
     // Maintained by SQLite triggers on submissions insert/delete — never write
     // this directly from application code.
     submissionCount: integer("submission_count").notNull().default(0),
+    // Maintained by SQLite triggers on submissions — a running sum of the
+    // view_count of this question's submissions. Never write this directly from
+    // application code.
+    viewCount: integer("view_count").notNull().default(0),
   },
   (table) => [
     uniqueIndex("questions_combo_unique").on(
@@ -121,6 +125,7 @@ export const submissions = sqliteTable(
       .default("awaiting"),
     watermarkError: text("watermark_error"),
     transcription: text("transcription"),
+    viewCount: integer("view_count").notNull().default(0),
     createdAt: integer("created_at")
       .notNull()
       .default(sql`(unixepoch())`),

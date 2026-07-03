@@ -25,6 +25,7 @@ const questionColumns = {
   semesterId: true,
   examTypeId: true,
   submissionCount: true,
+  viewCount: true,
 } as const;
 
 const entityColumns = {
@@ -52,6 +53,7 @@ const loadQuestion = async (db: Db, id: number) => {
     semesterId: q.semesterId,
     examTypeId: q.examTypeId,
     submissionCount: q.submissionCount,
+    viewCount: q.viewCount,
     department: q.department,
     course: q.course,
     semester: q.semester,
@@ -95,6 +97,7 @@ route.get("/", validate("query", questionsListQuery), async (c) => {
       semesterId: q.semesterId,
       examTypeId: q.examTypeId,
       submissionCount: q.submissionCount,
+      viewCount: q.viewCount,
       department: q.department,
       course: q.course,
       semester: q.semester,

@@ -43,7 +43,7 @@ questionRoutes.get("/", validate("query", questionsListQuery), (c) => {
 
     const items = await db.query.questions.findMany({
       where,
-      columns: { id: true, submissionCount: true },
+      columns: { id: true, submissionCount: true, viewCount: true },
       with: entityColumns,
       orderBy: desc(questions.id),
       limit: perPage,
@@ -60,6 +60,7 @@ questionRoutes.get("/", validate("query", questionsListQuery), (c) => {
         id: q.id,
         title: buildQuestionTitle(q),
         submissionCount: q.submissionCount,
+        viewCount: q.viewCount,
         department: q.department,
         course: q.course,
         semester: q.semester,
@@ -82,7 +83,7 @@ questionRoutes.get("/:id", (c) => {
 
     const question = await db.query.questions.findFirst({
       where: eq(questions.id, id),
-      columns: { id: true, submissionCount: true },
+      columns: { id: true, submissionCount: true, viewCount: true },
       with: entityColumns,
     });
 
@@ -94,6 +95,7 @@ questionRoutes.get("/:id", (c) => {
       id: question.id,
       title: buildQuestionTitle(question),
       submissionCount: question.submissionCount,
+      viewCount: question.viewCount,
       department: question.department,
       course: question.course,
       semester: question.semester,
@@ -136,6 +138,7 @@ questionRoutes.get("/:id/submissions", (c) => {
           section: true,
           batch: true,
           fileSize: true,
+          viewCount: true,
           createdAt: true,
           pdfKey: true,
           watermarkedPdfKey: true,
@@ -152,6 +155,7 @@ questionRoutes.get("/:id/submissions", (c) => {
           section: s.section,
           batch: s.batch,
           fileSize: s.fileSize,
+          viewCount: s.viewCount,
           createdAt: s.createdAt,
           // Prefer the watermarked file once it exists; fall back to the original.
           pdfUrl: fileUrlFor(origin, s.watermarkedPdfKey ?? s.pdfKey),

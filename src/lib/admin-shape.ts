@@ -28,6 +28,7 @@ type AdminSubmissionRow = Pick<
   | "section"
   | "batch"
   | "fileSize"
+  | "viewCount"
   | "watermarkStatus"
   | "watermarkError"
   | "pdfKey"
@@ -58,6 +59,7 @@ export const toAdminSubmission = (row: AdminSubmissionRow, origin: string): Admi
   section: row.section,
   batch: row.batch,
   fileSize: row.fileSize,
+  viewCount: row.viewCount,
   watermarkStatus: row.watermarkStatus,
   watermarkError: row.watermarkError,
   pdfUrl: fileUrlFor(origin, row.pdfKey),

@@ -101,6 +101,18 @@ export const invalidateSubmissionEdit = (
   username: string,
 ): Promise<unknown> => bumpCache(env, `q:${questionId}`, `c:${username}`);
 
+/**
+ * A submission's view count bumped: its question (detail + list, whose summed
+ * viewCount changed) and the contributor's submissions page. No user-level count
+ * changes, so the contributor list (`c:list`) is untouched.
+ */
+export const invalidateSubmissionView = (
+  env: Env,
+  questionId: number,
+  username: string,
+): Promise<unknown> =>
+  bumpCache(env, `q:${questionId}`, "q:list", `c:${username}`);
+
 /** A submission moved to another question or contributor: old + new lists/counts changed. */
 export const invalidateSubmissionMove = (
   env: Env,

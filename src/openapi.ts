@@ -26,7 +26,10 @@ import {
   semesterUpdateSchema,
 } from "./shared/schemas/admin/semesters";
 import { mergeSchema } from "./shared/schemas/admin/merge";
-import { submissionUpdateSchema } from "./shared/schemas/admin/submissions";
+import {
+  submissionUpdateSchema,
+  submissionViewIncrementSchema,
+} from "./shared/schemas/admin/submissions";
 import { userUpdateSchema } from "./shared/schemas/admin/users";
 import { googleSignInSchema } from "./shared/schemas/auth";
 import { profileUpdateSchema } from "./shared/schemas/profile";
@@ -142,6 +145,10 @@ const questionListItem = z.object({
     .string()
     .describe("Human-readable label, e.g. \"Data Structures (CSE), Summer 26, Quiz\"."),
   submissionCount: z.number().int(),
+  viewCount: z
+    .number()
+    .int()
+    .describe("Total views across all of this question's submissions."),
   department,
   course,
   semester,
@@ -158,6 +165,10 @@ const publicSubmission = z.object({
   section: z.string().nullable(),
   batch: z.string().nullable(),
   fileSize: z.number().int().describe("Size of the PDF in bytes."),
+  viewCount: z
+    .number()
+    .int()
+    .describe("Number of times this submission has been viewed."),
   createdAt: z.number().int().describe("Unix epoch seconds (UTC)"),
   pdfUrl: z
     .string()
@@ -181,6 +192,10 @@ const contributorSubmission = z.object({
   section: z.string().nullable(),
   batch: z.string().nullable(),
   fileSize: z.number().int().describe("Size of the PDF in bytes."),
+  viewCount: z
+    .number()
+    .int()
+    .describe("Number of times this submission has been viewed."),
   createdAt: z.number().int().describe("Unix epoch seconds (UTC)"),
   pdfUrl: z
     .string()
@@ -199,6 +214,10 @@ const questionDetail = z.object({
     .string()
     .describe("Human-readable label, e.g. \"Data Structures (CSE), Summer 26, Quiz\"."),
   submissionCount: z.number().int(),
+  viewCount: z
+    .number()
+    .int()
+    .describe("Total views across all of this question's submissions."),
   department,
   course,
   semester,
@@ -293,6 +312,10 @@ const adminQuestion = z.object({
   semesterId: z.number().int(),
   examTypeId: z.number().int(),
   submissionCount: z.number().int(),
+  viewCount: z
+    .number()
+    .int()
+    .describe("Total views across all of this question's submissions."),
   department,
   course,
   semester,
@@ -310,6 +333,10 @@ const adminSubmission = z.object({
   section: z.string().nullable(),
   batch: z.string().nullable(),
   fileSize: z.number().int().describe("Size of the PDF in bytes."),
+  viewCount: z
+    .number()
+    .int()
+    .describe("Number of times this submission has been viewed."),
   watermarkStatus: z.enum(["awaiting", "completed", "failed"]),
   watermarkError: z.string().nullable(),
   pdfUrl: z
@@ -521,6 +548,7 @@ const componentSchemas = {
   UpdateAutoSubmission: toSchema(adminAutoSubmissionUpdateSchema),
   RejectAutoSubmission: toSchema(adminAutoSubmissionRejectSchema),
   UpdateSubmission: toSchema(submissionUpdateSchema),
+  IncrementSubmissionView: toSchema(submissionViewIncrementSchema),
   UpdateUser: toSchema(userUpdateSchema),
   SubmissionCreateForm: {
     type: "object",
@@ -1165,6 +1193,28 @@ const adminPaths = {
         "403": commonErrors["403"],
         "404": commonErrors["404"],
         "413": errResp("PDF exceeds the 20 MB size limit"),
+      },
+    },
+  },
+  "/admin/submissions/{id}/views": {
+    post: {
+      tags: ["admin-submissions"],
+      summary: "Increment a submission's view count",
+      ...authFields(
+        "Admin",
+        "Increments the submission's `viewCount`. Optional JSON body `{ by?: number }` (positive integer, default 1) adds several views at once. The parent question's summed `viewCount` is updated automatically at the database level.",
+      ),
+      parameters: [idPathParam("Submission")],
+      requestBody: {
+        required: false,
+        content: json(ref("IncrementSubmissionView")),
+      },
+      responses: {
+        "200": okJson("Updated", ref("AdminSubmission")),
+        "400": errResp("Validation failed (`by` must be a positive integer)"),
+        "401": commonErrors["401"],
+        "403": commonErrors["403"],
+        "404": commonErrors["404"],
       },
     },
   },

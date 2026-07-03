@@ -35,5 +35,14 @@ export const submissionsListQuery = z.object({
   watermarkStatus: watermarkStatus.optional(),
 });
 
+// Optional body for the admin view-count increment. `by` defaults to 1 when the
+// body is absent; capped to guard against runaway sums from a typo.
+export const submissionViewIncrementSchema = z.object({
+  by: z.coerce.number().int().positive().max(1_000_000).optional(),
+});
+
 export type SubmissionUpdateInput = z.infer<typeof submissionUpdateSchema>;
 export type SubmissionsListQuery = z.infer<typeof submissionsListQuery>;
+export type SubmissionViewIncrementInput = z.infer<
+  typeof submissionViewIncrementSchema
+>;
