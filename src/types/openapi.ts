@@ -4637,7 +4637,7 @@ export interface paths {
          * Edit an auto-submission
          * @description **Access:** `Admin` — Requires a bearer token from an account with `role: "admin"`.
          *
-         *     Corrects the AI-extracted metadata (department, course, semester, exam type, section, batch) before approving. Published rows are immutable.
+         *     Corrects the AI-extracted metadata (department, course, semester, exam type, section, batch) and the uploader's extra-context hint before approving or reprocessing. Published rows are immutable.
          */
         patch: {
             parameters: {
@@ -4988,7 +4988,7 @@ export interface paths {
          * Import legacy submissions into the auto pipeline
          * @description **Access:** `Admin` — Requires a bearer token from an account with `role: "admin"`.
          *
-         *     Pulls up to `limit` (default 10) not-yet-imported submissions from the legacy diuqbank.com feed, downloads each original PDF, find-or-creates the original uploader, and enqueues them for AI extraction. Deduped by legacy id, so calling it repeatedly walks the backlog.
+         *     Pulls up to `limit` (default 10) not-yet-imported submissions from the legacy diuqbank.com feed (oldest first), downloads each original PDF, find-or-creates the original uploader (copying their avatar on first import), records the legacy view count, and enqueues them for AI extraction. Deduped by legacy id, so calling it repeatedly walks the backlog.
          */
         post: {
             parameters: {
@@ -5870,6 +5870,7 @@ export interface components {
             examTypeName?: string;
             section?: string;
             batch?: string;
+            extraContext?: string;
         };
         RejectAutoSubmission: {
             reason: string;
@@ -6202,6 +6203,8 @@ export interface components {
             userId: number;
             /** @description Source id when bulk-imported from legacy diuqbank.com; else null. */
             legacyId: number | null;
+            /** @description View count carried over from the legacy site; seeds the submission's view count on publish. Null for normal uploads. */
+            legacyViews: number | null;
             contributor: {
                 id: number;
                 name: string;
@@ -6258,6 +6261,8 @@ export interface components {
                 userId: number;
                 /** @description Source id when bulk-imported from legacy diuqbank.com; else null. */
                 legacyId: number | null;
+                /** @description View count carried over from the legacy site; seeds the submission's view count on publish. Null for normal uploads. */
+                legacyViews: number | null;
                 contributor: {
                     id: number;
                     name: string;

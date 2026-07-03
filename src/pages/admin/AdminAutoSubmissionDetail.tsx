@@ -24,7 +24,16 @@ const META_FIELDS: { key: keyof UpdateAutoSubmission; label: string }[] = [
   { key: "examTypeName", label: "Exam type" },
   { key: "section", label: "Section" },
   { key: "batch", label: "Batch" },
+  { key: "extraContext", label: "Extra context" },
 ];
+
+// Unlike the taxonomy names above, these accept an empty string to clear the
+// stored value.
+const CLEARABLE_FIELDS = new Set<keyof UpdateAutoSubmission>([
+  "section",
+  "batch",
+  "extraContext",
+]);
 
 export default function AdminAutoSubmissionDetail() {
   const { id } = useParams();
@@ -158,6 +167,17 @@ export default function AdminAutoSubmissionDetail() {
             </dl>
           </div>
 
+          {sub.extraContext && (
+            <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
+              <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                Uploader&apos;s extra context
+              </h2>
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                {sub.extraContext}
+              </p>
+            </div>
+          )}
+
           {sub.aiReasoning && (
             <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
               <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
@@ -277,6 +297,7 @@ function EditMetaModal({
     examTypeName: string | null;
     section: string | null;
     batch: string | null;
+    extraContext: string | null;
   };
   onClose: () => void;
   onSaved: () => void;
@@ -289,16 +310,17 @@ function EditMetaModal({
     examTypeName: initial.examTypeName ?? "",
     section: initial.section ?? "",
     batch: initial.batch ?? "",
+    extraContext: initial.extraContext ?? "",
   });
 
   const save = useMutation({
     mutationFn: () => {
-      // The API requires each provided string field to be non-empty, so send
-      // only the fields the admin actually filled in.
+      // Taxonomy names must be non-empty when sent, so skip blank ones; the
+      // clearable fields are always sent ("" clears the stored value).
       const payload: UpdateAutoSubmission = {};
       for (const f of META_FIELDS) {
-        const v = form[f.key]?.trim();
-        if (v) payload[f.key] = v;
+        const v = form[f.key]?.trim() ?? "";
+        if (v || CLEARABLE_FIELDS.has(f.key)) payload[f.key] = v;
       }
       return updateAdminAutoSubmission(initial.id, payload);
     },
@@ -324,14 +346,28 @@ function EditMetaModal({
       <div className="space-y-3">
         {META_FIELDS.map((f) => (
           <Field key={f.key} label={f.label} htmlFor={f.key}>
-            <input
-              id={f.key}
-              value={form[f.key] ?? ""}
-              onChange={(e) =>
-                setForm((prev) => ({ ...prev, [f.key]: e.target.value }))
-              }
-              className={inputClass}
-            />
+            {f.key === "extraContext" ? (
+              <textarea
+                id={f.key}
+                value={form[f.key] ?? ""}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, [f.key]: e.target.value }))
+                }
+                rows={3}
+                maxLength={1000}
+                className={inputClass}
+                placeholder="Hint passed to the AI when reprocessing"
+              />
+            ) : (
+              <input
+                id={f.key}
+                value={form[f.key] ?? ""}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, [f.key]: e.target.value }))
+                }
+                className={inputClass}
+              />
+            )}
           </Field>
         ))}
         {save.isError && (
