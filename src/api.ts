@@ -1,20 +1,49 @@
 import type {
+  AdminAutoSubmission,
+  AdminAutoSubmissionList,
+  AdminManualSubmission,
+  AdminManualSubmissionList,
+  AdminQuestion,
+  AdminQuestionList,
+  AdminSubmission,
+  AdminSubmissionList,
+  AdminUser,
+  AdminUserList,
   AuthConfig,
   AuthResponse,
   AutoSubmission,
   AutoSubmissionList,
+  AutoSubmissionStatus,
   Contributor,
   ContributorList,
   ContributorSubmissionList,
+  Course,
+  CourseList,
+  CreateQuestion,
+  Department,
+  DepartmentList,
+  ExamType,
+  ExamTypeList,
   FilterOptions,
   ManualSubmission,
   ManualSubmissionList,
+  ManualSubmissionStatus,
+  MergeRequest,
+  MergeSummary,
   PaginationParams,
   QuestionDetail,
   QuestionFilters,
   QuestionList,
   QuestionSubmissions,
+  Semester,
+  SemesterList,
+  UpdateAutoSubmission,
+  UpdateManualSubmission,
+  UpdateQuestion,
+  UpdateSubmission,
+  UpdateUser,
   User,
+  UserRole,
 } from "./types/api";
 
 const PRODUCTION_API_BASE = "https://diuqbank-api-prod.sourov-cse.workers.dev";
@@ -84,6 +113,15 @@ async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
 
 const get = <T>(path: string, params?: QueryParams): Promise<T> =>
   request<T>(path, { params });
+
+const post = <T>(path: string, json?: unknown): Promise<T> =>
+  request<T>(path, { method: "POST", json });
+
+const patch = <T>(path: string, json?: unknown): Promise<T> =>
+  request<T>(path, { method: "PATCH", json });
+
+const del = (path: string): Promise<void> =>
+  request<void>(path, { method: "DELETE" });
 
 async function readErrorMessage(res: Response): Promise<string | null> {
   try {
@@ -177,3 +215,191 @@ export const createAutoSubmission = (form: FormData): Promise<AutoSubmission> =>
 
 export const deleteAutoSubmission = (id: number): Promise<void> =>
   request(`/auto-submissions/${id}`, { method: "DELETE" });
+
+// ---------------------------------------------------------------------------
+// Admin — every endpoint requires a bearer token from a `role: "admin"` account
+// ---------------------------------------------------------------------------
+
+export type AdminManualSubmissionParams = PaginationParams & {
+  status?: ManualSubmissionStatus;
+  userId?: number;
+  departmentName?: string;
+  courseName?: string;
+  semesterName?: string;
+  examTypeName?: string;
+};
+
+export type AdminAutoSubmissionParams = PaginationParams & {
+  status?: AutoSubmissionStatus;
+  userId?: number;
+};
+
+export type AdminUserParams = PaginationParams & {
+  search?: string;
+  role?: UserRole;
+};
+
+export type AdminQuestionParams = PaginationParams & {
+  departmentId?: number;
+  courseId?: number;
+  semesterId?: number;
+  examTypeId?: number;
+};
+
+export type AdminSubmissionParams = PaginationParams & {
+  questionId?: number;
+  userId?: number;
+  watermarkStatus?: "awaiting" | "completed" | "failed";
+};
+
+export type TaxonomyParams = PaginationParams & {
+  search?: string;
+  departmentId?: number; // courses only
+};
+
+// --- Manual submissions ---
+export const getAdminManualSubmissions = (
+  params: AdminManualSubmissionParams
+): Promise<AdminManualSubmissionList> =>
+  get("/admin/manual-submissions", params);
+
+export const getAdminManualSubmission = (
+  id: string | number
+): Promise<AdminManualSubmission> => get(`/admin/manual-submissions/${id}`);
+
+export const updateAdminManualSubmission = (
+  id: number,
+  body: UpdateManualSubmission
+): Promise<AdminManualSubmission> =>
+  patch(`/admin/manual-submissions/${id}`, body);
+
+export const approveManualSubmission = (
+  id: number
+): Promise<AdminManualSubmission> =>
+  post(`/admin/manual-submissions/${id}/approve`);
+
+export const rejectManualSubmission = (
+  id: number,
+  reason: string
+): Promise<AdminManualSubmission> =>
+  post(`/admin/manual-submissions/${id}/reject`, { reason });
+
+export const deleteAdminManualSubmission = (id: number): Promise<void> =>
+  del(`/admin/manual-submissions/${id}`);
+
+// --- Auto submissions ---
+export const getAdminAutoSubmissions = (
+  params: AdminAutoSubmissionParams
+): Promise<AdminAutoSubmissionList> => get("/admin/auto-submissions", params);
+
+export const getAdminAutoSubmission = (
+  id: string | number
+): Promise<AdminAutoSubmission> => get(`/admin/auto-submissions/${id}`);
+
+export const updateAdminAutoSubmission = (
+  id: number,
+  body: UpdateAutoSubmission
+): Promise<AdminAutoSubmission> => patch(`/admin/auto-submissions/${id}`, body);
+
+export const approveAutoSubmission = (
+  id: number
+): Promise<AdminAutoSubmission> =>
+  post(`/admin/auto-submissions/${id}/approve`);
+
+export const rejectAutoSubmission = (
+  id: number,
+  reason: string
+): Promise<AdminAutoSubmission> =>
+  post(`/admin/auto-submissions/${id}/reject`, { reason });
+
+export const reprocessAutoSubmission = (
+  id: number
+): Promise<AdminAutoSubmission> =>
+  post(`/admin/auto-submissions/${id}/reprocess`);
+
+// --- Users ---
+export const getAdminUsers = (params: AdminUserParams): Promise<AdminUserList> =>
+  get("/admin/users", params);
+
+export const getAdminUser = (id: string | number): Promise<AdminUser> =>
+  get(`/admin/users/${id}`);
+
+export const updateAdminUser = (
+  id: number,
+  body: UpdateUser
+): Promise<AdminUser> => patch(`/admin/users/${id}`, body);
+
+// --- Questions ---
+export const getAdminQuestions = (
+  params: AdminQuestionParams
+): Promise<AdminQuestionList> => get("/admin/questions", params);
+
+export const getAdminQuestion = (id: string | number): Promise<AdminQuestion> =>
+  get(`/admin/questions/${id}`);
+
+export const createAdminQuestion = (
+  body: CreateQuestion
+): Promise<AdminQuestion> => post("/admin/questions", body);
+
+export const updateAdminQuestion = (
+  id: number,
+  body: UpdateQuestion
+): Promise<AdminQuestion> => patch(`/admin/questions/${id}`, body);
+
+export const deleteAdminQuestion = (id: number): Promise<void> =>
+  del(`/admin/questions/${id}`);
+
+// --- Published submissions ---
+export const getAdminSubmissions = (
+  params: AdminSubmissionParams
+): Promise<AdminSubmissionList> => get("/admin/submissions", params);
+
+export const getAdminSubmission = (
+  id: string | number
+): Promise<AdminSubmission> => get(`/admin/submissions/${id}`);
+
+export const updateAdminSubmission = (
+  id: number,
+  body: UpdateSubmission
+): Promise<AdminSubmission> => patch(`/admin/submissions/${id}`, body);
+
+export const deleteAdminSubmission = (id: number): Promise<void> =>
+  del(`/admin/submissions/${id}`);
+
+export const replaceSubmissionPdf = (
+  id: number,
+  file: File
+): Promise<AdminSubmission> => {
+  const form = new FormData();
+  form.append("pdf", file);
+  return request(`/admin/submissions/${id}/pdf`, { method: "PUT", body: form });
+};
+
+// --- Taxonomy (departments, courses, semesters, exam-types) ---
+// Each entity shares the same CRUD + merge shape, so wrappers are generated
+// from the resource path to avoid four near-identical copies.
+type TaxonomyList = DepartmentList | CourseList | SemesterList | ExamTypeList;
+type TaxonomyItem = Department | Course | Semester | ExamType;
+
+const taxonomyApi = <List extends TaxonomyList, Item extends TaxonomyItem>(
+  resource: string
+) => ({
+  list: (params: TaxonomyParams): Promise<List> =>
+    get(`/admin/${resource}`, params),
+  create: (body: Record<string, unknown>): Promise<Item> =>
+    post(`/admin/${resource}`, body),
+  update: (id: number, body: Record<string, unknown>): Promise<Item> =>
+    patch(`/admin/${resource}/${id}`, body),
+  remove: (id: number): Promise<void> => del(`/admin/${resource}/${id}`),
+  merge: (body: MergeRequest): Promise<MergeSummary> =>
+    post(`/admin/${resource}/merge`, body),
+});
+
+export const departmentsApi = taxonomyApi<DepartmentList, Department>(
+  "departments"
+);
+export const coursesApi = taxonomyApi<CourseList, Course>("courses");
+export const semestersApi = taxonomyApi<SemesterList, Semester>("semesters");
+export const examTypesApi = taxonomyApi<ExamTypeList, ExamType>("exam-types");
+
+export type TaxonomyApi = ReturnType<typeof taxonomyApi>;

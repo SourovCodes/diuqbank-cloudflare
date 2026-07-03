@@ -23,6 +23,9 @@ export function UserMenu() {
   const items = [
     { label: "Your profile", to: "/profile" },
     { label: "Your submissions", to: "/submissions/manual" },
+    ...(user.role === "admin"
+      ? [{ label: "Admin panel", to: "/admin" }]
+      : []),
   ];
 
   return (
