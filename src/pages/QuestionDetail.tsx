@@ -4,7 +4,6 @@ import { useQuestion, useSubmissions } from "../hooks/queries";
 import { Badge } from "../components/ui/Badge";
 import { StatusPage } from "../components/ui/StatusPage";
 import { PdfPreview } from "../components/submissions/SubmissionParts";
-import { ArrowLeftIcon } from "../components/icons";
 import { cx } from "../lib/cx";
 import { formatBytes, formatDate } from "../lib/format";
 import type { QuestionDetail as QuestionDetailData } from "../types/api";
@@ -80,14 +79,6 @@ export default function QuestionDetail() {
 
   return (
     <main className="container mx-auto flex-1 px-4 py-10 sm:py-12">
-      <Link
-        to="/questions"
-        className="mb-5 inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 transition hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
-      >
-        <ArrowLeftIcon className="h-3.5 w-3.5" />
-        Back to questions
-      </Link>
-
       <div className="mb-6 flex flex-col gap-3 border-b border-gray-200 pb-5 dark:border-gray-800">
         <h1 className="max-w-4xl text-2xl font-bold leading-tight tracking-tight text-gray-900 dark:text-gray-100 sm:text-3xl">
           {question.title}
