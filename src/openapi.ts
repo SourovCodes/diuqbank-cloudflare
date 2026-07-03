@@ -1951,7 +1951,7 @@ export const buildOpenApiDoc = () => ({
         summary: "Count a submission view",
         ...authFields(
           "Public",
-          "Records one view for a submission. Requires a Cloudflare Turnstile token in the JSON body `{ token }` (single-use — obtain a fresh one per view). The view is buffered in Analytics Engine and flushed into `viewCount` by a cron every ~15 minutes, so the increment is not reflected in reads immediately. No auth and no rate limiting.",
+          "Records one view for a submission. Requires a Cloudflare Turnstile token in the JSON body `{ token }` (single-use — obtain a fresh one per view). Render the Turnstile widget with **site key `0x4AAAAAADvF7K_JpwpPHfiE`** to obtain the token. The view is buffered in Analytics Engine and flushed into `viewCount` by a cron every ~15 minutes, so the increment is not reflected in reads immediately. No auth and no rate limiting.",
         ),
         parameters: [idPathParam("Submission")],
         requestBody: { required: true, content: json(ref("SubmissionView")) },
