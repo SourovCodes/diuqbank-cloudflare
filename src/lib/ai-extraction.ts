@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import type { Db } from "../db/client";
 import { courses, departments, examTypes, semesters } from "../db/schema";
+import { normalizeTaxonomyName } from "../shared/utils/normalize-name";
 import type { Bindings } from "../types";
 
 const GEMINI_MODEL = "gemini-2.5-flash";
@@ -114,6 +115,13 @@ const clean = (value: string | null | undefined): string | null => {
   return trimmed ? trimmed : null;
 };
 
+// Taxonomy name fields additionally go through the "&" -> "and" policy so the
+// stored extraction snapshot never contains an ampersand.
+const cleanName = (value: string | null | undefined): string | null => {
+  const cleaned = clean(value);
+  return cleaned === null ? null : normalizeTaxonomyName(cleaned) || null;
+};
+
 // Encode an ArrayBuffer to base64 in chunks (a single
 // String.fromCharCode(...bigArray) overflows the call stack on large PDFs).
 const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
@@ -177,6 +185,7 @@ const buildPrompt = (vocab: Vocab, extraContext: string | null): string => {
     "  when the paper prints a longer title.",
     "- semesterName: follow the existing naming convention shown above.",
     "- examTypeName: e.g. Midterm, Final, Quiz — reuse an existing exam type when possible.",
+    '- Never use "&" in any name — always write the word "and".',
     "- section / batch: only when explicitly printed on the paper, otherwise null.",
     "- reasoning: one or two sentences explaining your decision.",
     extraContext
@@ -262,11 +271,11 @@ export const extractQuestionMetadata = async (args: {
   return {
     isAcceptable: d.isAcceptable,
     rejectionReason: clean(d.rejectionReason),
-    departmentName: clean(d.departmentName),
-    departmentShortName: clean(d.departmentShortName),
-    courseName: clean(d.courseName),
-    semesterName: clean(d.semesterName),
-    examTypeName: clean(d.examTypeName),
+    departmentName: cleanName(d.departmentName),
+    departmentShortName: cleanName(d.departmentShortName),
+    courseName: cleanName(d.courseName),
+    semesterName: cleanName(d.semesterName),
+    examTypeName: cleanName(d.examTypeName),
     section: clean(d.section),
     batch: clean(d.batch),
     reasoning: clean(d.reasoning) ?? "",

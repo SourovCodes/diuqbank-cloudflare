@@ -1,9 +1,10 @@
 import { z } from "zod";
 
 import { pageFields } from "../../utils/pagination";
+import { taxonomyName } from "../taxonomy-name";
 
 export const examTypeCreateSchema = z.object({
-  name: z.string().trim().min(1).max(100),
+  name: taxonomyName(100),
 });
 
 export const examTypeUpdateSchema = examTypeCreateSchema.partial();

@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { pageFields } from "../../utils/pagination";
+import { taxonomyName } from "../taxonomy-name";
 
 export const autoSubmissionStatus = z.enum([
   "processing",
@@ -20,11 +21,11 @@ export const adminAutoSubmissionsListQuery = z.object({
 // optional (partial); section/batch may be cleared by sending an empty string.
 export const adminAutoSubmissionUpdateSchema = z
   .object({
-    departmentName: z.string().trim().min(1).max(100),
-    departmentShortName: z.string().trim().min(1).max(20),
-    courseName: z.string().trim().min(1).max(150),
-    semesterName: z.string().trim().min(1).max(100),
-    examTypeName: z.string().trim().min(1).max(100),
+    departmentName: taxonomyName(100),
+    departmentShortName: taxonomyName(20),
+    courseName: taxonomyName(150),
+    semesterName: taxonomyName(100),
+    examTypeName: taxonomyName(100),
     section: z.string().trim().max(100),
     batch: z.string().trim().max(100),
   })

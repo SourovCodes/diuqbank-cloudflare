@@ -9,6 +9,7 @@ import {
   questions,
   semesters,
 } from "../db/schema";
+import { normalizeTaxonomyName } from "../shared/utils/normalize-name";
 
 /**
  * Race-safe find-or-create. Try `find`; if absent, `create`; if the create
@@ -32,9 +33,11 @@ const findOrCreate = async (
 
 export const findOrCreateDepartment = async (
   db: Db,
-  name: string,
-  shortName: string,
+  rawName: string,
+  rawShortName: string,
 ): Promise<number> => {
+  const name = normalizeTaxonomyName(rawName);
+  const shortName = normalizeTaxonomyName(rawShortName);
   const [byName] = await db
     .select({ id: departments.id })
     .from(departments)
@@ -78,9 +81,10 @@ export const findOrCreateDepartment = async (
 export const findOrCreateCourse = async (
   db: Db,
   departmentId: number,
-  name: string,
-): Promise<number> =>
-  findOrCreate(
+  rawName: string,
+): Promise<number> => {
+  const name = normalizeTaxonomyName(rawName);
+  return findOrCreate(
     async () => {
       const [row] = await db
         .select({ id: courses.id })
@@ -99,12 +103,14 @@ export const findOrCreateCourse = async (
       return row;
     },
   );
+};
 
 export const findOrCreateSemester = async (
   db: Db,
-  name: string,
-): Promise<number> =>
-  findOrCreate(
+  rawName: string,
+): Promise<number> => {
+  const name = normalizeTaxonomyName(rawName);
+  return findOrCreate(
     async () => {
       const [row] = await db
         .select({ id: semesters.id })
@@ -121,12 +127,14 @@ export const findOrCreateSemester = async (
       return row;
     },
   );
+};
 
 export const findOrCreateExamType = async (
   db: Db,
-  name: string,
-): Promise<number> =>
-  findOrCreate(
+  rawName: string,
+): Promise<number> => {
+  const name = normalizeTaxonomyName(rawName);
+  return findOrCreate(
     async () => {
       const [row] = await db
         .select({ id: examTypes.id })
@@ -143,6 +151,7 @@ export const findOrCreateExamType = async (
       return row;
     },
   );
+};
 
 export const findOrCreateQuestion = async (
   db: Db,

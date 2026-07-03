@@ -1,10 +1,11 @@
 import { z } from "zod";
 
 import { pageFields } from "../../utils/pagination";
+import { taxonomyName } from "../taxonomy-name";
 
 export const departmentCreateSchema = z.object({
-  name: z.string().trim().min(1).max(100),
-  shortName: z.string().trim().min(1).max(20),
+  name: taxonomyName(100),
+  shortName: taxonomyName(20),
 });
 
 export const departmentUpdateSchema = departmentCreateSchema.partial();
