@@ -1,0 +1,1 @@
+ALTER TABLE `auto_submissions` ADD `legacy_views` integer;

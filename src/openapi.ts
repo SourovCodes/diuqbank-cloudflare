@@ -387,6 +387,13 @@ const adminAutoSubmission = z.object({
     .int()
     .nullable()
     .describe("Source id when bulk-imported from legacy diuqbank.com; else null."),
+  legacyViews: z
+    .number()
+    .int()
+    .nullable()
+    .describe(
+      "View count carried over from the legacy site; seeds the submission's view count on publish. Null for normal uploads.",
+    ),
   contributor: user,
   status: autoSubmissionStatusEnum,
   isAcceptable: z.boolean().nullable(),
@@ -1472,7 +1479,7 @@ const adminPaths = {
       summary: "Import legacy submissions into the auto pipeline",
       ...authFields(
         "Admin",
-        "Pulls up to `limit` (default 10) not-yet-imported submissions from the legacy diuqbank.com feed, downloads each original PDF, find-or-creates the original uploader, and enqueues them for AI extraction. Deduped by legacy id, so calling it repeatedly walks the backlog.",
+        "Pulls up to `limit` (default 10) not-yet-imported submissions from the legacy diuqbank.com feed (oldest first), downloads each original PDF, find-or-creates the original uploader (copying their avatar on first import), records the legacy view count, and enqueues them for AI extraction. Deduped by legacy id, so calling it repeatedly walks the backlog.",
       ),
       parameters: [
         {

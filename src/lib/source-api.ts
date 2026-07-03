@@ -9,6 +9,7 @@ const SOURCE_TIMEOUT_MS = 30_000;
 
 export type SourceSubmission = {
   id: number;
+  views: number;
   created_at: string;
   /** Signed, expiring URL to the original (un-watermarked) PDF. Download promptly. */
   pdf_original_temporary_url: string;
@@ -45,10 +46,11 @@ export const fetchSourcePage: FetchSourcePage = async (page) => {
 
 /**
  * Collect up to `limit` legacy submissions not already imported (by `id`),
- * walking the feed **newest-first** (page 1 upward) so the most recent
- * submissions are imported first. New legacy items always surface on page 1, so
- * steady-state backfill only ever scans a page or two; `pageCap` bounds the
- * fetches per call so a deep initial backfill can never run away.
+ * walking the feed **oldest-first** (last page downward, each page reversed —
+ * the feed itself is newest-first) so the backlog fills in chronological order.
+ * `pageCap` bounds the fetches per call so a deep backfill can never run away.
+ * Items shifting pages mid-walk (new legacy uploads) can only defer an item to
+ * the next run; the dedup by id makes re-walks safe.
  *
  * `fetchPage` is injected so this is unit-testable without network.
  */
@@ -58,20 +60,22 @@ export const selectUnimported = async (
   limit: number,
   pageCap: number,
 ): Promise<{ items: SourceSubmission[]; remaining: boolean }> => {
+  // Page 1 is fetched only to learn where the feed ends.
   const first = await fetchPage(1);
   const lastPage = Math.max(1, first.meta.last_page);
 
   const picked: SourceSubmission[] = [];
   let scanned = 0;
-  let reachedLastPage = false;
+  let reachedFirstPage = false;
 
-  for (let page = 1; page <= lastPage && scanned < pageCap; page++) {
+  for (let page = lastPage; page >= 1 && scanned < pageCap; page--) {
     // Reuse page 1 we already fetched instead of requesting it twice.
     const body = page === 1 ? first : await fetchPage(page);
     scanned++;
-    if (page === lastPage) reachedLastPage = true;
+    if (page === 1) reachedFirstPage = true;
 
-    for (const item of body.data) {
+    // Each page lists newest-first; reverse it so picks stay oldest-first.
+    for (const item of [...body.data].reverse()) {
       if (importedIds.has(item.id)) continue;
       picked.push(item);
       if (picked.length >= limit) {
@@ -81,5 +85,5 @@ export const selectUnimported = async (
   }
 
   // More may remain only if we stopped before scanning the whole feed.
-  return { items: picked, remaining: !reachedLastPage };
+  return { items: picked, remaining: !reachedFirstPage };
 };

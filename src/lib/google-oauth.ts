@@ -11,6 +11,7 @@ export type GoogleClaims = {
   email: string;
   emailVerified: boolean;
   name: string | null;
+  picture: string | null;
   aud: string;
 };
 
@@ -29,6 +30,7 @@ type TokeninfoResponse = {
   email?: string;
   email_verified?: string;
   name?: string;
+  picture?: string;
   exp?: string;
   error_description?: string;
 };
@@ -75,6 +77,7 @@ export const verifyGoogleIdToken = async (
     email: data.email,
     emailVerified: true,
     name: data.name ?? null,
+    picture: data.picture ?? null,
     aud: data.aud,
   };
 };

@@ -203,6 +203,8 @@ export type AdminAutoSubmission = {
   userId: number
   /** Source submission id when bulk-imported from legacy diuqbank.com; else null. */
   legacyId: number | null
+  /** View count carried over from the legacy site; else null. */
+  legacyViews: number | null
   contributor: User
   status: AutoSubmissionStatus
   isAcceptable: boolean | null

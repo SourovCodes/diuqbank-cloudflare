@@ -201,6 +201,9 @@ export const autoSubmissions = sqliteTable(
     // normal user uploads. Unique so an import can't pull the same source twice
     // (SQLite allows many NULLs, so normal uploads are unaffected).
     legacyId: integer("legacy_id").unique(),
+    // View count carried over from the legacy site; seeds the live submission's
+    // view_count on publish. Null for normal user uploads.
+    legacyViews: integer("legacy_views"),
     pdfKey: text("pdf_key").notNull(),
     fileSize: integer("file_size").notNull(),
     status: text("status", {

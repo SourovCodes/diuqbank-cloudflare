@@ -23,33 +23,34 @@ const makeFeed = (total: number, perPage: number): FetchSourcePage => {
 };
 
 const run = async () => {
-  // 25 items → pages [25..16],[15..6],[5..1]. Newest-first: page 1 fills the limit.
+  // 25 items → pages [25..16],[15..6],[5..1]. Oldest-first: page 3 reversed
+  // yields 1..5, so with 1–3 already imported the walk continues onto page 2.
   const feed = makeFeed(25, 10);
   const a = await selectUnimported(feed, new Set([1, 2, 3]), 5, 20);
   assert.strictEqual(a.items.length, 5, "respects limit");
   assert.deepStrictEqual(
     a.items.map((i) => i.id),
-    [25, 24, 23, 22, 21],
-    "newest-first",
+    [4, 5, 6, 7, 8],
+    "skips imported oldest, then oldest-first",
   );
   assert.strictEqual(a.remaining, true, "more remain when limit filled");
 
-  // Newest already imported (page 1 = 16..25) → picks continue onto page 2, newest-first.
-  const imported = new Set(Array.from({ length: 10 }, (_, i) => 16 + i)); // 16..25
+  // Oldest already imported (pages 2–3 = 1..15) → picks continue onto page 1.
+  const imported = new Set(Array.from({ length: 15 }, (_, i) => i + 1)); // 1..15
   const b = await selectUnimported(feed, imported, 3, 20);
   assert.deepStrictEqual(
     b.items.map((i) => i.id),
-    [15, 14, 13],
-    "skips imported newest, then newest-first",
+    [16, 17, 18],
+    "skips imported pages, then oldest-first",
   );
 
-  // pageCap=2 scans pages 1–2 (ids 25..6) without filling limit; last page unreached.
+  // pageCap=2 scans pages 3–2 (ids 1..15) without filling limit; page 1 unreached.
   const cap = await selectUnimported(feed, new Set(), 100, 2);
-  assert.strictEqual(cap.items.length, 20, "scans exactly pageCap pages");
-  assert.strictEqual(cap.items[0].id, 25, "starts at the newest");
+  assert.strictEqual(cap.items.length, 15, "scans exactly pageCap pages");
+  assert.strictEqual(cap.items[0].id, 1, "starts at the oldest");
   assert.strictEqual(cap.remaining, true, "remaining true when scan is capped");
 
-  // Nothing new → empty, and we reached the last page so nothing remains.
+  // Nothing new → empty, and we reached page 1 so nothing remains.
   const all = new Set(Array.from({ length: 25 }, (_, i) => i + 1));
   const c = await selectUnimported(feed, all, 5, 20);
   assert.strictEqual(c.items.length, 0, "all imported → none picked");

@@ -5,6 +5,7 @@ import { getDb, type Db } from "../../db/client";
 import { autoSubmissions } from "../../db/schema";
 import { startAutoSubmission } from "../../lib/auto-submission";
 import { findOrCreateContributor } from "../../lib/contributor";
+import { fetchImageToR2 } from "../../lib/image-upload";
 import { assertPdfBuffer } from "../../lib/pdf-upload";
 import {
   fetchSourcePage,
@@ -57,11 +58,15 @@ route.post(
     const contributorByEmail = new Map<string, number>();
     for (const item of items) {
       if (contributorByEmail.has(item.user.email)) continue;
-      const userId = await findOrCreateContributor(db, {
-        name: item.user.name,
-        email: item.user.email,
-        username: item.user.username,
-      });
+      const userId = await findOrCreateContributor(
+        db,
+        {
+          name: item.user.name,
+          email: item.user.email,
+          username: item.user.username,
+        },
+        () => fetchImageToR2(c.env.BUCKET, item.user.avatar_url),
+      );
       contributorByEmail.set(item.user.email, userId);
     }
 
@@ -116,6 +121,7 @@ const importOne = async (
       .values({
         userId,
         legacyId: item.id,
+        legacyViews: item.views ?? null,
         pdfKey: key,
         fileSize: buffer.byteLength,
         extraContext: legacyHint(item),

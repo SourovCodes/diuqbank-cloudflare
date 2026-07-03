@@ -6,7 +6,7 @@ import { getDb } from "../db/client";
 import { users } from "../db/schema";
 import { withCache, invalidateUser } from "../lib/cache";
 import { GoogleAuthError, verifyGoogleIdToken } from "../lib/google-oauth";
-import { parseImageUpload } from "../lib/image-upload";
+import { fetchImageToR2, parseImageUpload } from "../lib/image-upload";
 import { signAuthToken } from "../lib/jwt";
 import { clientIp, enforceRateLimit } from "../lib/rate-limit";
 import { toAuthUser } from "../lib/user-shape";
@@ -110,6 +110,21 @@ auth.post(
       throw new HTTPException(500, {
         message: "Could not create user from Google sign-in",
       });
+    }
+  }
+
+  // First sign-in: copy the Google profile photo into R2 as the initial avatar.
+  // Best-effort — fetchImageToR2 returns null instead of throwing, so an
+  // unreachable/oversized/odd image never blocks the sign-in itself.
+  if (createdNow && claims.picture) {
+    const imageKey = await fetchImageToR2(c.env.BUCKET, claims.picture);
+    if (imageKey) {
+      const [withImage] = await db
+        .update(users)
+        .set({ imageKey })
+        .where(eq(users.id, user.id))
+        .returning(authUserColumns);
+      if (withImage) user = withImage;
     }
   }
 

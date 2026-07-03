@@ -68,6 +68,7 @@ const toAdminAutoSubmission = (
   id: row.id,
   userId: row.userId,
   legacyId: row.legacyId,
+  legacyViews: row.legacyViews,
   contributor: toAuthUser(row.user, origin),
   status: row.status,
   isAcceptable: row.isAcceptable,
