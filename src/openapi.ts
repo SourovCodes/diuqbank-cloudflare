@@ -1624,7 +1624,7 @@ export const buildOpenApiDoc = () => ({
     },
     {
       name: "submissions",
-      description: "Public, Turnstile-protected view counting for submissions.",
+      description: "Public, reCAPTCHA-protected view counting for submissions.",
     },
     {
       name: "filter-options",
@@ -1951,14 +1951,14 @@ export const buildOpenApiDoc = () => ({
         summary: "Count a submission view",
         ...authFields(
           "Public",
-          "Records one view for a submission. Requires a Cloudflare Turnstile token in the JSON body `{ token }` (single-use — obtain a fresh one per view). Render the Turnstile widget with **site key `0x4AAAAAADvF7K_JpwpPHfiE`** to obtain the token. The view is buffered in Analytics Engine and flushed into `viewCount` by a cron every ~15 minutes, so the increment is not reflected in reads immediately. No auth and no rate limiting.",
+          "Records one view for a submission. Requires a Google reCAPTCHA v3 token in the JSON body `{ token }` (single-use, ~2-minute expiry — obtain a fresh one per view). Call `grecaptcha.execute()` with **site key `6LfNQUMtAAAAALqjSZZS8oIFmJQXA-xAv-z03KvH`** to obtain the token. The view is buffered in Analytics Engine and flushed into `viewCount` by a cron every ~15 minutes, so the increment is not reflected in reads immediately. No auth and no rate limiting.",
         ),
         parameters: [idPathParam("Submission")],
         requestBody: { required: true, content: json(ref("SubmissionView")) },
         responses: {
           "202": { description: "Accepted — the view was buffered" },
           "400": errResp("Validation failed (missing or empty `token`)"),
-          "403": errResp("Turnstile verification failed"),
+          "403": errResp("reCAPTCHA verification failed"),
           "404": errResp("Submission not found (invalid id)"),
         },
       },

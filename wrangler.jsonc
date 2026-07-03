@@ -112,9 +112,9 @@
       // Google AI Studio key for Gemini (auto-submission extraction). Sent as
       // the `x-goog-api-key` header. Local dev: `.dev.vars`.
       "GEMINI_API_KEY",
-      // Turnstile secret for verifying view-count tokens (siteverify). Local
-      // dev can use Cloudflare's always-passes test key in `.dev.vars`.
-      "TURNSTILE_SECRET_KEY",
+      // reCAPTCHA v3 secret for verifying view-count tokens (siteverify).
+      // Local dev: `.dev.vars`.
+      "RECAPTCHA_SECRET_KEY",
       // Cloudflare API token (scope: Account Analytics → Read) the view-count
       // cron uses to query the Analytics Engine SQL API. Local dev: `.dev.vars`.
       "CF_ANALYTICS_API_TOKEN"

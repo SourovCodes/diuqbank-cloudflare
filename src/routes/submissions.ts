@@ -2,14 +2,14 @@ import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 
 import { parseId } from "../lib/parse-id";
-import { verifyTurnstile } from "../lib/turnstile";
+import { verifyRecaptcha } from "../lib/recaptcha";
 import { validate } from "../lib/validator";
 import { submissionViewSchema } from "../shared/schemas/submissions";
 import type { AppEnv } from "../types";
 
 const route = new Hono<AppEnv>();
 
-// Public, Turnstile-protected view counter. The hot path deliberately touches
+// Public, reCAPTCHA-protected view counter. The hot path deliberately touches
 // neither D1 nor the KV cache: a verified view is written as a single Analytics
 // Engine data point and the 15-minute cron (src/cron.ts) flushes the buffered
 // counts into `submissions.view_count`. There is intentionally no existence
@@ -20,8 +20,8 @@ route.post("/:id/views", validate("json", submissionViewSchema), async (c) => {
   if (id === null) throw new HTTPException(404, { message: "Submission not found" });
 
   const { token } = c.req.valid("json");
-  const ok = await verifyTurnstile(c.env.TURNSTILE_SECRET_KEY, token);
-  if (!ok) throw new HTTPException(403, { message: "Turnstile verification failed" });
+  const ok = await verifyRecaptcha(c.env.RECAPTCHA_SECRET_KEY, token);
+  if (!ok) throw new HTTPException(403, { message: "reCAPTCHA verification failed" });
 
   // indexes: sampling is keyed per submission so a hot submission's views are
   // sampled independently. blob1 is the GROUP BY column at flush time; double1
