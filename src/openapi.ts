@@ -1379,7 +1379,7 @@ const adminPaths = {
       summary: "Edit an auto-submission",
       ...authFields(
         "Admin",
-        "Corrects the AI-extracted metadata (department, course, semester, exam type, section, batch) before approving. Published rows are immutable.",
+        "Corrects the AI-extracted metadata (department, course, semester, exam type, section, batch) and the uploader's extra-context hint before approving or reprocessing. Published rows are immutable.",
       ),
       parameters: [idPathParam("Auto submission")],
       requestBody: {

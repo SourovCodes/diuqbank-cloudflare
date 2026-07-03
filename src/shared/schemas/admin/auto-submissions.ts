@@ -18,7 +18,8 @@ export const adminAutoSubmissionsListQuery = z.object({
 });
 
 // Admins can correct the AI-extracted metadata before approving. All fields are
-// optional (partial); section/batch may be cleared by sending an empty string.
+// optional (partial); section/batch/extraContext may be cleared by sending an
+// empty string.
 export const adminAutoSubmissionUpdateSchema = z
   .object({
     departmentName: taxonomyName(100),
@@ -28,6 +29,7 @@ export const adminAutoSubmissionUpdateSchema = z
     examTypeName: taxonomyName(100),
     section: z.string().trim().max(100),
     batch: z.string().trim().max(100),
+    extraContext: z.string().trim().max(1000),
   })
   .partial();
 

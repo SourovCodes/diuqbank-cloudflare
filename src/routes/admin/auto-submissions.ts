@@ -174,7 +174,7 @@ route.patch(
     }
 
     // Map the editable form fields onto the extracted_* snapshot columns.
-    // section/batch may be cleared by sending an empty string.
+    // section/batch/extraContext may be cleared by sending an empty string.
     const update: Partial<typeof autoSubmissions.$inferInsert> = {};
     if (input.departmentName !== undefined)
       update.extractedDepartmentName = input.departmentName;
@@ -188,6 +188,8 @@ route.patch(
       update.extractedExamTypeName = input.examTypeName;
     if (input.section !== undefined) update.section = input.section || null;
     if (input.batch !== undefined) update.batch = input.batch || null;
+    if (input.extraContext !== undefined)
+      update.extraContext = input.extraContext || null;
 
     await db
       .update(autoSubmissions)
