@@ -31,6 +31,7 @@ import {
   submissionViewIncrementSchema,
 } from "./shared/schemas/admin/submissions";
 import { userUpdateSchema } from "./shared/schemas/admin/users";
+import { submissionViewSchema } from "./shared/schemas/submissions";
 import { googleSignInSchema } from "./shared/schemas/auth";
 import { profileUpdateSchema } from "./shared/schemas/profile";
 
@@ -549,6 +550,7 @@ const componentSchemas = {
   RejectAutoSubmission: toSchema(adminAutoSubmissionRejectSchema),
   UpdateSubmission: toSchema(submissionUpdateSchema),
   IncrementSubmissionView: toSchema(submissionViewIncrementSchema),
+  SubmissionView: toSchema(submissionViewSchema),
   UpdateUser: toSchema(userUpdateSchema),
   SubmissionCreateForm: {
     type: "object",
@@ -1621,6 +1623,10 @@ export const buildOpenApiDoc = () => ({
       description: "Public read access to the question bank.",
     },
     {
+      name: "submissions",
+      description: "Public, Turnstile-protected view counting for submissions.",
+    },
+    {
       name: "filter-options",
       description: "Lookup entities (departments, courses, semesters, exam types) for the filter UI.",
     },
@@ -1661,6 +1667,7 @@ export const buildOpenApiDoc = () => ({
         "files",
         "contributors",
         "questions",
+        "submissions",
         "filter-options",
         "manual-submissions",
         "auto-submissions",
@@ -1935,6 +1942,24 @@ export const buildOpenApiDoc = () => ({
         responses: {
           "200": okJson("OK", ref("QuestionSubmissions")),
           "404": commonErrors["404"],
+        },
+      },
+    },
+    "/submissions/{id}/views": {
+      post: {
+        tags: ["submissions"],
+        summary: "Count a submission view",
+        ...authFields(
+          "Public",
+          "Records one view for a submission. Requires a Cloudflare Turnstile token in the JSON body `{ token }` (single-use — obtain a fresh one per view). The view is buffered in Analytics Engine and flushed into `viewCount` by a cron every ~15 minutes, so the increment is not reflected in reads immediately. No auth and no rate limiting.",
+        ),
+        parameters: [idPathParam("Submission")],
+        requestBody: { required: true, content: json(ref("SubmissionView")) },
+        responses: {
+          "202": { description: "Accepted — the view was buffered" },
+          "400": errResp("Validation failed (missing or empty `token`)"),
+          "403": errResp("Turnstile verification failed"),
+          "404": errResp("Submission not found (invalid id)"),
         },
       },
     },

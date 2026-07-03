@@ -34,6 +34,14 @@
       "id": "17dcd20d1e4843cab7f381ad4b2d9dd4"
     }
   ],
+  // Workers Analytics Engine buffer for public submission views. The hot path
+  // (`POST /submissions/:id/views`) only calls `VIEWS.writeDataPoint(...)` — no
+  // D1 write, no cache bump per view. The 15-minute cron (see `triggers` below,
+  // consumer = src/cron.ts) reads these back via the Analytics Engine SQL API
+  // and flushes summed counts into `submissions.view_count`.
+  "analytics_engine_datasets": [{ "binding": "VIEWS", "dataset": "diuqbank_views" }],
+  // Flush the buffered views into D1 every 15 minutes. Handler = src/cron.ts.
+  "triggers": { "crons": ["*/15 * * * *"] },
   // Single throttled queue fronting ALL external PDF Processor work — watermark
   // (submissions) and AI auto-submission (compress + Gemini). `max_concurrency`
   // caps how many run at once, bounding concurrent load on the shared service
@@ -89,7 +97,11 @@
     "PDF_PROCESSOR_URL": "https://pdf-processor.diuqbank.com",
     // Comma-separated CORS allowlist. Requests from any other Origin are
     // rejected (no CORS headers). Add your production/custom domains here.
-    "WEB_ORIGINS": "https://diuqbank-web-prod.sourov-cse.workers.dev,https://diuqbank-web.sourov-cse.workers.dev,http://localhost:5173,http://localhost:8787"
+    "WEB_ORIGINS": "https://diuqbank-web-prod.sourov-cse.workers.dev,https://diuqbank-web.sourov-cse.workers.dev,http://localhost:5173,http://localhost:8787",
+    // Account id, reused by the view-count cron to build the Analytics Engine
+    // SQL API URL. Not exposed to the Worker via the top-level `account_id`, so
+    // it must live here as a runtime var (public value — fine to commit).
+    "CF_ACCOUNT_ID": "fa8625f86a085605ee19ba16ccfc9615"
   },
   "secrets": {
     "required": [
@@ -99,7 +111,13 @@
       "PDF_PROCESSOR_API_KEY",
       // Google AI Studio key for Gemini (auto-submission extraction). Sent as
       // the `x-goog-api-key` header. Local dev: `.dev.vars`.
-      "GEMINI_API_KEY"
+      "GEMINI_API_KEY",
+      // Turnstile secret for verifying view-count tokens (siteverify). Local
+      // dev can use Cloudflare's always-passes test key in `.dev.vars`.
+      "TURNSTILE_SECRET_KEY",
+      // Cloudflare API token (scope: Account Analytics → Read) the view-count
+      // cron uses to query the Analytics Engine SQL API. Local dev: `.dev.vars`.
+      "CF_ANALYTICS_API_TOKEN"
     ]
   }
 }

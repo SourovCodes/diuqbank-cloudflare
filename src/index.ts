@@ -6,6 +6,7 @@ import { logger } from "hono/logger";
 import { requestId } from "hono/request-id";
 import { secureHeaders } from "hono/secure-headers";
 
+import { handleScheduled } from "./cron";
 import { openApiDoc } from "./openapi";
 import { handleQueue } from "./queue";
 import { MAX_PDF_BYTES } from "./shared/constants";
@@ -17,6 +18,7 @@ import files from "./routes/files";
 import filterOptions from "./routes/filter-options";
 import manualSubmissions from "./routes/manual-submissions";
 import questions from "./routes/questions";
+import submissions from "./routes/submissions";
 import type { AppEnv, Bindings } from "./types";
 
 const app = new Hono<AppEnv>();
@@ -129,6 +131,7 @@ app.route("/auth", auth);
 app.route("/files", files);
 app.route("/contributors", contributors);
 app.route("/questions", questions);
+app.route("/submissions", submissions);
 app.route("/filter-options", filterOptions);
 app.route("/manual-submissions", manualSubmissions);
 app.route("/auto-submissions", autoSubmissions);
@@ -187,10 +190,13 @@ app.onError((err, c) => {
 
 app.notFound((c) => c.json({ error: "Not found" }, 404));
 
-// The Worker exports both the HTTP handler and the queue consumer. The consumer
-// drains the throttled PDF_QUEUE (watermarking + AI auto-submission); its
-// max_concurrency bounds concurrent load on the external PDF Processor.
+// The Worker exports the HTTP handler, the queue consumer, and the cron
+// consumer. The queue drains the throttled PDF_QUEUE (watermarking + AI
+// auto-submission); its max_concurrency bounds concurrent load on the external
+// PDF Processor. The scheduled handler flushes buffered submission views from
+// Analytics Engine into D1 every 15 minutes (see src/cron.ts).
 export default {
   fetch: app.fetch,
   queue: handleQueue,
+  scheduled: handleScheduled,
 };
