@@ -37,6 +37,20 @@ const CLEARABLE_FIELDS = new Set<keyof UpdateAutoSubmission>([
   "extraContext",
 ]);
 
+// e.g. "12 published · 3 rejected" — pending only shown when non-zero, and a
+// contributor with no history at all reads "None".
+function formatTrackRecord(
+  accepted: number,
+  rejected: number,
+  pending: number,
+  acceptedLabel: string,
+) {
+  if (accepted === 0 && rejected === 0 && pending === 0) return "None";
+  const parts = [`${accepted} ${acceptedLabel}`, `${rejected} rejected`];
+  if (pending > 0) parts.push(`${pending} pending`);
+  return parts.join(" · ");
+}
+
 export default function AdminAutoSubmissionDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -195,7 +209,69 @@ export default function AdminAutoSubmissionDetail() {
               <DetailRow label="Section" value={sub.section ?? "—"} />
               <DetailRow label="Batch" value={sub.batch ?? "—"} />
               <DetailRow label="Uploaded" value={formatDate(sub.createdAt)} />
-              <DetailRow label="Submitter" value={`@${sub.contributor.username}`} />
+            </dl>
+          </div>
+
+          <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                Contributor
+              </h2>
+              <Link
+                to={`/admin/users/${sub.userId}`}
+                className="text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400"
+              >
+                View profile
+              </Link>
+            </div>
+            <div className="mb-3 flex items-center gap-3">
+              {sub.contributor.image ? (
+                <img
+                  src={sub.contributor.image}
+                  alt=""
+                  className="h-9 w-9 rounded-full object-cover"
+                />
+              ) : (
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 text-sm font-semibold text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+                  {sub.contributor.name.charAt(0).toUpperCase()}
+                </div>
+              )}
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-gray-800 dark:text-gray-200">
+                  {sub.contributor.name}
+                </p>
+                <p className="truncate text-xs text-gray-500 dark:text-gray-400">
+                  @{sub.contributor.username}
+                </p>
+              </div>
+            </div>
+            <dl className="space-y-1.5 text-sm">
+              <DetailRow
+                label="Member since"
+                value={formatDate(sub.contributor.createdAt)}
+              />
+              <DetailRow
+                label="Live submissions"
+                value={String(sub.contributorStats.liveSubmissionCount)}
+              />
+              <DetailRow
+                label="Auto uploads"
+                value={formatTrackRecord(
+                  sub.contributorStats.autoPublished,
+                  sub.contributorStats.autoRejected,
+                  sub.contributorStats.autoPendingReview,
+                  "published",
+                )}
+              />
+              <DetailRow
+                label="Manual uploads"
+                value={formatTrackRecord(
+                  sub.contributorStats.manualApproved,
+                  sub.contributorStats.manualRejected,
+                  sub.contributorStats.manualPendingReview,
+                  "approved",
+                )}
+              />
             </dl>
           </div>
 

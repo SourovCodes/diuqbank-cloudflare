@@ -245,6 +245,26 @@ export type AdminAutoSubmission = {
   createdAt: number
 }
 
+/**
+ * Review-history overview of a contributor, shown alongside a submission under
+ * review so admins can judge the uploader's track record at a glance.
+ */
+export type AdminContributorStats = {
+  /** Live submissions currently on the site (`users.submission_count`). */
+  liveSubmissionCount: number
+  autoPublished: number
+  autoRejected: number
+  autoPendingReview: number
+  manualApproved: number
+  manualRejected: number
+  manualPendingReview: number
+}
+
+/** Detail variant of `AdminAutoSubmission`: adds the contributor's track record. */
+export type AdminAutoSubmissionDetail = AdminAutoSubmission & {
+  contributorStats: AdminContributorStats
+}
+
 export type AdminUser = User & { submissionCount: number }
 
 /**

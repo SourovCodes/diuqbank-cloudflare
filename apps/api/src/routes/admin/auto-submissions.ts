@@ -5,11 +5,17 @@ import { and, count, desc, eq, type SQL } from "drizzle-orm";
 import { getDb, type Db } from "../../db/client";
 import {
   autoSubmissions,
+  manualSubmissions,
+  users,
   type AutoSubmission,
   type User,
 } from "../../db/schema";
 import { buildMeta } from "../../shared/utils/pagination";
-import type { AdminAutoSubmission } from "../../shared/types";
+import type {
+  AdminAutoSubmission,
+  AdminAutoSubmissionDetail,
+  AdminContributorStats,
+} from "../../shared/types";
 import {
   publishAutoSubmission,
   startAutoSubmission,
@@ -91,6 +97,45 @@ const toAdminAutoSubmission = (
   createdAt: row.createdAt,
 });
 
+// Review-history overview of the contributor (shown next to the PDF so the
+// reviewer can judge the uploader's track record). Counts include the row
+// currently under review.
+const loadContributorStats = async (
+  db: Db,
+  userId: number,
+): Promise<AdminContributorStats> => {
+  const [autoRows, manualRows, [contributor]] = await Promise.all([
+    db
+      .select({ status: autoSubmissions.status, value: count() })
+      .from(autoSubmissions)
+      .where(eq(autoSubmissions.userId, userId))
+      .groupBy(autoSubmissions.status),
+    db
+      .select({ status: manualSubmissions.status, value: count() })
+      .from(manualSubmissions)
+      .where(eq(manualSubmissions.userId, userId))
+      .groupBy(manualSubmissions.status),
+    db
+      .select({ submissionCount: users.submissionCount })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1),
+  ]);
+
+  const countOf = (rows: { status: string; value: number }[], status: string) =>
+    rows.find((r) => r.status === status)?.value ?? 0;
+
+  return {
+    liveSubmissionCount: contributor?.submissionCount ?? 0,
+    autoPublished: countOf(autoRows, "published"),
+    autoRejected: countOf(autoRows, "rejected"),
+    autoPendingReview: countOf(autoRows, "needs_review"),
+    manualApproved: countOf(manualRows, "approved"),
+    manualRejected: countOf(manualRows, "rejected"),
+    manualPendingReview: countOf(manualRows, "pending_review"),
+  };
+};
+
 const loadAutoSubmission = async (db: Db, id: number, origin: string) => {
   const row = await db.query.autoSubmissions.findFirst({
     where: eq(autoSubmissions.id, id),
@@ -135,15 +180,14 @@ route.get("/:id", async (c) => {
     throw new HTTPException(404, { message: "Auto submission not found" });
   }
 
-  const detail = await loadAutoSubmission(
-    getDb(c.env.DB),
-    id,
-    new URL(c.req.url).origin,
-  );
+  const db = getDb(c.env.DB);
+  const detail = await loadAutoSubmission(db, id, new URL(c.req.url).origin);
   if (!detail) {
     throw new HTTPException(404, { message: "Auto submission not found" });
   }
-  return c.json(detail);
+
+  const contributorStats = await loadContributorStats(db, detail.userId);
+  return c.json({ ...detail, contributorStats } satisfies AdminAutoSubmissionDetail);
 });
 
 route.patch(

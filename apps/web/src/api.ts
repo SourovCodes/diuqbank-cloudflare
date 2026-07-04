@@ -1,5 +1,6 @@
 import type {
   AdminAutoSubmission,
+  AdminAutoSubmissionDetail,
   AdminAutoSubmissionList,
   AdminManualSubmission,
   AdminManualSubmissionList,
@@ -306,7 +307,7 @@ export const getAdminAutoSubmissions = (
 
 export const getAdminAutoSubmission = (
   id: string | number
-): Promise<AdminAutoSubmission> => get(`/admin/auto-submissions/${id}`);
+): Promise<AdminAutoSubmissionDetail> => get(`/admin/auto-submissions/${id}`);
 
 export const updateAdminAutoSubmission = (
   id: number,

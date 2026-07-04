@@ -439,6 +439,27 @@ const adminAutoSubmissionList = z.object({
   meta: paginationMeta,
 });
 
+const adminContributorStats = z
+  .object({
+    liveSubmissionCount: z
+      .number()
+      .int()
+      .describe("Live submissions currently on the site."),
+    autoPublished: z.number().int(),
+    autoRejected: z.number().int(),
+    autoPendingReview: z.number().int(),
+    manualApproved: z.number().int(),
+    manualRejected: z.number().int(),
+    manualPendingReview: z.number().int(),
+  })
+  .describe(
+    "Review-history overview of a contributor, so admins can judge the uploader's track record at a glance.",
+  );
+
+const adminAutoSubmissionDetail = adminAutoSubmission.extend({
+  contributorStats: adminContributorStats,
+});
+
 const importAutoSubmissionsResult = z.object({
   imported: z
     .array(
@@ -615,7 +636,9 @@ const componentSchemas = {
   AdminManualSubmission: toSchema(adminManualSubmission),
   AdminManualSubmissionList: toSchema(adminManualSubmissionList),
   AdminAutoSubmission: toSchema(adminAutoSubmission),
+  AdminAutoSubmissionDetail: toSchema(adminAutoSubmissionDetail),
   AdminAutoSubmissionList: toSchema(adminAutoSubmissionList),
+  AdminContributorStats: toSchema(adminContributorStats),
   ImportAutoSubmissionsResult: toSchema(importAutoSubmissionsResult),
   AdminUser: toSchema(adminUser),
   AdminUserList: toSchema(adminUserList),
@@ -1382,11 +1405,11 @@ const adminPaths = {
       summary: "Get an auto-submission",
       ...authFields(
         "Admin",
-        "Returns the AI extraction snapshot, submitter, reviewer, PDF URL, and linked records once published.",
+        "Returns the AI extraction snapshot, submitter, reviewer, PDF URL, linked records once published, and the contributor's review-history stats.",
       ),
       parameters: [idPathParam("Auto submission")],
       responses: {
-        "200": okJson("OK", ref("AdminAutoSubmission")),
+        "200": okJson("OK", ref("AdminAutoSubmissionDetail")),
         "401": commonErrors["401"],
         "403": commonErrors["403"],
         "404": commonErrors["404"],

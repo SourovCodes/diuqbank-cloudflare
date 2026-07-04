@@ -28,6 +28,8 @@ export type AdminManualSubmission =
 export type AdminManualSubmissionList =
   components["schemas"]["AdminManualSubmissionList"];
 export type AdminAutoSubmission = components["schemas"]["AdminAutoSubmission"];
+export type AdminAutoSubmissionDetail =
+  components["schemas"]["AdminAutoSubmissionDetail"];
 export type AdminAutoSubmissionList =
   components["schemas"]["AdminAutoSubmissionList"];
 export type AdminUser = components["schemas"]["AdminUser"];

@@ -4523,7 +4523,7 @@ export interface paths {
          * Get an auto-submission
          * @description **Access:** `Admin` — Requires a bearer token from an account with `role: "admin"`.
          *
-         *     Returns the AI extraction snapshot, submitter, reviewer, PDF URL, and linked records once published.
+         *     Returns the AI extraction snapshot, submitter, reviewer, PDF URL, linked records once published, and the contributor's review-history stats.
          */
         get: {
             parameters: {
@@ -4543,7 +4543,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["AdminAutoSubmission"];
+                        "application/json": components["schemas"]["AdminAutoSubmissionDetail"];
                     };
                 };
                 /** @description Missing or invalid bearer token */
@@ -6283,6 +6283,73 @@ export interface components {
             /** @description Unix epoch seconds (UTC) */
             createdAt: number;
         };
+        AdminAutoSubmissionDetail: {
+            id: number;
+            userId: number;
+            /** @description Source id when bulk-imported from legacy diuqbank.com; else null. */
+            legacyId: number | null;
+            /** @description View count carried over from the legacy site; seeds the submission's view count on publish. Null for normal uploads. */
+            legacyViews: number | null;
+            contributor: {
+                id: number;
+                name: string;
+                /** Format: email */
+                email: string;
+                username: string;
+                /** @enum {string} */
+                role: "admin" | "user";
+                /** @description Absolute URL to the profile image, or null if none is set. */
+                image: string | null;
+                /** @description Unix epoch seconds (UTC) */
+                createdAt: number;
+            };
+            /** @enum {string} */
+            status: "processing" | "needs_review" | "published" | "rejected" | "failed";
+            isAcceptable: boolean | null;
+            aiReasoning: string | null;
+            departmentName: string | null;
+            courseName: string | null;
+            semesterName: string | null;
+            examTypeName: string | null;
+            section: string | null;
+            batch: string | null;
+            extraContext: string | null;
+            /** @description Size of the uploaded PDF in bytes. */
+            fileSize: number;
+            processingError: string | null;
+            rejectedReason: string | null;
+            reviewedBy: number | null;
+            reviewer: {
+                id: number;
+                name: string;
+                /** Format: email */
+                email: string;
+                username: string;
+                /** @enum {string} */
+                role: "admin" | "user";
+                /** @description Absolute URL to the profile image, or null if none is set. */
+                image: string | null;
+                /** @description Unix epoch seconds (UTC) */
+                createdAt: number;
+            } | null;
+            questionId: number | null;
+            submissionId: number | null;
+            /** @description Absolute URL to the uploaded PDF, served by `GET /files/:key`. */
+            pdfUrl: string | null;
+            /** @description Unix epoch seconds (UTC) */
+            createdAt: number;
+            /** @description Review-history overview of a contributor, so admins can judge the uploader's track record at a glance. */
+            contributorStats: {
+                /** @description Live submissions currently on the site. */
+                liveSubmissionCount: number;
+                autoPublished: number;
+                autoRejected: number;
+                autoPendingReview: number;
+                manualApproved: number;
+                manualRejected: number;
+                manualPendingReview: number;
+            };
+        };
         AdminAutoSubmissionList: {
             data: {
                 id: number;
@@ -6346,6 +6413,17 @@ export interface components {
                 total: number;
                 totalPages: number;
             };
+        };
+        /** @description Review-history overview of a contributor, so admins can judge the uploader's track record at a glance. */
+        AdminContributorStats: {
+            /** @description Live submissions currently on the site. */
+            liveSubmissionCount: number;
+            autoPublished: number;
+            autoRejected: number;
+            autoPendingReview: number;
+            manualApproved: number;
+            manualRejected: number;
+            manualPendingReview: number;
         };
         ImportAutoSubmissionsResult: {
             /** @description Auto-submissions created and enqueued for AI processing. */
