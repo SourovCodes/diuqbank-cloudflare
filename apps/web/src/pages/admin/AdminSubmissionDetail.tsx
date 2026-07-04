@@ -69,6 +69,28 @@ export default function AdminSubmissionDetail() {
                 </Link>
               </>
             )}
+            {sub.autoSubmissionId !== null && (
+              <>
+                {" · "}
+                <Link
+                  to={`/admin/auto-submissions/${sub.autoSubmissionId}`}
+                  className="font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400"
+                >
+                  View auto submission
+                </Link>
+              </>
+            )}
+            {sub.manualSubmissionId !== null && (
+              <>
+                {" · "}
+                <Link
+                  to={`/admin/manual-submissions/${sub.manualSubmissionId}`}
+                  className="font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400"
+                >
+                  View manual submission
+                </Link>
+              </>
+            )}
           </p>
         </div>
         <Badge

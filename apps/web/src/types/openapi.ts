@@ -3598,7 +3598,7 @@ export interface paths {
          * Get a submission by id
          * @description **Access:** `Admin` — Requires a bearer token from an account with `role: "admin"`.
          *
-         *     A single submission with its question, contributor, and file URLs.
+         *     A single submission with its question, contributor, file URLs, and the id of the auto/manual submission it was published from (if any).
          */
         get: {
             parameters: {
@@ -3618,7 +3618,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["AdminSubmission"];
+                        "application/json": components["schemas"]["AdminSubmissionDetail"];
                     };
                 };
                 /** @description Missing or invalid bearer token */
@@ -6058,6 +6058,38 @@ export interface components {
             watermarkedPdfUrl: string | null;
             /** @description Unix epoch seconds (UTC) */
             createdAt: number;
+        };
+        AdminSubmissionDetail: {
+            id: number;
+            question: {
+                id: number;
+                title: string;
+            };
+            contributor: {
+                id: number;
+                name: string;
+                username: string;
+                image: string | null;
+            } | null;
+            section: string | null;
+            batch: string | null;
+            /** @description Size of the PDF in bytes. */
+            fileSize: number;
+            /** @description Number of times this submission has been viewed. */
+            viewCount: number;
+            /** @enum {string} */
+            watermarkStatus: "awaiting" | "completed" | "failed";
+            watermarkError: string | null;
+            /** @description Absolute URL to the original PDF, served by `GET /files/:key`. */
+            pdfUrl: string | null;
+            /** @description Absolute URL to the watermarked PDF, if one has been generated. */
+            watermarkedPdfUrl: string | null;
+            /** @description Unix epoch seconds (UTC) */
+            createdAt: number;
+            /** @description Id of the auto submission this submission was published from, if any. */
+            autoSubmissionId: number | null;
+            /** @description Id of the manual submission this submission was published from, if any. */
+            manualSubmissionId: number | null;
         };
         AdminSubmissionList: {
             data: {

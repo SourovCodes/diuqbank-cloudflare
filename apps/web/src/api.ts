@@ -6,6 +6,7 @@ import type {
   AdminQuestion,
   AdminQuestionList,
   AdminSubmission,
+  AdminSubmissionDetail,
   AdminSubmissionList,
   AdminUser,
   AdminUserList,
@@ -373,7 +374,7 @@ export const getAdminSubmissions = (
 
 export const getAdminSubmission = (
   id: string | number
-): Promise<AdminSubmission> => get(`/admin/submissions/${id}`);
+): Promise<AdminSubmissionDetail> => get(`/admin/submissions/${id}`);
 
 export const updateAdminSubmission = (
   id: number,

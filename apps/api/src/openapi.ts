@@ -353,6 +353,22 @@ const adminSubmissionList = z.object({
   data: z.array(adminSubmission),
   meta: paginationMeta,
 });
+const adminSubmissionDetail = adminSubmission.extend({
+  autoSubmissionId: z
+    .number()
+    .int()
+    .nullable()
+    .describe(
+      "Id of the auto submission this submission was published from, if any.",
+    ),
+  manualSubmissionId: z
+    .number()
+    .int()
+    .nullable()
+    .describe(
+      "Id of the manual submission this submission was published from, if any.",
+    ),
+});
 
 const adminManualSubmission = z.object({
   id: z.number().int(),
@@ -594,6 +610,7 @@ const componentSchemas = {
   AdminQuestion: toSchema(adminQuestion),
   AdminQuestionList: toSchema(adminQuestionList),
   AdminSubmission: toSchema(adminSubmission),
+  AdminSubmissionDetail: toSchema(adminSubmissionDetail),
   AdminSubmissionList: toSchema(adminSubmissionList),
   AdminManualSubmission: toSchema(adminManualSubmission),
   AdminManualSubmissionList: toSchema(adminManualSubmissionList),
@@ -1140,10 +1157,13 @@ const adminPaths = {
     get: {
       tags: ["admin-submissions"],
       summary: "Get a submission by id",
-      ...authFields("Admin", "A single submission with its question, contributor, and file URLs."),
+      ...authFields(
+        "Admin",
+        "A single submission with its question, contributor, file URLs, and the id of the auto/manual submission it was published from (if any).",
+      ),
       parameters: [idPathParam("Submission")],
       responses: {
-        "200": okJson("OK", ref("AdminSubmission")),
+        "200": okJson("OK", ref("AdminSubmissionDetail")),
         "401": commonErrors["401"],
         "403": commonErrors["403"],
         "404": commonErrors["404"],

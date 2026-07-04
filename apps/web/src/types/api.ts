@@ -35,6 +35,8 @@ export type AdminUserList = components["schemas"]["AdminUserList"];
 export type AdminQuestion = components["schemas"]["AdminQuestion"];
 export type AdminQuestionList = components["schemas"]["AdminQuestionList"];
 export type AdminSubmission = components["schemas"]["AdminSubmission"];
+export type AdminSubmissionDetail =
+  components["schemas"]["AdminSubmissionDetail"];
 export type AdminSubmissionList = components["schemas"]["AdminSubmissionList"];
 export type Department = components["schemas"]["Department"];
 export type DepartmentList = components["schemas"]["DepartmentList"];

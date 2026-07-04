@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { useQuestion, useSubmissions } from "../hooks/queries";
+import { useAuth } from "../auth";
 import { Badge } from "../components/ui/Badge";
 import { StatusPage } from "../components/ui/StatusPage";
 import { PdfPreview } from "../components/submissions/SubmissionParts";
@@ -19,6 +20,9 @@ export default function QuestionDetail() {
   const initialQuestion = (location.state as QuestionDetailLocationState | null)
     ?.question;
   const { data: question, isPending, isError } = useQuestion(id, initialQuestion);
+  const { user } = useAuth();
+  // Admin panel routes are guarded by role, so only admins get the shortcuts.
+  const isAdmin = user?.role === "admin";
   const {
     data: submissionsData,
     isPending: isSubmissionsPending,
@@ -86,6 +90,14 @@ export default function QuestionDetail() {
             {formatCount(question.viewCount)} view
             {question.viewCount !== 1 ? "s" : ""}
           </span>
+          {isAdmin && (
+            <Link
+              to={`/admin/questions/${question.id}`}
+              className="text-sm font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400"
+            >
+              Open in admin
+            </Link>
+          )}
         </div>
       </div>
 
@@ -218,6 +230,15 @@ export default function QuestionDetail() {
                     {selected.section && <Row label="Section" value={selected.section} />}
                     {selected.batch && <Row label="Batch" value={selected.batch} />}
                   </dl>
+
+                  {isAdmin && (
+                    <Link
+                      to={`/admin/submissions/${selected.id}`}
+                      className="mt-3 inline-flex text-sm font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400"
+                    >
+                      Open submission in admin
+                    </Link>
+                  )}
 
                   {selected.pdfUrl && (
                     <a

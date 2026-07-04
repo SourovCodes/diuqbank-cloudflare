@@ -1,5 +1,6 @@
 import type {
   AdminSubmission as AdminSubmissionDTO,
+  AdminSubmissionDetail as AdminSubmissionDetailDTO,
   AdminUser as AdminUserDTO,
 } from "../shared/types";
 import type { Submission, User } from "../db/schema";
@@ -68,3 +69,17 @@ export const toAdminSubmission = (row: AdminSubmissionRow, origin: string): Admi
 });
 
 export type AdminSubmission = ReturnType<typeof toAdminSubmission>;
+
+/**
+ * Detail variant: the base admin shape plus the id of the auto/manual
+ * submission this submission was published from (null when there is none).
+ */
+export const toAdminSubmissionDetail = (
+  row: AdminSubmissionRow,
+  origin: string,
+  source: { autoSubmissionId: number | null; manualSubmissionId: number | null },
+): AdminSubmissionDetailDTO => ({
+  ...toAdminSubmission(row, origin),
+  autoSubmissionId: source.autoSubmissionId,
+  manualSubmissionId: source.manualSubmissionId,
+});

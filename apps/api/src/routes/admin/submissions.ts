@@ -3,14 +3,14 @@ import { HTTPException } from "hono/http-exception";
 import { and, count, desc, eq, sql, type SQL } from "drizzle-orm";
 
 import { getDb } from "../../db/client";
-import { manualSubmissions, submissions } from "../../db/schema";
+import { autoSubmissions, manualSubmissions, submissions } from "../../db/schema";
 import {
   invalidateSubmission,
   invalidateSubmissionEdit,
   invalidateSubmissionMove,
   invalidateSubmissionView,
 } from "../../lib/cache";
-import { toAdminSubmission } from "../../lib/admin-shape";
+import { toAdminSubmission, toAdminSubmissionDetail } from "../../lib/admin-shape";
 import { buildMeta } from "../../shared/utils/pagination";
 import { parseId } from "../../lib/parse-id";
 import { startWatermark } from "../../lib/pdf-processor";
@@ -93,13 +93,28 @@ route.get("/:id", async (c) => {
   const db = getDb(c.env.DB);
   const origin = new URL(c.req.url).origin;
 
-  const row = await db.query.submissions.findFirst({
-    where: eq(submissions.id, id),
-    with: submissionWith,
-  });
+  // The source auto/manual submission (if this submission was published from
+  // one) so the admin UI can link back to the review record.
+  const [row, autoSource, manualSource] = await Promise.all([
+    db.query.submissions.findFirst({
+      where: eq(submissions.id, id),
+      with: submissionWith,
+    }),
+    db.query.autoSubmissions.findFirst({
+      where: eq(autoSubmissions.submissionId, id),
+      columns: { id: true },
+    }),
+    db.query.manualSubmissions.findFirst({
+      where: eq(manualSubmissions.submissionId, id),
+      columns: { id: true },
+    }),
+  ]);
   if (!row) throw new HTTPException(404, { message: "Submission not found" });
 
-  return c.json(toAdminSubmission(row, origin));
+  return c.json(toAdminSubmissionDetail(row, origin, {
+    autoSubmissionId: autoSource?.id ?? null,
+    manualSubmissionId: manualSource?.id ?? null,
+  }));
 });
 
 // Multipart: `pdf` file + text fields (validated by `submissionCreateForm`).

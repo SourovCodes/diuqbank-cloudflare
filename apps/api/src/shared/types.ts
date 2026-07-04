@@ -186,6 +186,16 @@ export type AdminSubmission = {
   createdAt: number
 }
 
+/**
+ * Detail variant of `AdminSubmission`: also carries the id of the auto/manual
+ * submission this live submission was published from (null when it wasn't
+ * created through that pipeline).
+ */
+export type AdminSubmissionDetail = AdminSubmission & {
+  autoSubmissionId: number | null
+  manualSubmissionId: number | null
+}
+
 export type AdminManualSubmission = {
   id: number
   userId: number
