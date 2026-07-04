@@ -1,7 +1,7 @@
 import type { MiddlewareHandler } from "hono";
 import { HTTPException } from "hono/http-exception";
 
-import { MAX_PDF_BYTES, PDF_MIME_TYPE } from "../shared/constants";
+import { MAX_PDF_BYTES, PDF_MIME_TYPE } from "@diuqbank/shared";
 import type { AppEnv } from "../types";
 
 const MAX_MULTIPART_OVERHEAD_BYTES = 256 * 1024;

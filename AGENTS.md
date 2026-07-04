@@ -13,6 +13,9 @@ A pnpm workspace monorepo with two Cloudflare deployables:
 - **`apps/web`** (`diuqbank-web`) — React 19 + Vite + Tailwind 4 frontend using
   TanStack Query and React Router 7, deployed as a Wrangler assets-only Worker
   (SPA fallback). Worker name: `diuqbank-web-prod`.
+- **`packages/shared`** (`@diuqbank/shared`) — tiny internal package (consumed
+  as TypeScript source, no build step) holding constants both sides must agree
+  on: upload size limits, accepted MIME types, pagination caps.
 
 Package manager: **pnpm 10.33.2** (pinned in the root `package.json`). One
 lockfile at the root; never add per-app lockfiles.
@@ -40,6 +43,8 @@ apps/
     src/               React app: pages/, components/, hooks/, lib/, types/openapi.ts
     vite.config.ts     Dev server proxies /api -> API origin
     wrangler.jsonc     Assets-only Worker serving dist/ with SPA fallback
+packages/
+  shared/src/index.ts  Upload limits, MIME types, pagination caps (@diuqbank/shared)
 ```
 
 ## Commands
@@ -91,9 +96,11 @@ builtin, not the app's deploy script.
 
 ## Web Conventions (`apps/web`)
 
-- **API types:** generated into `src/types/openapi.ts` from the deployed
-  `/openapi.json` via `pnpm --filter diuqbank-web run api:types`. Regenerate
-  after backend contract changes.
+- **API types:** generated into `src/types/openapi.ts` **from local API
+  source** via `pnpm --filter diuqbank-web run api:types` (it runs the API's
+  `openapi:emit` script, then openapi-typescript on `apps/api/openapi.json`).
+  No deploy needed; regenerate in the same commit as the API contract change.
+  `api:types:remote` still reads the deployed spec for comparison.
 - **API base:** same-origin `/api` by default; the Vite dev server proxies it
   to the deployed API (`VITE_DEV_API_PROXY_TARGET` overrides the target;
   `VITE_API_BASE_URL` overrides the base at build time).

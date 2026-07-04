@@ -10,6 +10,9 @@ importers:
 
   apps/api:
     dependencies:
+      '@diuqbank/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       '@hono/zod-validator':
         specifier: ^0.8.0
         version: 0.8.0(hono@4.12.27)(zod@4.4.3)
@@ -50,6 +53,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@diuqbank/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       '@tailwindcss/vite':
         specifier: ^4.3.2
         version: 4.3.2(vite@8.1.3(@types/node@20.19.43)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.0))
@@ -93,6 +99,12 @@ importers:
       wrangler:
         specifier: ^4.106.0
         version: 4.107.0
+
+  packages/shared:
+    devDependencies:
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
 packages:
 

@@ -1,4 +1,4 @@
-import { MAX_IMAGE_BYTES } from "../shared/constants";
+import { MAX_IMAGE_BYTES } from "@diuqbank/shared";
 import type { Context } from "hono";
 import { HTTPException } from "hono/http-exception";
 

@@ -34,3 +34,6 @@ pnpm-debug.log*
 *.njsproj
 *.sln
 *.sw?
+
+# Generated OpenAPI spec (emit with `pnpm --filter diuqbank-api run openapi:emit`)
+apps/api/openapi.json

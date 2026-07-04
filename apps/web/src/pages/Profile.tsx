@@ -1,3 +1,4 @@
+import { IMAGE_MIME_TYPES, MAX_IMAGE_BYTES } from "@diuqbank/shared";
 import { useEffect, useRef, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { updateProfile, uploadProfileImage } from "../api";
@@ -5,6 +6,8 @@ import { useAuth } from "../auth";
 import { Button, Field, inputClass } from "../components/ui/form";
 import { Card, CardTitle } from "../components/ui/Card";
 import { formatDate } from "../lib/format";
+
+const MAX_IMAGE_MB = Math.round(MAX_IMAGE_BYTES / 1024 / 1024);
 
 export default function Profile() {
   const { user, setUser } = useAuth();
@@ -71,7 +74,7 @@ export default function Profile() {
             <input
               ref={fileRef}
               type="file"
-              accept="image/png,image/jpeg,image/gif,image/webp"
+              accept={IMAGE_MIME_TYPES.join(",")}
               className="hidden"
               onChange={(e) => {
                 const file = e.target.files?.[0];
@@ -88,7 +91,7 @@ export default function Profile() {
               Change photo
             </Button>
             <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-              PNG, JPEG, GIF, or WebP — max 5 MB.
+              PNG, JPEG, GIF, or WebP — max {MAX_IMAGE_MB} MB.
             </p>
             {upload.isError && (
               <p className="mt-1 text-xs text-red-600 dark:text-red-400">

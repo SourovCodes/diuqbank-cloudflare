@@ -1,4 +1,5 @@
-// API constants for upload limits, accepted MIME types, and pagination defaults.
+// Constants shared by the API (enforcement) and the web app (client-side
+// validation and UI copy). Changing a limit here updates both sides.
 
 /** Maximum profile-image upload size (5 MB). */
 export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;

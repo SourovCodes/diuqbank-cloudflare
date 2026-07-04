@@ -13,11 +13,16 @@ React/Vite frontend for the public DIU QuestionBank archive. The app is built as
 
 ## API
 
-Generated API types live in `src/types/openapi.ts` and are sourced from:
+Generated API types live in `src/types/openapi.ts` and are generated from the
+local API source (`apps/api/src/openapi.ts`) — no deploy needed:
 
 ```sh
-https://diuqbank-api-prod.sourov-cse.workers.dev/openapi.json
+pnpm run api:types          # emit apps/api/openapi.json from source, then generate types
+pnpm run api:types:remote   # generate from the deployed /openapi.json instead
 ```
+
+Shared constants (upload limits, MIME types) come from the workspace package
+`@diuqbank/shared`.
 
 Local development uses a same-origin `/api` path by default. Vite proxies that path to the production API so local requests do not depend on browser CORS behavior.
 

@@ -9,6 +9,7 @@ question papers, deployed entirely on Cloudflare.
 | --- | --- | --- |
 | `diuqbank-api` | [apps/api](apps/api) | Hono API on Cloudflare Workers (D1 + Drizzle, R2, PDF queue). Worker: `diuqbank-api-prod`. |
 | `diuqbank-web` | [apps/web](apps/web) | React 19 + Vite frontend, deployed as a Wrangler assets-only Worker. Worker: `diuqbank-web-prod`. |
+| `@diuqbank/shared` | [packages/shared](packages/shared) | Constants both apps must agree on (upload limits, MIME types, pagination caps). |
 
 Each app has its own README with details.
 

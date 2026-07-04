@@ -1,10 +1,9 @@
+import { MAX_PDF_BYTES, PDF_MIME_TYPE } from "@diuqbank/shared";
 import { useRef, useState } from "react";
 import { cx } from "../../lib/cx";
 import { formatBytes } from "../../lib/format";
 
-const MAX_PDF_BYTES = 20 * 1024 * 1024;
 const MAX_MB = Math.round(MAX_PDF_BYTES / 1024 / 1024);
-const PDF_MIME_TYPE = "application/pdf";
 
 type FileUploadProps = {
   file: File | null;

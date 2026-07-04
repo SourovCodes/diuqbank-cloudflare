@@ -10,11 +10,13 @@
     "db:migrate:local": "wrangler d1 migrations apply diuqbank-db-prod --local",
     "db:migrate:remote": "wrangler d1 migrations apply diuqbank-db-prod --remote",
     "cf-typegen": "wrangler types",
+    "openapi:emit": "tsx scripts/emit-openapi.ts",
     "wipe": "node scripts/wipe.mjs",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@diuqbank/shared": "workspace:*",
     "@hono/zod-validator": "^0.8.0",
     "drizzle-orm": "^0.45.2",
     "hono": "^4.12.26",

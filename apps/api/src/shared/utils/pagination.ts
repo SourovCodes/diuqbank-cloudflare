@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { DEFAULT_PER_PAGE, MAX_PER_PAGE } from "../constants";
+import { DEFAULT_PER_PAGE, MAX_PER_PAGE } from "@diuqbank/shared";
 
 /**
  * Shared pagination query fields. Spread into a route's query schema:

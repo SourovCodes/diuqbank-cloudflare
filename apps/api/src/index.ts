@@ -9,7 +9,7 @@ import { secureHeaders } from "hono/secure-headers";
 import { handleScheduled } from "./cron";
 import { openApiDoc } from "./openapi";
 import { handleQueue } from "./queue";
-import { MAX_PDF_BYTES } from "./shared/constants";
+import { MAX_PDF_BYTES } from "@diuqbank/shared";
 import admin from "./routes/admin";
 import auth from "./routes/auth";
 import autoSubmissions from "./routes/auto-submissions";
