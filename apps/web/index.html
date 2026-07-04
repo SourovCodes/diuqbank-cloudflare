@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DIUQBank — Past questions for every DIU course</title>
+    <meta
+      name="description"
+      content="Free archive of past DIU exam questions. Browse by department, course, semester and exam type, read every paper in your browser, and contribute your own."
+    />
+    <meta name="theme-color" content="#2563eb" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="DIUQBank" />
+    <meta property="og:title" content="DIUQBank — Past questions for every DIU course" />
+    <meta
+      property="og:description"
+      content="Free archive of past DIU exam questions. Browse by department, course, semester and exam type, and read every paper in your browser."
+    />
+    <meta name="twitter:card" content="summary" />
+    <script>
+      // Apply the saved theme (or system preference) before paint to avoid a flash.
+      (function () {
+        try {
+          var t = localStorage.getItem("theme");
+          if (t === "dark" || (!t && matchMedia("(prefers-color-scheme: dark)").matches)) {
+            document.documentElement.classList.add("dark");
+          }
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

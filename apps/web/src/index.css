@@ -1,0 +1,77 @@
+@import "tailwindcss";
+
+/* Drive `dark:` from a class on <html> instead of the OS media query, so the
+   navbar toggle can override the system preference. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+html {
+  scroll-behavior: smooth;
+  color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
+/* --- Homepage motion + hero backdrop (CSS only, no deps) --- */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Soft radial spotlight behind the hero. */
+.hero-glow {
+  background:
+    radial-gradient(60% 60% at 50% 0%, rgb(37 99 235 / 0.12), transparent 70%),
+    radial-gradient(40% 50% at 85% 10%, rgb(129 140 248 / 0.1), transparent 70%);
+}
+
+.dark .hero-glow {
+  background:
+    radial-gradient(60% 60% at 50% 0%, rgb(59 130 246 / 0.16), transparent 70%),
+    radial-gradient(45% 55% at 85% 5%, rgb(129 140 248 / 0.14), transparent 70%);
+}
+
+/* Faint grid so the hero has texture without a background image. */
+.bg-grid {
+  background-image:
+    linear-gradient(to right, rgb(15 23 42 / 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(15 23 42 / 0.04) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(70% 60% at 50% 0%, black, transparent 75%);
+}
+
+.dark .bg-grid {
+  background-image:
+    linear-gradient(to right, rgb(255 255 255 / 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(255 255 255 / 0.05) 1px, transparent 1px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-up {
+    animation: none;
+  }
+}
+
+/* PDF viewer: fill most of the viewport below the sticky navbar (4rem),
+   so the document reads nearly full-screen once scrolled to. */
+.pdf-frame {
+  height: calc(100vh - 10rem);
+  min-height: 540px;
+}
+
+@supports (height: 100dvh) {
+  .pdf-frame {
+    height: calc(100dvh - 10rem);
+  }
+}
