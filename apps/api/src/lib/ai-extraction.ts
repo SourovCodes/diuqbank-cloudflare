@@ -182,6 +182,8 @@ const buildPrompt = (vocab: Vocab, extraContext: string | null): string => {
     "  when the paper prints a longer title.",
     "- semesterName: follow the existing naming convention shown above.",
     "- examTypeName: e.g. Midterm, Final, Quiz — reuse an existing exam type when possible.",
+    '  "Class Test" (or "CT") and "Quiz" mean the same thing: when the paper says Class Test,',
+    '  use the existing "Quiz" exam type instead of creating a new one.',
     '- Never use "&" in any name — always write the word "and".',
     "- section / batch: only when explicitly printed on the paper, otherwise null.",
     "- reasoning: one or two sentences explaining your decision.",
