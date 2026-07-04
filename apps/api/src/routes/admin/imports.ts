@@ -18,9 +18,11 @@ import type { AppEnv, Bindings } from "../../types";
 
 const route = new Hono<AppEnv>();
 
-// Bound the feed walk per request; each page is ~15 items, so 20 pages is plenty
-// of headroom to fill a batch of 10 as the backfill frontier advances.
-const PAGE_SCAN_CAP = 20;
+// Bound the feed walk per request. Must exceed the feed's total page count
+// (~22 pages at 100 items/page as of 2026-07), otherwise the walk — which
+// restarts from the oldest page every call — can exhaust the cap on
+// already-imported pages before reaching the unimported frontier and stall.
+const PAGE_SCAN_CAP = 50;
 const PDF_DOWNLOAD_TIMEOUT_MS = 30_000;
 
 /** Seed the AI extractor with the (unmoderated) legacy taxonomy as a hint. */

@@ -37,6 +37,20 @@ const CLEARABLE_FIELDS = new Set<keyof UpdateAutoSubmission>([
   "extraContext",
 ]);
 
+// Canned rejection reasons for the most common cases; clicking one fills the
+// reason box (the submitter sees the full text, so keep it actionable).
+const QUICK_REJECT_REASONS: { label: string; reason: string }[] = [
+  {
+    label: "Multiple questions",
+    reason:
+      "This PDF contains multiple question papers. Please upload each question paper as a separate PDF.",
+  },
+  {
+    label: "Invalid question",
+    reason: "This file is not a valid exam question paper.",
+  },
+];
+
 // e.g. "12 published · 3 rejected" — pending only shown when non-zero, and a
 // contributor with no history at all reads "None".
 function formatTrackRecord(
@@ -385,6 +399,22 @@ export default function AdminAutoSubmissionDetail() {
           </>
         }
       >
+        <div className="mb-3 flex flex-wrap gap-2">
+          {QUICK_REJECT_REASONS.map((q) => (
+            <button
+              key={q.label}
+              type="button"
+              onClick={() => setReason(q.reason)}
+              className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
+                reason === q.reason
+                  ? "border-blue-600 bg-blue-50 text-blue-700 dark:border-blue-400 dark:bg-blue-500/10 dark:text-blue-300"
+                  : "border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:border-gray-600 dark:hover:text-gray-100"
+              }`}
+            >
+              {q.label}
+            </button>
+          ))}
+        </div>
         <Field label="Reason">
           <textarea
             value={reason}
