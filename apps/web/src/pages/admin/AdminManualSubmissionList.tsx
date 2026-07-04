@@ -1,9 +1,19 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAdminManualSubmissions } from "../../hooks/adminQueries";
-import type { AdminManualSubmissionParams } from "../../api";
+import {
+  approveManualSubmission,
+  rejectManualSubmission,
+  type AdminManualSubmissionParams,
+} from "../../api";
 import type { ManualSubmissionStatus } from "../../types/api";
 import { DataTable, type Column } from "../../components/admin/DataTable";
+import {
+  BulkBar,
+  BulkButton,
+  BulkRejectModal,
+  useBulkActions,
+} from "../../components/admin/bulk";
 import { Pagination } from "../../components/ui/Pagination";
 import { SubmissionStatusBadge } from "../../components/ui/SubmissionStatusBadge";
 import { inputClass } from "../../components/ui/form";
@@ -25,6 +35,11 @@ export default function AdminManualSubmissionList() {
   const navigate = useNavigate();
   const { page, setPage, searchParams, setSearchParams } = usePageParam();
   const status = searchParams.get("status") ?? "pending_review";
+  const bulk = useBulkActions([
+    ["admin", "manual-submissions"],
+    ["admin", "manual-submission"],
+  ]);
+  const [rejectOpen, setRejectOpen] = useState(false);
 
   useEffect(() => {
     document.title = "Manual queue | Admin";
@@ -110,6 +125,19 @@ export default function AdminManualSubmissionList() {
         <ErrorBox message={`Failed to load queue: ${error.message}`} />
       ) : (
         <>
+          <BulkBar bulk={bulk}>
+            <BulkButton
+              label="Approve & publish"
+              bulk={bulk}
+              onClick={() => bulk.run("Approve", approveManualSubmission)}
+            />
+            <BulkButton
+              label="Reject…"
+              bulk={bulk}
+              variant="danger"
+              onClick={() => setRejectOpen(true)}
+            />
+          </BulkBar>
           <DataTable
             columns={columns}
             rows={data?.data ?? []}
@@ -120,10 +148,24 @@ export default function AdminManualSubmissionList() {
             onRowClick={(r) =>
               navigate(`/admin/manual-submissions/${r.id}`)
             }
+            selection={{
+              selected: bulk.selected,
+              onChange: bulk.onSelectionChange,
+            }}
           />
           {data && <Pagination meta={data.meta} onPageChange={setPage} />}
         </>
       )}
+
+      <BulkRejectModal
+        open={rejectOpen}
+        count={bulk.selected.size}
+        onClose={() => setRejectOpen(false)}
+        onSubmit={(reason) => {
+          setRejectOpen(false);
+          bulk.run("Reject", (id) => rejectManualSubmission(id, reason));
+        }}
+      />
     </div>
   );
 }

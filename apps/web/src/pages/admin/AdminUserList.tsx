@@ -1,13 +1,11 @@
 import { useEffect, useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { updateAdminUser } from "../../api";
-import type { AdminUser, UpdateUser } from "../../types/api";
+import { useNavigate } from "react-router-dom";
+import type { AdminUser } from "../../types/api";
 import { useAdminUsers } from "../../hooks/adminQueries";
 import { DataTable, type Column } from "../../components/admin/DataTable";
 import { Pagination } from "../../components/ui/Pagination";
 import { Badge } from "../../components/ui/Badge";
-import { Button, Field, inputClass } from "../../components/ui/form";
-import { Modal } from "../../components/ui/Modal";
+import { inputClass } from "../../components/ui/form";
 import { formatDate } from "../../lib/format";
 import {
   AdminHeader,
@@ -18,11 +16,11 @@ import {
 } from "./shared";
 
 export default function AdminUserList() {
+  const navigate = useNavigate();
   const { page, setPage } = usePageParam();
   const [searchInput, setSearchInput] = useState("");
   const [role, setRole] = useState("");
   const search = useDebouncedValue(searchInput);
-  const [editing, setEditing] = useState<AdminUser | null>(null);
 
   useEffect(() => {
     document.title = "Users | Admin";
@@ -90,19 +88,6 @@ export default function AdminUserList() {
         </span>
       ),
     },
-    {
-      header: "",
-      cell: (u) => (
-        <button
-          type="button"
-          onClick={() => setEditing(u)}
-          className="text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400"
-        >
-          Edit
-        </button>
-      ),
-      className: "text-right",
-    },
   ];
 
   return (
@@ -144,95 +129,11 @@ export default function AdminUserList() {
             isLoading={isPending}
             isFetching={isFetching}
             emptyMessage="No users match this filter."
+            onRowClick={(u) => navigate(`/admin/users/${u.id}`)}
           />
           {data && <Pagination meta={data.meta} onPageChange={setPage} />}
         </>
       )}
-
-      {editing && (
-        <EditUserModal user={editing} onClose={() => setEditing(null)} />
-      )}
     </div>
-  );
-}
-
-function EditUserModal({
-  user,
-  onClose,
-}: {
-  user: AdminUser;
-  onClose: () => void;
-}) {
-  const queryClient = useQueryClient();
-  const [form, setForm] = useState<UpdateUser>({
-    name: user.name,
-    username: user.username,
-    role: user.role,
-  });
-
-  const save = useMutation({
-    mutationFn: () => updateAdminUser(user.id, form),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
-      onClose();
-    },
-  });
-
-  return (
-    <Modal
-      open
-      onClose={onClose}
-      title={`Edit ${user.name}`}
-      description={user.email}
-      footer={
-        <>
-          <Button variant="secondary" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button loading={save.isPending} onClick={() => save.mutate()}>
-            Save changes
-          </Button>
-        </>
-      }
-    >
-      <div className="space-y-3">
-        <Field label="Name" htmlFor="user-name">
-          <input
-            id="user-name"
-            value={form.name ?? ""}
-            onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-            className={inputClass}
-          />
-        </Field>
-        <Field label="Username" htmlFor="user-username">
-          <input
-            id="user-username"
-            value={form.username ?? ""}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, username: e.target.value }))
-            }
-            className={inputClass}
-          />
-        </Field>
-        <Field label="Role" htmlFor="user-role">
-          <select
-            id="user-role"
-            value={form.role}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, role: e.target.value as UpdateUser["role"] }))
-            }
-            className={inputClass}
-          >
-            <option value="user">user</option>
-            <option value="admin">admin</option>
-          </select>
-        </Field>
-        {save.isError && (
-          <p className="text-xs text-red-600 dark:text-red-400">
-            {(save.error as Error).message}
-          </p>
-        )}
-      </div>
-    </Modal>
   );
 }

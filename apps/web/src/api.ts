@@ -340,6 +340,9 @@ export const updateAdminUser = (
   body: UpdateUser
 ): Promise<AdminUser> => patch(`/admin/users/${id}`, body);
 
+export const deleteAdminUser = (id: number): Promise<void> =>
+  del(`/admin/users/${id}`);
+
 // --- Questions ---
 export const getAdminQuestions = (
   params: AdminQuestionParams

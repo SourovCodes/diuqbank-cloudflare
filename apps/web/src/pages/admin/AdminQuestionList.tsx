@@ -1,16 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  createAdminQuestion,
-  deleteAdminQuestion,
-  updateAdminQuestion,
-} from "../../api";
+import { createAdminQuestion, deleteAdminQuestion } from "../../api";
 import type { AdminQuestion, SelectOption } from "../../types/api";
 import { useAdminQuestions } from "../../hooks/adminQueries";
 import { useFilterOptions } from "../../hooks/queries";
 import { DataTable, type Column } from "../../components/admin/DataTable";
+import {
+  BulkBar,
+  BulkButton,
+  useBulkActions,
+} from "../../components/admin/bulk";
 import { Pagination } from "../../components/ui/Pagination";
-import { Button } from "../../components/ui/form";
+import { Button, labelClass } from "../../components/ui/form";
 import { Modal } from "../../components/ui/Modal";
 import { SearchableSelect } from "../../components/ui/SearchableSelect";
 import { AdminHeader, ErrorBox, usePageParam } from "./shared";
@@ -30,10 +32,11 @@ const EMPTY_FORM: QuestionFormValue = {
 };
 
 export default function AdminQuestionList() {
+  const navigate = useNavigate();
   const { page, setPage } = usePageParam();
   const [departmentId, setDepartmentId] = useState("");
   const [creating, setCreating] = useState(false);
-  const [editing, setEditing] = useState<AdminQuestion | null>(null);
+  const bulk = useBulkActions([["admin", "questions"]]);
 
   useEffect(() => {
     document.title = "Questions | Admin";
@@ -102,19 +105,6 @@ export default function AdminQuestionList() {
       cell: (q) => <span className="tabular-nums">{q.viewCount}</span>,
       className: "text-right",
     },
-    {
-      header: "",
-      cell: (q) => (
-        <button
-          type="button"
-          onClick={() => setEditing(q)}
-          className="text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400"
-        >
-          Edit
-        </button>
-      ),
-      className: "text-right",
-    },
   ];
 
   return (
@@ -146,6 +136,22 @@ export default function AdminQuestionList() {
         <ErrorBox message={`Failed to load questions: ${error.message}`} />
       ) : (
         <>
+          <BulkBar bulk={bulk}>
+            <BulkButton
+              label="Delete"
+              bulk={bulk}
+              variant="danger"
+              onClick={() => {
+                if (
+                  confirm(
+                    `Delete ${bulk.selected.size} question(s)? Questions with submissions are skipped with an error.`
+                  )
+                ) {
+                  bulk.run("Delete", deleteAdminQuestion);
+                }
+              }}
+            />
+          </BulkBar>
           <DataTable
             columns={columns}
             rows={data?.data ?? []}
@@ -153,46 +159,25 @@ export default function AdminQuestionList() {
             isLoading={isPending}
             isFetching={isFetching}
             emptyMessage="No questions match this filter."
+            onRowClick={(q) => navigate(`/admin/questions/${q.id}`)}
+            selection={{
+              selected: bulk.selected,
+              onChange: bulk.onSelectionChange,
+            }}
           />
           {data && <Pagination meta={data.meta} onPageChange={setPage} />}
         </>
       )}
 
-      {creating && (
-        <QuestionModal mode="create" onClose={() => setCreating(false)} />
-      )}
-      {editing && (
-        <QuestionModal
-          mode="edit"
-          question={editing}
-          onClose={() => setEditing(null)}
-        />
-      )}
+      {creating && <CreateQuestionModal onClose={() => setCreating(false)} />}
     </div>
   );
 }
 
-function QuestionModal({
-  mode,
-  question,
-  onClose,
-}: {
-  mode: "create" | "edit";
-  question?: AdminQuestion;
-  onClose: () => void;
-}) {
+function CreateQuestionModal({ onClose }: { onClose: () => void }) {
   const queryClient = useQueryClient();
   const { data: options } = useFilterOptions();
-  const [form, setForm] = useState<QuestionFormValue>(
-    question
-      ? {
-          departmentId: String(question.departmentId),
-          courseId: String(question.courseId),
-          semesterId: String(question.semesterId),
-          examTypeId: String(question.examTypeId),
-        }
-      : EMPTY_FORM
-  );
+  const [form, setForm] = useState<QuestionFormValue>(EMPTY_FORM);
 
   const departmentOptions: SelectOption[] = (options?.departments ?? []).map(
     (d) => ({ value: String(d.id), label: `${d.name} (${d.shortName})` })
@@ -214,25 +199,13 @@ function QuestionModal({
     form.departmentId && form.courseId && form.semesterId && form.examTypeId;
 
   const save = useMutation({
-    mutationFn: () => {
-      const payload = {
+    mutationFn: () =>
+      createAdminQuestion({
         departmentId: Number(form.departmentId),
         courseId: Number(form.courseId),
         semesterId: Number(form.semesterId),
         examTypeId: Number(form.examTypeId),
-      };
-      return mode === "create"
-        ? createAdminQuestion(payload)
-        : updateAdminQuestion(question!.id, payload);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "questions"] });
-      onClose();
-    },
-  });
-
-  const remove = useMutation({
-    mutationFn: () => deleteAdminQuestion(question!.id),
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "questions"] });
       onClose();
@@ -243,27 +216,9 @@ function QuestionModal({
     <Modal
       open
       onClose={onClose}
-      title={mode === "create" ? "New question" : "Edit question"}
+      title="New question"
       footer={
         <>
-          {mode === "edit" && (
-            <Button
-              variant="danger"
-              className="mr-auto"
-              loading={remove.isPending}
-              onClick={() => {
-                if (
-                  confirm(
-                    "Delete this question? Its submissions must be reassigned or removed first."
-                  )
-                ) {
-                  remove.mutate();
-                }
-              }}
-            >
-              Delete
-            </Button>
-          )}
           <Button variant="secondary" onClick={onClose}>
             Cancel
           </Button>
@@ -272,16 +227,14 @@ function QuestionModal({
             disabled={!complete}
             onClick={() => save.mutate()}
           >
-            {mode === "create" ? "Create" : "Save"}
+            Create
           </Button>
         </>
       }
     >
       <div className="space-y-3">
         <div>
-          <p id="q-dept-label" className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
-            Department
-          </p>
+          <p className={labelClass}>Department</p>
           <SearchableSelect
             id="q-dept"
             label="Department"
@@ -293,9 +246,7 @@ function QuestionModal({
           />
         </div>
         <div>
-          <p id="q-course-label" className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
-            Course
-          </p>
+          <p className={labelClass}>Course</p>
           <SearchableSelect
             id="q-course"
             label="Course"
@@ -309,9 +260,7 @@ function QuestionModal({
           />
         </div>
         <div>
-          <p id="q-sem-label" className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
-            Semester
-          </p>
+          <p className={labelClass}>Semester</p>
           <SearchableSelect
             id="q-sem"
             label="Semester"
@@ -321,9 +270,7 @@ function QuestionModal({
           />
         </div>
         <div>
-          <p id="q-exam-label" className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
-            Exam type
-          </p>
+          <p className={labelClass}>Exam type</p>
           <SearchableSelect
             id="q-exam"
             label="Exam type"
@@ -332,9 +279,9 @@ function QuestionModal({
             onChange={(v) => setForm((f) => ({ ...f, examTypeId: v }))}
           />
         </div>
-        {(save.isError || remove.isError) && (
+        {save.isError && (
           <p className="text-xs text-red-600 dark:text-red-400">
-            {((save.error || remove.error) as Error).message}
+            {(save.error as Error).message}
           </p>
         )}
       </div>

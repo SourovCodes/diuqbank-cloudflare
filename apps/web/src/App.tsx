@@ -28,8 +28,11 @@ import AdminManualSubmissionDetail from "./pages/admin/AdminManualSubmissionDeta
 import AdminAutoSubmissionList from "./pages/admin/AdminAutoSubmissionList";
 import AdminAutoSubmissionDetail from "./pages/admin/AdminAutoSubmissionDetail";
 import AdminUserList from "./pages/admin/AdminUserList";
+import AdminUserDetail from "./pages/admin/AdminUserDetail";
 import AdminQuestionList from "./pages/admin/AdminQuestionList";
+import AdminQuestionDetail from "./pages/admin/AdminQuestionDetail";
 import AdminSubmissionList from "./pages/admin/AdminSubmissionList";
+import AdminSubmissionDetail from "./pages/admin/AdminSubmissionDetail";
 import {
   AdminCourses,
   AdminDepartments,
@@ -235,12 +238,15 @@ export default function App() {
               element={<AdminAutoSubmissionDetail />}
             />
             <Route path="/admin/questions" element={<AdminQuestionList />} />
+            <Route path="/admin/questions/:id" element={<AdminQuestionDetail />} />
             <Route path="/admin/submissions" element={<AdminSubmissionList />} />
+            <Route path="/admin/submissions/:id" element={<AdminSubmissionDetail />} />
             <Route path="/admin/departments" element={<AdminDepartments />} />
             <Route path="/admin/courses" element={<AdminCourses />} />
             <Route path="/admin/semesters" element={<AdminSemesters />} />
             <Route path="/admin/exam-types" element={<AdminExamTypes />} />
             <Route path="/admin/users" element={<AdminUserList />} />
+            <Route path="/admin/users/:id" element={<AdminUserDetail />} />
           </Route>
         </Route>
 

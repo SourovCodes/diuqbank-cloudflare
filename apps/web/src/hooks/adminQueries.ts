@@ -4,6 +4,7 @@ import {
   getAdminAutoSubmissions,
   getAdminManualSubmission,
   getAdminManualSubmissions,
+  getAdminQuestion,
   getAdminQuestions,
   getAdminSubmission,
   getAdminSubmissions,
@@ -78,6 +79,14 @@ export function useAdminQuestions(params: AdminQuestionParams) {
     queryKey: ["admin", "questions", params],
     queryFn: () => getAdminQuestions(params),
     placeholderData: keepPreviousData,
+  });
+}
+
+export function useAdminQuestion(id?: string) {
+  return useQuery({
+    queryKey: ["admin", "question", id],
+    queryFn: () => getAdminQuestion(id as string),
+    enabled: !!id,
   });
 }
 

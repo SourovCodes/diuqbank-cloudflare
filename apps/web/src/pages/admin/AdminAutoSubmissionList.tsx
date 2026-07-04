@@ -1,9 +1,20 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAdminAutoSubmissions } from "../../hooks/adminQueries";
-import type { AdminAutoSubmissionParams } from "../../api";
+import {
+  approveAutoSubmission,
+  rejectAutoSubmission,
+  reprocessAutoSubmission,
+  type AdminAutoSubmissionParams,
+} from "../../api";
 import type { AutoSubmissionStatus } from "../../types/api";
 import { DataTable, type Column } from "../../components/admin/DataTable";
+import {
+  BulkBar,
+  BulkButton,
+  BulkRejectModal,
+  useBulkActions,
+} from "../../components/admin/bulk";
 import { Pagination } from "../../components/ui/Pagination";
 import { SubmissionStatusBadge } from "../../components/ui/SubmissionStatusBadge";
 import { inputClass } from "../../components/ui/form";
@@ -27,6 +38,11 @@ export default function AdminAutoSubmissionList() {
   const navigate = useNavigate();
   const { page, setPage, searchParams, setSearchParams } = usePageParam();
   const status = searchParams.get("status") ?? "needs_review";
+  const bulk = useBulkActions([
+    ["admin", "auto-submissions"],
+    ["admin", "auto-submission"],
+  ]);
+  const [rejectOpen, setRejectOpen] = useState(false);
 
   useEffect(() => {
     document.title = "Auto queue | Admin";
@@ -113,6 +129,24 @@ export default function AdminAutoSubmissionList() {
         <ErrorBox message={`Failed to load queue: ${error.message}`} />
       ) : (
         <>
+          <BulkBar bulk={bulk}>
+            <BulkButton
+              label="Approve & publish"
+              bulk={bulk}
+              onClick={() => bulk.run("Approve", approveAutoSubmission)}
+            />
+            <BulkButton
+              label="Reject…"
+              bulk={bulk}
+              variant="danger"
+              onClick={() => setRejectOpen(true)}
+            />
+            <BulkButton
+              label="Reprocess with AI"
+              bulk={bulk}
+              onClick={() => bulk.run("Reprocess", reprocessAutoSubmission)}
+            />
+          </BulkBar>
           <DataTable
             columns={columns}
             rows={data?.data ?? []}
@@ -121,10 +155,24 @@ export default function AdminAutoSubmissionList() {
             isFetching={isFetching}
             emptyMessage="No submissions match this filter."
             onRowClick={(r) => navigate(`/admin/auto-submissions/${r.id}`)}
+            selection={{
+              selected: bulk.selected,
+              onChange: bulk.onSelectionChange,
+            }}
           />
           {data && <Pagination meta={data.meta} onPageChange={setPage} />}
         </>
       )}
+
+      <BulkRejectModal
+        open={rejectOpen}
+        count={bulk.selected.size}
+        onClose={() => setRejectOpen(false)}
+        onSubmit={(reason) => {
+          setRejectOpen(false);
+          bulk.run("Reject", (id) => rejectAutoSubmission(id, reason));
+        }}
+      />
     </div>
   );
 }

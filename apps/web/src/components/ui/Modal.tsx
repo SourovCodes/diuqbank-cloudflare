@@ -23,16 +23,23 @@ export function Modal({
 }: ModalProps) {
   const panelRef = useRef<HTMLDivElement>(null);
 
+  // Callers pass inline arrow functions for onClose, so keep the latest one in
+  // a ref: if the effect below depended on onClose directly it would re-run
+  // (and re-focus the panel, stealing focus from inputs) on every parent
+  // re-render — e.g. on each keystroke in a controlled field.
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
   // Close on Escape and focus the panel when opened.
   useEffect(() => {
     if (!open) return;
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") onCloseRef.current();
     };
     document.addEventListener("keydown", onKeyDown);
     panelRef.current?.focus();
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, [open, onClose]);
+  }, [open]);
 
   // Lock body scroll while the modal is open.
   useEffect(() => {
