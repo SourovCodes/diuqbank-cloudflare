@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   approveManualSubmission,
   deleteAdminManualSubmission,
+  getAdminManualSubmissions,
   rejectManualSubmission,
   updateAdminManualSubmission,
 } from "../../api";
@@ -15,6 +16,7 @@ import { SubmissionStatusBadge } from "../../components/ui/SubmissionStatusBadge
 import { DetailRow, PdfPreview } from "../../components/submissions/SubmissionParts";
 import { formatDate } from "../../lib/format";
 import { ErrorBox } from "./shared";
+import { useAdvanceQueue } from "./useAdvanceQueue";
 
 const META_FIELDS: { key: keyof UpdateManualSubmission; label: string }[] = [
   { key: "departmentName", label: "Department" },
@@ -38,6 +40,17 @@ export default function AdminManualSubmissionDetail() {
     document.title = "Review submission | Admin";
   }, []);
 
+  const advance = useAdvanceQueue({
+    listPath: "/admin/manual-submissions",
+    currentId: Number(id),
+    fetchPending: () =>
+      getAdminManualSubmissions({
+        page: 1,
+        perPage: 2,
+        status: "pending_review",
+      }).then((r) => r.data),
+  });
+
   function invalidate() {
     queryClient.invalidateQueries({ queryKey: ["admin", "manual-submissions"] });
     queryClient.invalidateQueries({
@@ -47,7 +60,10 @@ export default function AdminManualSubmissionDetail() {
 
   const approve = useMutation({
     mutationFn: () => approveManualSubmission(Number(id)),
-    onSuccess: invalidate,
+    onSuccess: () => {
+      invalidate();
+      advance();
+    },
   });
   const reject = useMutation({
     mutationFn: () => rejectManualSubmission(Number(id), reason.trim()),
@@ -55,6 +71,7 @@ export default function AdminManualSubmissionDetail() {
       invalidate();
       setRejecting(false);
       setReason("");
+      advance();
     },
   });
   const remove = useMutation({
@@ -85,12 +102,21 @@ export default function AdminManualSubmissionDetail() {
 
   return (
     <div>
-      <Link
-        to="/admin/manual-submissions"
-        className="mb-6 inline-flex text-sm font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400"
-      >
-        ← Back to queue
-      </Link>
+      <div className="mb-6 flex items-center justify-between gap-3">
+        <Link
+          to="/admin/manual-submissions"
+          className="inline-flex text-sm font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400"
+        >
+          ← Back to queue
+        </Link>
+        <button
+          type="button"
+          onClick={() => advance()}
+          className="text-sm font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400"
+        >
+          Skip to next →
+        </button>
+      </div>
 
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 pb-5 dark:border-gray-800">
         <div>

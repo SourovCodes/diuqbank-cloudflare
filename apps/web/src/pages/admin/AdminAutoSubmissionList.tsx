@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAdminAutoSubmissions } from "../../hooks/adminQueries";
 import {
   approveAutoSubmission,
+  deleteAdminAutoSubmission,
   rejectAutoSubmission,
   reprocessAutoSubmission,
   type AdminAutoSubmissionParams,
@@ -145,6 +146,20 @@ export default function AdminAutoSubmissionList() {
               label="Reprocess with AI"
               bulk={bulk}
               onClick={() => bulk.run("Reprocess", reprocessAutoSubmission)}
+            />
+            <BulkButton
+              label="Delete"
+              bulk={bulk}
+              variant="danger"
+              onClick={() => {
+                if (
+                  confirm(
+                    `Delete ${bulk.selected.size} auto submission(s) and their uploaded PDFs? Published live submissions keep their own copies.`
+                  )
+                ) {
+                  bulk.run("Delete", deleteAdminAutoSubmission);
+                }
+              }}
             />
           </BulkBar>
           <DataTable

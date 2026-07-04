@@ -11,13 +11,24 @@ import {
 } from "../../components/admin/bulk";
 import { Pagination } from "../../components/ui/Pagination";
 import { Badge } from "../../components/ui/Badge";
+import { inputClass } from "../../components/ui/form";
 import { formatBytes, formatDate } from "../../lib/format";
 import { AdminHeader, ErrorBox, usePageParam } from "./shared";
 import { WATERMARK_VARIANT } from "./SubmissionsTable";
 
+type WatermarkStatus = "awaiting" | "completed" | "failed";
+
+const WATERMARK_OPTIONS: { value: string; label: string }[] = [
+  { value: "", label: "All watermark states" },
+  { value: "awaiting", label: "Awaiting" },
+  { value: "completed", label: "Completed" },
+  { value: "failed", label: "Failed" },
+];
+
 export default function AdminSubmissionList() {
   const navigate = useNavigate();
-  const { page, setPage } = usePageParam();
+  const { page, setPage, searchParams, setSearchParams } = usePageParam();
+  const watermark = searchParams.get("watermark") ?? "";
   const bulk = useBulkActions([["admin", "submissions"]]);
 
   useEffect(() => {
@@ -27,7 +38,18 @@ export default function AdminSubmissionList() {
   const { data, isPending, isError, error, isFetching } = useAdminSubmissions({
     page,
     perPage: 20,
+    watermarkStatus: watermark ? (watermark as WatermarkStatus) : undefined,
   });
+
+  function setWatermark(next: string) {
+    setSearchParams((prev) => {
+      const p = new URLSearchParams(prev);
+      if (next) p.set("watermark", next);
+      else p.delete("watermark");
+      p.set("page", "1");
+      return p;
+    });
+  }
 
   const columns: Column<AdminSubmission>[] = [
     {
@@ -97,6 +119,19 @@ export default function AdminSubmissionList() {
         title="Published submissions"
         description={
           data?.meta.total ? `${data.meta.total} submissions.` : undefined
+        }
+        actions={
+          <select
+            value={watermark}
+            onChange={(e) => setWatermark(e.target.value)}
+            className={`${inputClass} w-auto`}
+          >
+            {WATERMARK_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
         }
       />
 

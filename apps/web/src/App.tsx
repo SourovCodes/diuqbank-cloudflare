@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import {
   Link,
   NavLink,
@@ -22,23 +22,53 @@ import AutoSubmissionList from "./pages/AutoSubmissionList";
 import AutoSubmissionCreate from "./pages/AutoSubmissionCreate";
 import AutoSubmissionDetail from "./pages/AutoSubmissionDetail";
 import NotFound from "./pages/NotFound";
-import AdminDashboard from "./pages/admin/AdminDashboard";
-import AdminManualSubmissionList from "./pages/admin/AdminManualSubmissionList";
-import AdminManualSubmissionDetail from "./pages/admin/AdminManualSubmissionDetail";
-import AdminAutoSubmissionList from "./pages/admin/AdminAutoSubmissionList";
-import AdminAutoSubmissionDetail from "./pages/admin/AdminAutoSubmissionDetail";
-import AdminUserList from "./pages/admin/AdminUserList";
-import AdminUserDetail from "./pages/admin/AdminUserDetail";
-import AdminQuestionList from "./pages/admin/AdminQuestionList";
-import AdminQuestionDetail from "./pages/admin/AdminQuestionDetail";
-import AdminSubmissionList from "./pages/admin/AdminSubmissionList";
-import AdminSubmissionDetail from "./pages/admin/AdminSubmissionDetail";
-import {
-  AdminCourses,
-  AdminDepartments,
-  AdminExamTypes,
-  AdminSemesters,
-} from "./pages/admin/TaxonomyPages";
+// Admin pages are lazy so the (much larger) public audience never downloads
+// them; Vite splits each into its own chunk loaded on first admin navigation.
+const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
+const AdminManualSubmissionList = lazy(
+  () => import("./pages/admin/AdminManualSubmissionList")
+);
+const AdminManualSubmissionDetail = lazy(
+  () => import("./pages/admin/AdminManualSubmissionDetail")
+);
+const AdminAutoSubmissionList = lazy(
+  () => import("./pages/admin/AdminAutoSubmissionList")
+);
+const AdminAutoSubmissionDetail = lazy(
+  () => import("./pages/admin/AdminAutoSubmissionDetail")
+);
+const AdminUserList = lazy(() => import("./pages/admin/AdminUserList"));
+const AdminUserDetail = lazy(() => import("./pages/admin/AdminUserDetail"));
+const AdminQuestionList = lazy(() => import("./pages/admin/AdminQuestionList"));
+const AdminQuestionDetail = lazy(
+  () => import("./pages/admin/AdminQuestionDetail")
+);
+const AdminSubmissionList = lazy(
+  () => import("./pages/admin/AdminSubmissionList")
+);
+const AdminSubmissionDetail = lazy(
+  () => import("./pages/admin/AdminSubmissionDetail")
+);
+const AdminDepartments = lazy(() =>
+  import("./pages/admin/TaxonomyPages").then((m) => ({
+    default: m.AdminDepartments,
+  }))
+);
+const AdminCourses = lazy(() =>
+  import("./pages/admin/TaxonomyPages").then((m) => ({
+    default: m.AdminCourses,
+  }))
+);
+const AdminSemesters = lazy(() =>
+  import("./pages/admin/TaxonomyPages").then((m) => ({
+    default: m.AdminSemesters,
+  }))
+);
+const AdminExamTypes = lazy(() =>
+  import("./pages/admin/TaxonomyPages").then((m) => ({
+    default: m.AdminExamTypes,
+  }))
+);
 import { RequireAuth } from "./components/RequireAuth";
 import { RequireAdmin } from "./components/RequireAdmin";
 import { DashboardLayout } from "./components/DashboardLayout";
@@ -47,6 +77,22 @@ import { ThemeToggle } from "./components/ThemeToggle";
 import { TopLoader } from "./components/TopLoader";
 import { UserMenu } from "./components/UserMenu";
 import { useAuth } from "./auth";
+
+/** Suspense boundary for the lazy admin pages: the sidebar (rendered by the
+ * parent AdminLayout route) stays put while a page chunk downloads. */
+function LazyOutlet() {
+  return (
+    <Suspense
+      fallback={
+        <div className="rounded-lg border border-dashed border-gray-200 py-14 text-center text-sm text-gray-500 dark:border-gray-800 dark:text-gray-400">
+          Loading…
+        </div>
+      }
+    >
+      <Outlet />
+    </Suspense>
+  );
+}
 
 type NavLinkItem = {
   label: string;
@@ -220,33 +266,35 @@ export default function App() {
 
         <Route element={<RequireAdmin />}>
           <Route element={<AdminLayout />}>
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route
-              path="/admin/manual-submissions"
-              element={<AdminManualSubmissionList />}
-            />
-            <Route
-              path="/admin/manual-submissions/:id"
-              element={<AdminManualSubmissionDetail />}
-            />
-            <Route
-              path="/admin/auto-submissions"
-              element={<AdminAutoSubmissionList />}
-            />
-            <Route
-              path="/admin/auto-submissions/:id"
-              element={<AdminAutoSubmissionDetail />}
-            />
-            <Route path="/admin/questions" element={<AdminQuestionList />} />
-            <Route path="/admin/questions/:id" element={<AdminQuestionDetail />} />
-            <Route path="/admin/submissions" element={<AdminSubmissionList />} />
-            <Route path="/admin/submissions/:id" element={<AdminSubmissionDetail />} />
-            <Route path="/admin/departments" element={<AdminDepartments />} />
-            <Route path="/admin/courses" element={<AdminCourses />} />
-            <Route path="/admin/semesters" element={<AdminSemesters />} />
-            <Route path="/admin/exam-types" element={<AdminExamTypes />} />
-            <Route path="/admin/users" element={<AdminUserList />} />
-            <Route path="/admin/users/:id" element={<AdminUserDetail />} />
+            <Route element={<LazyOutlet />}>
+              <Route path="/admin" element={<AdminDashboard />} />
+              <Route
+                path="/admin/manual-submissions"
+                element={<AdminManualSubmissionList />}
+              />
+              <Route
+                path="/admin/manual-submissions/:id"
+                element={<AdminManualSubmissionDetail />}
+              />
+              <Route
+                path="/admin/auto-submissions"
+                element={<AdminAutoSubmissionList />}
+              />
+              <Route
+                path="/admin/auto-submissions/:id"
+                element={<AdminAutoSubmissionDetail />}
+              />
+              <Route path="/admin/questions" element={<AdminQuestionList />} />
+              <Route path="/admin/questions/:id" element={<AdminQuestionDetail />} />
+              <Route path="/admin/submissions" element={<AdminSubmissionList />} />
+              <Route path="/admin/submissions/:id" element={<AdminSubmissionDetail />} />
+              <Route path="/admin/departments" element={<AdminDepartments />} />
+              <Route path="/admin/courses" element={<AdminCourses />} />
+              <Route path="/admin/semesters" element={<AdminSemesters />} />
+              <Route path="/admin/exam-types" element={<AdminExamTypes />} />
+              <Route path="/admin/users" element={<AdminUserList />} />
+              <Route path="/admin/users/:id" element={<AdminUserDetail />} />
+            </Route>
           </Route>
         </Route>
 

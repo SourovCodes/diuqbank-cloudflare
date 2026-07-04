@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   approveAutoSubmission,
+  deleteAdminAutoSubmission,
+  getAdminAutoSubmissions,
   rejectAutoSubmission,
   reprocessAutoSubmission,
   updateAdminAutoSubmission,
@@ -15,6 +17,7 @@ import { SubmissionStatusBadge } from "../../components/ui/SubmissionStatusBadge
 import { DetailRow, PdfPreview } from "../../components/submissions/SubmissionParts";
 import { formatDate } from "../../lib/format";
 import { ErrorBox } from "./shared";
+import { useAdvanceQueue } from "./useAdvanceQueue";
 
 const META_FIELDS: { key: keyof UpdateAutoSubmission; label: string }[] = [
   { key: "departmentName", label: "Department" },
@@ -37,6 +40,7 @@ const CLEARABLE_FIELDS = new Set<keyof UpdateAutoSubmission>([
 
 export default function AdminAutoSubmissionDetail() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: sub, isPending, isError } = useAdminAutoSubmission(id);
 
@@ -48,6 +52,17 @@ export default function AdminAutoSubmissionDetail() {
     document.title = "Review auto submission | Admin";
   }, []);
 
+  const advance = useAdvanceQueue({
+    listPath: "/admin/auto-submissions",
+    currentId: Number(id),
+    fetchPending: () =>
+      getAdminAutoSubmissions({
+        page: 1,
+        perPage: 2,
+        status: "needs_review",
+      }).then((r) => r.data),
+  });
+
   function invalidate() {
     queryClient.invalidateQueries({ queryKey: ["admin", "auto-submissions"] });
     queryClient.invalidateQueries({
@@ -57,7 +72,10 @@ export default function AdminAutoSubmissionDetail() {
 
   const approve = useMutation({
     mutationFn: () => approveAutoSubmission(Number(id)),
-    onSuccess: invalidate,
+    onSuccess: () => {
+      invalidate();
+      advance();
+    },
   });
   const reject = useMutation({
     mutationFn: () => rejectAutoSubmission(Number(id), reason.trim()),
@@ -65,11 +83,19 @@ export default function AdminAutoSubmissionDetail() {
       invalidate();
       setRejecting(false);
       setReason("");
+      advance();
     },
   });
   const reprocess = useMutation({
     mutationFn: () => reprocessAutoSubmission(Number(id)),
     onSuccess: invalidate,
+  });
+  const remove = useMutation({
+    mutationFn: () => deleteAdminAutoSubmission(Number(id)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "auto-submissions"] });
+      navigate("/admin/auto-submissions", { replace: true });
+    },
   });
 
   if (isPending) {
@@ -90,12 +116,21 @@ export default function AdminAutoSubmissionDetail() {
 
   return (
     <div>
-      <Link
-        to="/admin/auto-submissions"
-        className="mb-6 inline-flex text-sm font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400"
-      >
-        ← Back to queue
-      </Link>
+      <div className="mb-6 flex items-center justify-between gap-3">
+        <Link
+          to="/admin/auto-submissions"
+          className="inline-flex text-sm font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400"
+        >
+          ← Back to queue
+        </Link>
+        <button
+          type="button"
+          onClick={() => advance()}
+          className="text-sm font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400"
+        >
+          Skip to next →
+        </button>
+      </div>
 
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 pb-5 dark:border-gray-800">
         <div>
@@ -229,6 +264,30 @@ export default function AdminAutoSubmissionDetail() {
               )}
             </div>
           )}
+
+          <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
+            <Button
+              variant="danger"
+              className="w-full"
+              loading={remove.isPending}
+              onClick={() => {
+                if (
+                  confirm(
+                    "Delete this auto submission and its uploaded PDF? A published live submission keeps its own copy."
+                  )
+                ) {
+                  remove.mutate();
+                }
+              }}
+            >
+              Delete auto submission
+            </Button>
+            {remove.isError && (
+              <p className="mt-2 text-xs text-red-600 dark:text-red-400">
+                {(remove.error as Error).message}
+              </p>
+            )}
+          </div>
         </aside>
       </div>
 

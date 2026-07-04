@@ -114,7 +114,10 @@ route.get("/", validate("query", adminAutoSubmissionsListQuery), async (c) => {
     db.query.autoSubmissions.findMany({
       where,
       with: lookupWith,
-      orderBy: [desc(autoSubmissions.createdAt), desc(autoSubmissions.id)],
+      // Arrival order, not created_at: legacy imports carry their historical
+      // upload date, which would otherwise sink fresh imports to the bottom
+      // of the review queue.
+      orderBy: desc(autoSubmissions.id),
       limit: perPage,
       offset: (page - 1) * perPage,
     }),

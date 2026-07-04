@@ -328,6 +328,9 @@ export const reprocessAutoSubmission = (
 ): Promise<AdminAutoSubmission> =>
   post(`/admin/auto-submissions/${id}/reprocess`);
 
+export const deleteAdminAutoSubmission = (id: number): Promise<void> =>
+  del(`/admin/auto-submissions/${id}`);
+
 // --- Users ---
 export const getAdminUsers = (params: AdminUserParams): Promise<AdminUserList> =>
   get("/admin/users", params);
