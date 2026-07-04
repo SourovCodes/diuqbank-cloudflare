@@ -1,3 +1,4 @@
+import { ALLOWED_EXAM_TYPES } from "@diuqbank/shared";
 import { z } from "zod";
 
 import { pageFields } from "../../utils/pagination";
@@ -25,7 +26,7 @@ export const adminManualSubmissionUpdateSchema = z
     departmentShortName: z.string().trim().min(1).max(20),
     courseName: z.string().trim().min(1).max(150),
     semesterName: z.string().trim().min(1).max(100),
-    examTypeName: z.string().trim().min(1).max(100),
+    examTypeName: z.enum(ALLOWED_EXAM_TYPES),
   })
   .partial();
 

@@ -1,3 +1,4 @@
+import { ALLOWED_EXAM_TYPES } from "@diuqbank/shared";
 import { z } from "zod";
 
 import { pageFields } from "../utils/pagination";
@@ -10,7 +11,7 @@ export const manualSubmissionCreateForm = z.object({
   departmentShortName: taxonomyName(20),
   courseName: taxonomyName(150),
   semesterName: taxonomyName(100),
-  examTypeName: taxonomyName(100),
+  examTypeName: z.enum(ALLOWED_EXAM_TYPES),
   note: z.string().trim().max(1000).optional(),
 });
 

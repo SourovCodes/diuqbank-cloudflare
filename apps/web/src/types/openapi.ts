@@ -5833,10 +5833,12 @@ export interface components {
             name?: string;
         };
         CreateExamType: {
-            name: string;
+            /** @enum {string} */
+            name: "Midterm" | "Final" | "Quiz" | "Lab Midterm" | "Lab Final";
         };
         UpdateExamType: {
-            name?: string;
+            /** @enum {string} */
+            name?: "Midterm" | "Final" | "Quiz" | "Lab Midterm" | "Lab Final";
         };
         CreateQuestion: {
             departmentId: number;
@@ -5855,7 +5857,8 @@ export interface components {
             departmentShortName?: string;
             courseName?: string;
             semesterName?: string;
-            examTypeName?: string;
+            /** @enum {string} */
+            examTypeName?: "Midterm" | "Final" | "Quiz" | "Lab Midterm" | "Lab Final";
         };
         RejectManualSubmission: {
             reason: string;
@@ -5864,7 +5867,8 @@ export interface components {
             departmentName?: string;
             courseName?: string;
             semesterName?: string;
-            examTypeName?: string;
+            /** @enum {string} */
+            examTypeName?: "Midterm" | "Final" | "Quiz" | "Lab Midterm" | "Lab Final";
             section?: string;
             batch?: string;
             extraContext?: string;

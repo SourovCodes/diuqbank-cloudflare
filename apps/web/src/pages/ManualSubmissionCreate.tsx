@@ -1,3 +1,4 @@
+import { ALLOWED_EXAM_TYPES } from "@diuqbank/shared";
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -154,7 +155,7 @@ export default function ManualSubmissionCreate() {
               <SearchableSelect
                 id="examType"
                 label="Exam type"
-                options={options?.examTypes.map((t) => ({ value: t.name, label: t.name })) ?? []}
+                options={ALLOWED_EXAM_TYPES.map((t) => ({ value: t, label: t }))}
                 value={examTypeName}
                 onChange={setExamTypeName}
                 placeholder="Select type"

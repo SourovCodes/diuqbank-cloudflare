@@ -18,6 +18,27 @@ export const IMAGE_MIME_TYPES = [
 /** The only accepted document MIME type. */
 export const PDF_MIME_TYPE = "application/pdf";
 
+/**
+ * The only exam types the platform accepts, in display order. Enforced by the
+ * API (request schemas + the auto-submission publish path) and used by the web
+ * app to render exam-type dropdowns.
+ */
+export const ALLOWED_EXAM_TYPES = [
+  "Midterm",
+  "Final",
+  "Quiz",
+  "Lab Midterm",
+  "Lab Final",
+] as const;
+
+export type AllowedExamType = (typeof ALLOWED_EXAM_TYPES)[number];
+
+/** Case-insensitive match to the canonical exam-type name, or null. */
+export const canonicalExamType = (name: string): AllowedExamType | null =>
+  ALLOWED_EXAM_TYPES.find(
+    (t) => t.toLowerCase() === name.trim().toLowerCase(),
+  ) ?? null;
+
 /** Default page size for paginated list endpoints (matches `pageFields`). */
 export const DEFAULT_PER_PAGE = 20;
 

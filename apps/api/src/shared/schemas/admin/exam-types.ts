@@ -1,10 +1,10 @@
+import { ALLOWED_EXAM_TYPES } from "@diuqbank/shared";
 import { z } from "zod";
 
 import { pageFields } from "../../utils/pagination";
-import { taxonomyName } from "../taxonomy-name";
 
 export const examTypeCreateSchema = z.object({
-  name: taxonomyName(100),
+  name: z.enum(ALLOWED_EXAM_TYPES),
 });
 
 export const examTypeUpdateSchema = examTypeCreateSchema.partial();

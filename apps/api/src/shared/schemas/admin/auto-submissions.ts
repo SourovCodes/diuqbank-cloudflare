@@ -1,3 +1,4 @@
+import { ALLOWED_EXAM_TYPES } from "@diuqbank/shared";
 import { z } from "zod";
 
 import { pageFields } from "../../utils/pagination";
@@ -25,7 +26,7 @@ export const adminAutoSubmissionUpdateSchema = z
     departmentName: taxonomyName(100),
     courseName: taxonomyName(150),
     semesterName: taxonomyName(100),
-    examTypeName: taxonomyName(100),
+    examTypeName: z.enum(ALLOWED_EXAM_TYPES),
     section: z.string().trim().max(100),
     batch: z.string().trim().max(100),
     extraContext: z.string().trim().max(1000),

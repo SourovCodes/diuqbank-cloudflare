@@ -1,3 +1,4 @@
+import { ALLOWED_EXAM_TYPES } from "@diuqbank/shared";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -463,7 +464,11 @@ function EditMetaModal({
   onClose: () => void;
   onSaved: () => void;
 }) {
-  const [form, setForm] = useState<UpdateAutoSubmission>({
+  // Kept as plain strings while editing; the API-side enum narrows examTypeName
+  // on submit (the select below only offers allowed values anyway).
+  const [form, setForm] = useState<
+    Record<(typeof META_FIELDS)[number]["key"], string>
+  >({
     departmentName: initial.departmentName ?? "",
     courseName: initial.courseName ?? "",
     semesterName: initial.semesterName ?? "",
@@ -477,12 +482,15 @@ function EditMetaModal({
     mutationFn: () => {
       // Taxonomy names must be non-empty when sent, so skip blank ones; the
       // clearable fields are always sent ("" clears the stored value).
-      const payload: UpdateAutoSubmission = {};
+      const payload: Record<string, string> = {};
       for (const f of META_FIELDS) {
         const v = form[f.key]?.trim() ?? "";
         if (v || CLEARABLE_FIELDS.has(f.key)) payload[f.key] = v;
       }
-      return updateAdminAutoSubmission(initial.id, payload);
+      return updateAdminAutoSubmission(
+        initial.id,
+        payload as UpdateAutoSubmission,
+      );
     },
     onSuccess: onSaved,
   });
@@ -518,6 +526,22 @@ function EditMetaModal({
                 className={inputClass}
                 placeholder="Hint passed to the AI when reprocessing"
               />
+            ) : f.key === "examTypeName" ? (
+              <select
+                id={f.key}
+                value={form[f.key] ?? ""}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, [f.key]: e.target.value }))
+                }
+                className={inputClass}
+              >
+                <option value="">Select exam type…</option>
+                {ALLOWED_EXAM_TYPES.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </select>
             ) : (
               <input
                 id={f.key}

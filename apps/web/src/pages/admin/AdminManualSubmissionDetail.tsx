@@ -1,3 +1,4 @@
+import { ALLOWED_EXAM_TYPES } from "@diuqbank/shared";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -329,7 +330,11 @@ function EditMetaModal({
   onClose: () => void;
   onSaved: () => void;
 }) {
-  const [form, setForm] = useState<UpdateManualSubmission>({
+  // Kept as plain strings while editing; the API-side enum narrows examTypeName
+  // on submit (the select below only offers allowed values anyway).
+  const [form, setForm] = useState<
+    Record<(typeof META_FIELDS)[number]["key"], string>
+  >({
     departmentName: initial.departmentName,
     departmentShortName: initial.departmentShortName,
     courseName: initial.courseName,
@@ -341,12 +346,15 @@ function EditMetaModal({
     mutationFn: () => {
       // The API requires each provided string field to be non-empty, so send
       // only the fields the admin actually filled in.
-      const payload: UpdateManualSubmission = {};
+      const payload: Record<string, string> = {};
       for (const f of META_FIELDS) {
         const v = form[f.key]?.trim();
         if (v) payload[f.key] = v;
       }
-      return updateAdminManualSubmission(initial.id, payload);
+      return updateAdminManualSubmission(
+        initial.id,
+        payload as UpdateManualSubmission,
+      );
     },
     onSuccess: onSaved,
   });
@@ -370,14 +378,32 @@ function EditMetaModal({
       <div className="space-y-3">
         {META_FIELDS.map((f) => (
           <Field key={f.key} label={f.label} htmlFor={f.key}>
-            <input
-              id={f.key}
-              value={form[f.key] ?? ""}
-              onChange={(e) =>
-                setForm((prev) => ({ ...prev, [f.key]: e.target.value }))
-              }
-              className={inputClass}
-            />
+            {f.key === "examTypeName" ? (
+              <select
+                id={f.key}
+                value={form[f.key] ?? ""}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, [f.key]: e.target.value }))
+                }
+                className={inputClass}
+              >
+                <option value="">Select exam type…</option>
+                {ALLOWED_EXAM_TYPES.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                id={f.key}
+                value={form[f.key] ?? ""}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, [f.key]: e.target.value }))
+                }
+                className={inputClass}
+              />
+            )}
           </Field>
         ))}
         {save.isError && (

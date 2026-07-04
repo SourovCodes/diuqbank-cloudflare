@@ -1,8 +1,9 @@
+import { ALLOWED_EXAM_TYPES } from "@diuqbank/shared";
 import { asc } from "drizzle-orm";
 import { z } from "zod";
 
 import type { Db } from "../db/client";
-import { courses, departments, examTypes, semesters } from "../db/schema";
+import { courses, departments, semesters } from "../db/schema";
 import { normalizeTaxonomyName } from "../shared/utils/normalize-name";
 import type { Bindings } from "../types";
 
@@ -26,36 +27,33 @@ export type AiExtraction = {
   reasoning: string;
 };
 
-/** Existing lookup values fed to the model so it reuses canonical names. */
+/**
+ * Existing lookup values fed to the model so it reuses canonical names. Exam
+ * types are not included: they are a closed set (`ALLOWED_EXAM_TYPES`), not a
+ * DB-driven vocabulary.
+ */
 export type Vocab = {
   departments: { name: string; shortName: string }[];
   courses: string[];
   semesters: string[];
-  examTypes: string[];
 };
 
 /** Snapshot the lookup tables (same shape as the /filter-options endpoint). */
 export const buildVocab = async (db: Db): Promise<Vocab> => {
-  const [departmentRows, courseRows, semesterRows, examTypeRows] =
-    await Promise.all([
-      db
-        .select({ name: departments.name, shortName: departments.shortName })
-        .from(departments)
-        .orderBy(asc(departments.name)),
-      db.select({ name: courses.name }).from(courses).orderBy(asc(courses.name)),
-      db.select({ name: semesters.name }).from(semesters).orderBy(asc(semesters.id)),
-      db
-        .select({ name: examTypes.name })
-        .from(examTypes)
-        .orderBy(asc(examTypes.name)),
-    ]);
+  const [departmentRows, courseRows, semesterRows] = await Promise.all([
+    db
+      .select({ name: departments.name, shortName: departments.shortName })
+      .from(departments)
+      .orderBy(asc(departments.name)),
+    db.select({ name: courses.name }).from(courses).orderBy(asc(courses.name)),
+    db.select({ name: semesters.name }).from(semesters).orderBy(asc(semesters.id)),
+  ]);
 
   return {
     departments: departmentRows,
     // Course names repeat across departments; de-dupe for the prompt.
     courses: [...new Set(courseRows.map((c) => c.name))],
     semesters: semesterRows.map((s) => s.name),
-    examTypes: examTypeRows.map((e) => e.name),
   };
 };
 
@@ -137,8 +135,7 @@ const buildPrompt = (vocab: Vocab, extraContext: string | null): string => {
   const courseList = vocab.courses.map((c) => `- ${c}`).join("\n") || "(none yet)";
   const semesterList =
     vocab.semesters.map((s) => `- ${s}`).join("\n") || "(none yet)";
-  const examTypeList =
-    vocab.examTypes.map((e) => `- ${e}`).join("\n") || "(none yet)";
+  const examTypeList = ALLOWED_EXAM_TYPES.map((e) => `- ${e}`).join("\n");
 
   return [
     "You extract metadata from a university exam question paper PDF for Daffodil International University (DIU).",
@@ -168,7 +165,7 @@ const buildPrompt = (vocab: Vocab, extraContext: string | null): string => {
     'Semesters (follow this exact naming convention, e.g. "Summer 26"):',
     semesterList,
     "",
-    "Exam types:",
+    "Exam types (a CLOSED list — examTypeName MUST be exactly one of these, never anything else):",
     examTypeList,
     "",
     "## Field rules",
@@ -181,9 +178,9 @@ const buildPrompt = (vocab: Vocab, extraContext: string | null): string => {
     "  If the Courses list above already contains the same course, reuse that exact name even",
     "  when the paper prints a longer title.",
     "- semesterName: follow the existing naming convention shown above.",
-    "- examTypeName: e.g. Midterm, Final, Quiz — reuse an existing exam type when possible.",
-    '  "Class Test" (or "CT") and "Quiz" mean the same thing: when the paper says Class Test,',
-    '  use the existing "Quiz" exam type instead of creating a new one.',
+    "- examTypeName: exactly one of the closed exam-type list above.",
+    '  "Class Test" (or "CT") means "Quiz". Lab exams map to "Lab Midterm" / "Lab Final".',
+    "  If the paper's exam type genuinely fits none of them, set examTypeName to null.",
     '- Never use "&" in any name — always write the word "and".',
     "- section / batch: only when explicitly printed on the paper, otherwise null.",
     "- reasoning: one or two sentences explaining your decision.",

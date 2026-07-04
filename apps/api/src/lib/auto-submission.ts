@@ -1,3 +1,4 @@
+import { ALLOWED_EXAM_TYPES, canonicalExamType } from "@diuqbank/shared";
 import { and, eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 
@@ -61,7 +62,8 @@ export const markAutoFailed = async (
 };
 
 /** True only when the model accepted the paper AND gave us every field needed
- * to create a question. Anything short of this goes to admin review. */
+ * to create a question, with an exam type on the allowlist. Anything short of
+ * this goes to admin review. */
 const isConfident = (e: {
   isAcceptable: boolean | null;
   extractedDepartmentName: string | null;
@@ -73,7 +75,8 @@ const isConfident = (e: {
   !!e.extractedDepartmentName &&
   !!e.extractedCourseName &&
   !!e.extractedSemesterName &&
-  !!e.extractedExamTypeName;
+  !!e.extractedExamTypeName &&
+  canonicalExamType(e.extractedExamTypeName) !== null;
 
 /**
  * Process one auto-submission: compress → Gemini extract → route. Run by the
@@ -188,13 +191,22 @@ export const publishAutoSubmission = async (
     });
   }
 
+  // Hard allowlist: exam types are a closed set, and this is the only path
+  // that can create new exam-type rows.
+  const examTypeName = canonicalExamType(row.extractedExamTypeName);
+  if (examTypeName === null) {
+    throw new HTTPException(400, {
+      message: `Exam type "${row.extractedExamTypeName}" is not allowed; use one of: ${ALLOWED_EXAM_TYPES.join(", ")}`,
+    });
+  }
+
   const departmentId = await findOrCreateDepartment(
     db,
     row.extractedDepartmentName,
   );
   const courseId = await findOrCreateCourse(db, departmentId, row.extractedCourseName);
   const semesterId = await findOrCreateSemester(db, row.extractedSemesterName);
-  const examTypeId = await findOrCreateExamType(db, row.extractedExamTypeName);
+  const examTypeId = await findOrCreateExamType(db, examTypeName);
   const questionId = await findOrCreateQuestion(db, {
     departmentId,
     courseId,
