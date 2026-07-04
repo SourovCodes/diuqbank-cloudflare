@@ -18,7 +18,14 @@ A pnpm workspace monorepo with two Cloudflare deployables:
   on: upload size limits, accepted MIME types, pagination caps.
 
 Package manager: **pnpm 10.33.2** (pinned in the root `package.json`). One
-lockfile at the root; never add per-app lockfiles.
+lockfile at the root; never add per-app lockfiles. Versions of tooling used by
+more than one package (`typescript`, `wrangler`) are pinned once in the
+`catalog:` block of `pnpm-workspace.yaml` — reference them as `"catalog:"` in
+package.json, don't hardcode versions in two places.
+
+CI (`.github/workflows/ci.yml`) runs typecheck, lint, build, and fails if
+`apps/web/src/types/openapi.ts` wasn't regenerated after an API contract
+change.
 
 ## Layout
 
@@ -101,6 +108,12 @@ builtin, not the app's deploy script.
   `openapi:emit` script, then openapi-typescript on `apps/api/openapi.json`).
   No deploy needed; regenerate in the same commit as the API contract change.
   `api:types:remote` still reads the deployed spec for comparison.
+- **Contract check:** `src/types/contract-check.ts` type-asserts the generated
+  schemas against the API's DTO types (type-only import of
+  `diuqbank-api/shared/types`). If typecheck fails there, a response schema in
+  `apps/api/src/openapi.ts` drifted from `apps/api/src/shared/types.ts`; fix
+  whichever side is wrong and rerun `api:types`. Add an assertion when adding
+  a new response DTO.
 - **API base:** same-origin `/api` by default; the Vite dev server proxies it
   to the deployed API (`VITE_DEV_API_PROXY_TARGET` overrides the target;
   `VITE_API_BASE_URL` overrides the base at build time).

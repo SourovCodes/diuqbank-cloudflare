@@ -61,6 +61,8 @@ export type ContributorSummary = {
 
 export type WatermarkStatus = 'awaiting' | 'completed' | 'failed'
 
+// The embedded question is a slim variant: no submissionCount/viewCount
+// (the contributor listing doesn't aggregate those).
 export type ContributorSubmission = {
   id: number
   section: string | null
@@ -69,7 +71,14 @@ export type ContributorSubmission = {
   viewCount: number
   createdAt: number
   pdfUrl: string | null
-  question: Question
+  question: {
+    id: number
+    title: string
+    department: Department
+    course: Course
+    semester: Semester
+    examType: ExamType
+  }
 }
 
 export type ManualSubmission = {
