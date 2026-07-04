@@ -23,7 +23,6 @@ export const adminAutoSubmissionsListQuery = z.object({
 export const adminAutoSubmissionUpdateSchema = z
   .object({
     departmentName: taxonomyName(100),
-    departmentShortName: taxonomyName(20),
     courseName: taxonomyName(150),
     semesterName: taxonomyName(100),
     examTypeName: taxonomyName(100),

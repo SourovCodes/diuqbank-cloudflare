@@ -18,7 +18,6 @@ export type AiExtraction = {
   isAcceptable: boolean;
   rejectionReason: string | null;
   departmentName: string | null;
-  departmentShortName: string | null;
   courseName: string | null;
   semesterName: string | null;
   examTypeName: string | null;
@@ -66,7 +65,6 @@ const aiResultSchema = z.object({
   isAcceptable: z.boolean(),
   rejectionReason: z.string().nullish(),
   departmentName: z.string().nullish(),
-  departmentShortName: z.string().nullish(),
   courseName: z.string().nullish(),
   semesterName: z.string().nullish(),
   examTypeName: z.string().nullish(),
@@ -83,7 +81,6 @@ const RESPONSE_SCHEMA = {
     isAcceptable: { type: "boolean" },
     rejectionReason: { type: "string", nullable: true },
     departmentName: { type: "string", nullable: true },
-    departmentShortName: { type: "string", nullable: true },
     courseName: { type: "string", nullable: true },
     semesterName: { type: "string", nullable: true },
     examTypeName: { type: "string", nullable: true },
@@ -96,7 +93,6 @@ const RESPONSE_SCHEMA = {
     "isAcceptable",
     "rejectionReason",
     "departmentName",
-    "departmentShortName",
     "courseName",
     "semesterName",
     "examTypeName",
@@ -177,7 +173,8 @@ const buildPrompt = (vocab: Vocab, extraContext: string | null): string => {
     "",
     "## Field rules",
     "- departmentName: the department name without the leading \"Department of\"",
-    '  ("Department of Software Engineering" -> "Software Engineering"). departmentShortName: its abbreviation (e.g. SWE or CSE).',
+    '  ("Department of Software Engineering" -> "Software Engineering"). If the paper only prints an',
+    "  abbreviation (e.g. SWE or CSE), resolve it to the matching full name from the list above.",
     '- courseName: the concise, conventional course name — e.g. "Physics II", "Mathematics I".',
     "  Drop the course code, and drop any descriptive subtitle printed after a colon or dash",
     '  ("Physics II: Basic Electricity and Magnetism and Modern Physics" -> "Physics II").',
@@ -272,7 +269,6 @@ export const extractQuestionMetadata = async (args: {
     isAcceptable: d.isAcceptable,
     rejectionReason: clean(d.rejectionReason),
     departmentName: cleanName(d.departmentName),
-    departmentShortName: cleanName(d.departmentShortName),
     courseName: cleanName(d.courseName),
     semesterName: cleanName(d.semesterName),
     examTypeName: cleanName(d.examTypeName),

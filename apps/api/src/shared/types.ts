@@ -115,7 +115,6 @@ export type AutoSubmission = {
   isAcceptable: boolean | null
   aiReasoning: string | null
   departmentName: string | null
-  departmentShortName: string | null
   courseName: string | null
   semesterName: string | null
   examTypeName: string | null
@@ -219,7 +218,6 @@ export type AdminAutoSubmission = {
   isAcceptable: boolean | null
   aiReasoning: string | null
   departmentName: string | null
-  departmentShortName: string | null
   courseName: string | null
   semesterName: string | null
   examTypeName: string | null

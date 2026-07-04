@@ -21,7 +21,6 @@ import { useAdvanceQueue } from "./useAdvanceQueue";
 
 const META_FIELDS: { key: keyof UpdateAutoSubmission; label: string }[] = [
   { key: "departmentName", label: "Department" },
-  { key: "departmentShortName", label: "Department short name" },
   { key: "courseName", label: "Course" },
   { key: "semesterName", label: "Semester" },
   { key: "examTypeName", label: "Exam type" },
@@ -138,9 +137,7 @@ export default function AdminAutoSubmissionDetail() {
             {sub.courseName ?? "Untitled paper"}
           </h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            {sub.departmentName
-              ? `${sub.departmentName}${sub.departmentShortName ? ` (${sub.departmentShortName})` : ""}`
-              : "No department detected"}
+            {sub.departmentName ?? "No department detected"}
           </p>
         </div>
         <SubmissionStatusBadge status={sub.status} />
@@ -350,7 +347,6 @@ function EditMetaModal({
   initial: {
     id: number;
     departmentName: string | null;
-    departmentShortName: string | null;
     courseName: string | null;
     semesterName: string | null;
     examTypeName: string | null;
@@ -363,7 +359,6 @@ function EditMetaModal({
 }) {
   const [form, setForm] = useState<UpdateAutoSubmission>({
     departmentName: initial.departmentName ?? "",
-    departmentShortName: initial.departmentShortName ?? "",
     courseName: initial.courseName ?? "",
     semesterName: initial.semesterName ?? "",
     examTypeName: initial.examTypeName ?? "",

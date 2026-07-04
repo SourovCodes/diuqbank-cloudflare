@@ -32,7 +32,6 @@ const toAutoSubmission = (
   isAcceptable: row.isAcceptable,
   aiReasoning: row.aiReasoning,
   departmentName: row.extractedDepartmentName,
-  departmentShortName: row.extractedDepartmentShortName,
   courseName: row.extractedCourseName,
   semesterName: row.extractedSemesterName,
   examTypeName: row.extractedExamTypeName,

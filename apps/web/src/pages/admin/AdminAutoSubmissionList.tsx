@@ -76,7 +76,7 @@ export default function AdminAutoSubmissionList() {
             {r.courseName ?? "Untitled"}
           </p>
           <p className="text-xs text-gray-500 dark:text-gray-400">
-            {[r.departmentShortName, r.semesterName, r.examTypeName]
+            {[r.departmentName, r.semesterName, r.examTypeName]
               .filter(Boolean)
               .join(" · ") || "No metadata yet"}
           </p>

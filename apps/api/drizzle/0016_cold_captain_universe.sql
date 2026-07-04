@@ -1,0 +1,1 @@
+ALTER TABLE `auto_submissions` DROP COLUMN `extracted_department_short_name`;

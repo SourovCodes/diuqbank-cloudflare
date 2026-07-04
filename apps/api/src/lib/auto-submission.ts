@@ -65,14 +65,12 @@ export const markAutoFailed = async (
 const isConfident = (e: {
   isAcceptable: boolean | null;
   extractedDepartmentName: string | null;
-  extractedDepartmentShortName: string | null;
   extractedCourseName: string | null;
   extractedSemesterName: string | null;
   extractedExamTypeName: string | null;
 }): boolean =>
   e.isAcceptable === true &&
   !!e.extractedDepartmentName &&
-  !!e.extractedDepartmentShortName &&
   !!e.extractedCourseName &&
   !!e.extractedSemesterName &&
   !!e.extractedExamTypeName;
@@ -146,7 +144,6 @@ const snapshotFields = (e: AiExtraction) => ({
   // Keep the model's reasoning; on rejection prefer the concrete reason.
   aiReasoning: e.isAcceptable ? e.reasoning : e.rejectionReason ?? e.reasoning,
   extractedDepartmentName: e.departmentName,
-  extractedDepartmentShortName: e.departmentShortName,
   extractedCourseName: e.courseName,
   extractedSemesterName: e.semesterName,
   extractedExamTypeName: e.examTypeName,
@@ -181,7 +178,6 @@ export const publishAutoSubmission = async (
   if (row.status === "published") return null;
   if (
     !row.extractedDepartmentName ||
-    !row.extractedDepartmentShortName ||
     !row.extractedCourseName ||
     !row.extractedSemesterName ||
     !row.extractedExamTypeName
@@ -195,7 +191,6 @@ export const publishAutoSubmission = async (
   const departmentId = await findOrCreateDepartment(
     db,
     row.extractedDepartmentName,
-    row.extractedDepartmentShortName,
   );
   const courseId = await findOrCreateCourse(db, departmentId, row.extractedCourseName);
   const semesterId = await findOrCreateSemester(db, row.extractedSemesterName);

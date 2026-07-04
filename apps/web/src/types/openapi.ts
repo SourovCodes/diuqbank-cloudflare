@@ -5732,7 +5732,6 @@ export interface components {
             isAcceptable: boolean | null;
             aiReasoning: string | null;
             departmentName: string | null;
-            departmentShortName: string | null;
             courseName: string | null;
             semesterName: string | null;
             examTypeName: string | null;
@@ -5755,7 +5754,6 @@ export interface components {
                 isAcceptable: boolean | null;
                 aiReasoning: string | null;
                 departmentName: string | null;
-                departmentShortName: string | null;
                 courseName: string | null;
                 semesterName: string | null;
                 examTypeName: string | null;
@@ -5864,7 +5862,6 @@ export interface components {
         };
         UpdateAutoSubmission: {
             departmentName?: string;
-            departmentShortName?: string;
             courseName?: string;
             semesterName?: string;
             examTypeName?: string;
@@ -6223,7 +6220,6 @@ export interface components {
             isAcceptable: boolean | null;
             aiReasoning: string | null;
             departmentName: string | null;
-            departmentShortName: string | null;
             courseName: string | null;
             semesterName: string | null;
             examTypeName: string | null;
@@ -6281,7 +6277,6 @@ export interface components {
                 isAcceptable: boolean | null;
                 aiReasoning: string | null;
                 departmentName: string | null;
-                departmentShortName: string | null;
                 courseName: string | null;
                 semesterName: string | null;
                 examTypeName: string | null;

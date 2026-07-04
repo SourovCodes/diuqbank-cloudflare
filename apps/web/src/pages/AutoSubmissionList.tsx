@@ -82,7 +82,7 @@ export default function AutoSubmissionList() {
             )}
           >
             {data.data.map((sub) => {
-              const meta = [sub.departmentShortName, sub.semesterName, sub.examTypeName]
+              const meta = [sub.departmentName, sub.semesterName, sub.examTypeName]
                 .filter(Boolean)
                 .join(" · ");
               return (

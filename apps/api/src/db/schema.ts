@@ -215,7 +215,6 @@ export const autoSubmissions = sqliteTable(
     isAcceptable: integer("is_acceptable", { mode: "boolean" }),
     aiReasoning: text("ai_reasoning"),
     extractedDepartmentName: text("extracted_department_name"),
-    extractedDepartmentShortName: text("extracted_department_short_name"),
     extractedCourseName: text("extracted_course_name"),
     extractedSemesterName: text("extracted_semester_name"),
     extractedExamTypeName: text("extracted_exam_type_name"),

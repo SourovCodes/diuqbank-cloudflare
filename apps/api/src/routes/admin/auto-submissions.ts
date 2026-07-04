@@ -74,7 +74,6 @@ const toAdminAutoSubmission = (
   isAcceptable: row.isAcceptable,
   aiReasoning: row.aiReasoning,
   departmentName: row.extractedDepartmentName,
-  departmentShortName: row.extractedDepartmentShortName,
   courseName: row.extractedCourseName,
   semesterName: row.extractedSemesterName,
   examTypeName: row.extractedExamTypeName,
@@ -181,8 +180,6 @@ route.patch(
     const update: Partial<typeof autoSubmissions.$inferInsert> = {};
     if (input.departmentName !== undefined)
       update.extractedDepartmentName = input.departmentName;
-    if (input.departmentShortName !== undefined)
-      update.extractedDepartmentShortName = input.departmentShortName;
     if (input.courseName !== undefined)
       update.extractedCourseName = input.courseName;
     if (input.semesterName !== undefined)
