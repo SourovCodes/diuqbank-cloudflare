@@ -348,13 +348,26 @@ route.delete("/:id", async (c) => {
   });
   if (!row) throw new HTTPException(404, { message: "Submission not found" });
 
-  const [{ value: manualSubmissionCount }] = await db
-    .select({ value: count() })
-    .from(manualSubmissions)
-    .where(eq(manualSubmissions.submissionId, id));
+  // Delete safety: both source-submission FKs are `restrict`.
+  const [[{ value: manualSubmissionCount }], [{ value: autoSubmissionCount }]] =
+    await Promise.all([
+      db
+        .select({ value: count() })
+        .from(manualSubmissions)
+        .where(eq(manualSubmissions.submissionId, id)),
+      db
+        .select({ value: count() })
+        .from(autoSubmissions)
+        .where(eq(autoSubmissions.submissionId, id)),
+    ]);
   if (manualSubmissionCount > 0) {
     throw new HTTPException(409, {
       message: `Cannot delete: ${manualSubmissionCount} approved manual submission(s) reference this submission`,
+    });
+  }
+  if (autoSubmissionCount > 0) {
+    throw new HTTPException(409, {
+      message: `Cannot delete: ${autoSubmissionCount} approved auto submission(s) reference this submission`,
     });
   }
 
