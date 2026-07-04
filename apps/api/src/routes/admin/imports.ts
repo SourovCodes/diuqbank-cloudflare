@@ -30,6 +30,16 @@ const legacyHint = (item: SourceSubmission): string =>
     1000,
   );
 
+/**
+ * Legacy `created_at` (ISO 8601) → epoch seconds, so the imported row (and the
+ * live submission it eventually publishes) keeps the original upload date.
+ * Undefined on an unparseable value, falling back to the column default (now).
+ */
+const legacyCreatedAt = (item: SourceSubmission): number | undefined => {
+  const ms = Date.parse(item.created_at);
+  return Number.isNaN(ms) ? undefined : Math.floor(ms / 1000);
+};
+
 route.post(
   "/auto-submissions",
   validate("query", adminImportAutoSubmissionsSchema),
@@ -125,6 +135,7 @@ const importOne = async (
         pdfKey: key,
         fileSize: buffer.byteLength,
         extraContext: legacyHint(item),
+        createdAt: legacyCreatedAt(item),
       })
       .returning({ id: autoSubmissions.id });
 

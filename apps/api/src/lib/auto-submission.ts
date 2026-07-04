@@ -223,13 +223,16 @@ export const publishAutoSubmission = async (
   });
 
   // Seeding view_count from legacy_views also bumps the question's aggregate
-  // via the submissions_view_count_after_insert trigger.
+  // via the submissions_view_count_after_insert trigger. created_at is carried
+  // over from the auto row so legacy imports keep their original upload date
+  // (for normal uploads it equals the upload time, not the approval time).
   const submissionInsert = env.DB.prepare(
     `INSERT INTO submissions
        (question_id, user_id, section, batch, pdf_key, file_size,
-        watermarked_pdf_key, watermark_status, watermark_error, view_count)
+        watermarked_pdf_key, watermark_status, watermark_error, view_count,
+        created_at)
      SELECT ?, a.user_id, a.section, a.batch, ?, ?, NULL, 'awaiting', NULL,
-            COALESCE(a.legacy_views, 0)
+            COALESCE(a.legacy_views, 0), a.created_at
      FROM auto_submissions AS a
      WHERE a.id = ?
        AND a.status <> 'published'
