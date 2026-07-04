@@ -14,9 +14,10 @@ const MAX_ATTEMPTS = 3;
 const RETRY_DELAY_SECONDS = 10;
 
 /**
- * Consumer for the single throttled `PDF_QUEUE`. Its `max_concurrency` caps how
- * many of these run at once, which is what bounds concurrent load on the
- * external PDF Processor (every compress/watermark call originates here).
+ * Shared consumer for both throttled queues: `PDF_QUEUE` (watermark; its
+ * max_concurrency bounds concurrent PDF Processor load) and `GEMINI_QUEUE`
+ * (ai-submission; max_concurrency 1 so Gemini calls never overlap). Messages
+ * carry a `kind` discriminator, so no per-queue branching is needed here.
  */
 export const handleQueue = async (
   batch: MessageBatch<PdfQueueMessage>,

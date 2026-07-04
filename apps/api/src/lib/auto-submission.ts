@@ -21,8 +21,9 @@ import {
 } from "./taxonomy";
 
 /**
- * Enqueue an auto-submission for AI processing on the throttled `PDF_QUEUE`
- * (see `runAutoExtraction`). Never throws: if the enqueue fails, the row is
+ * Enqueue an auto-submission for AI processing on `GEMINI_QUEUE` (see
+ * `runAutoExtraction`). That queue's max_concurrency of 1 is what guarantees
+ * Gemini calls never overlap. Never throws: if the enqueue fails, the row is
  * flipped to `failed` so it isn't silently stranded at `processing`.
  */
 export const startAutoSubmission = async (
@@ -30,9 +31,9 @@ export const startAutoSubmission = async (
   autoSubmissionId: number,
 ): Promise<void> => {
   try {
-    await env.PDF_QUEUE.send({ kind: "ai-submission", autoSubmissionId });
+    await env.GEMINI_QUEUE.send({ kind: "ai-submission", autoSubmissionId });
   } catch (err) {
-    console.error("PDF_QUEUE.send(ai-submission) failed", autoSubmissionId, err);
+    console.error("GEMINI_QUEUE.send(ai-submission) failed", autoSubmissionId, err);
     const message =
       err instanceof Error ? err.message : "Failed to start AI processing";
     await markAutoFailed(env, autoSubmissionId, message);

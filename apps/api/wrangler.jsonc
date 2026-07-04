@@ -42,20 +42,37 @@
   "analytics_engine_datasets": [{ "binding": "VIEWS", "dataset": "diuqbank_views" }],
   // Flush the buffered views into D1 every 15 minutes. Handler = src/cron.ts.
   "triggers": { "crons": ["*/15 * * * *"] },
-  // Single throttled queue fronting ALL external PDF Processor work — watermark
-  // (submissions) and AI auto-submission (compress + Gemini). `max_concurrency`
-  // caps how many run at once, bounding concurrent load on the shared service
-  // (which degrades past ~5–15 concurrent requests). Consumer = src/queue.ts.
+  // Two throttled queues, one consumer (src/queue.ts dispatches on `kind`):
+  //  - diuqbank-pdf: watermark jobs. Bounds concurrent load on the external
+  //    PDF Processor. Host limits (100 entry processes, 4 cores, 4G RAM) sit
+  //    at a few percent; much of each job's wall time is R2 I/O, not
+  //    Ghostscript, so 15 in-flight jobs is comfortable. If jobs start
+  //    brushing the 120s client timeout under load, lower this first.
+  //  - diuqbank-gemini: AI auto-submission (compress + Gemini call).
+  //    max_concurrency MUST stay 1 — Gemini calls are strictly serialized;
+  //    at no point may two run at once. (Its compress step adds at most one
+  //    concurrent request on top of the PDF queue's 15.)
   // Create the queues before first deploy:
   //   wrangler queues create diuqbank-pdf
+  //   wrangler queues create diuqbank-gemini
   //   wrangler queues create diuqbank-pdf-dlq
   "queues": {
-    "producers": [{ "queue": "diuqbank-pdf", "binding": "PDF_QUEUE" }],
+    "producers": [
+      { "queue": "diuqbank-pdf", "binding": "PDF_QUEUE" },
+      { "queue": "diuqbank-gemini", "binding": "GEMINI_QUEUE" }
+    ],
     "consumers": [
       {
         "queue": "diuqbank-pdf",
         "max_batch_size": 1,
-        "max_concurrency": 5,
+        "max_concurrency": 15,
+        "max_retries": 3,
+        "dead_letter_queue": "diuqbank-pdf-dlq"
+      },
+      {
+        "queue": "diuqbank-gemini",
+        "max_batch_size": 1,
+        "max_concurrency": 1,
         "max_retries": 3,
         "dead_letter_queue": "diuqbank-pdf-dlq"
       }

@@ -191,10 +191,11 @@ app.onError((err, c) => {
 app.notFound((c) => c.json({ error: "Not found" }, 404));
 
 // The Worker exports the HTTP handler, the queue consumer, and the cron
-// consumer. The queue drains the throttled PDF_QUEUE (watermarking + AI
-// auto-submission); its max_concurrency bounds concurrent load on the external
-// PDF Processor. The scheduled handler flushes buffered submission views from
-// Analytics Engine into D1 every 15 minutes (see src/cron.ts).
+// consumer. The queue handler drains both throttled queues — PDF_QUEUE
+// (watermarking; bounds PDF Processor load) and GEMINI_QUEUE (AI
+// auto-submission; concurrency 1 so Gemini calls never overlap). The
+// scheduled handler flushes buffered submission views from Analytics Engine
+// into D1 every 15 minutes (see src/cron.ts).
 export default {
   fetch: app.fetch,
   queue: handleQueue,
