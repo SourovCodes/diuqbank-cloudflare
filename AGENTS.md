@@ -1,45 +1,74 @@
-# DIU Question Bank API — Agent Guide
+# DIU Question Bank — Agent Guide
 
 Onboarding notes for AI coding agents. See [README.md](README.md) for the
 human-facing overview.
 
 ## What This Is
 
-A single Cloudflare Worker API:
+A pnpm workspace monorepo with two Cloudflare deployables:
 
-- Hono API on Cloudflare Workers: D1 + Drizzle, R2 for files, stateless JWT auth,
-  hand-written OpenAPI, and a throttled PDF processing queue.
-- Worker name: `diuqbank-api-prod`.
-- `src/shared/` contains local API DTO types, Zod request schemas, constants, and
-  pure helpers that used to live in the old shared package.
+- **`apps/api`** (`diuqbank-api`) — Hono API on Cloudflare Workers: D1 + Drizzle,
+  R2 for files, stateless JWT auth, hand-written OpenAPI, and a throttled PDF
+  processing queue. Worker name: `diuqbank-api-prod`.
+- **`apps/web`** (`diuqbank-web`) — React 19 + Vite + Tailwind 4 frontend using
+  TanStack Query and React Router 7, deployed as a Wrangler assets-only Worker
+  (SPA fallback). Worker name: `diuqbank-web-prod`.
 
-Package manager: **pnpm 10.33.2** (pinned in `package.json`).
+Package manager: **pnpm 10.33.2** (pinned in the root `package.json`). One
+lockfile at the root; never add per-app lockfiles.
 
 ## Layout
 
 ```text
-src/
-  index.ts             App entry: builds Hono<AppEnv>, mounts routes, global onError, CORS
-  types.ts             AppEnv / Bindings (DB, BUCKET, GOOGLE_CLIENT_ID, JWT_SECRET...)
-  openapi.ts           Hand-written OpenAPI 3 doc
-  queue.ts             PDF queue consumer
-  db/
-    schema.ts          Drizzle schema, source of truth for DB tables + relations
-    client.ts          getDb(c.env.DB)
-  middleware/
-    auth.ts            requireAuth / requireAdmin
-  routes/              One file per route domain
-    admin/             Admin resources; auth applied once in index.ts
-  lib/                 JWT, upload validation, shape helpers, taxonomy, PDF helpers
-  shared/
-    types.ts           Canonical response DTOs
-    schemas/           Zod request schemas
-    utils/             pagination and question-title helpers
-drizzle/               Generated SQL migrations, applied by Wrangler
-wrangler.jsonc         Worker config: D1, R2, queues, rate limits, vars, secrets
+package.json           Root: workspace scripts only (thin --filter wrappers)
+pnpm-workspace.yaml    packages: apps/* ; onlyBuiltDependencies
+apps/
+  api/
+    src/
+      index.ts         App entry: builds Hono<AppEnv>, mounts routes, global onError, CORS
+      types.ts         AppEnv / Bindings (DB, BUCKET, GOOGLE_CLIENT_ID, JWT_SECRET...)
+      openapi.ts       Hand-written OpenAPI 3 doc
+      queue.ts         PDF queue consumer
+      db/              schema.ts (source of truth for tables + relations), client.ts
+      middleware/      auth.ts: requireAuth / requireAdmin
+      routes/          One file per route domain; admin/ auth applied once in its index.ts
+      lib/             JWT, upload validation, shape helpers, taxonomy, PDF helpers
+      shared/          API DTO types, Zod request schemas, pagination/title helpers
+    drizzle/           Generated SQL migrations, applied by Wrangler
+    wrangler.jsonc     Worker config: D1, R2, queues, rate limits, vars, secrets
+  web/
+    src/               React app: pages/, components/, hooks/, lib/, types/openapi.ts
+    vite.config.ts     Dev server proxies /api -> API origin
+    wrangler.jsonc     Assets-only Worker serving dist/ with SPA fallback
 ```
 
-## Conventions
+## Commands
+
+Run from the repo root:
+
+```bash
+pnpm install
+pnpm dev             # api + web dev servers in parallel
+pnpm dev:api         # wrangler dev
+pnpm dev:web         # vite (port 5173, strictPort)
+pnpm typecheck       # all apps
+pnpm lint            # all apps
+pnpm build           # web production build
+pnpm deploy:api
+pnpm deploy:web
+
+pnpm db:generate
+pnpm db:migrate:local
+pnpm db:migrate:remote
+pnpm cf-typegen
+```
+
+Anything app-specific: `pnpm --filter diuqbank-api run <script>` or
+`pnpm --filter diuqbank-web run <script>` (or `cd` into the app). Always pass
+`run` explicitly with `--filter` — `pnpm deploy` without `run` is a pnpm
+builtin, not the app's deploy script.
+
+## API Conventions (`apps/api`)
 
 - **Routing:** plain `Hono<AppEnv>` (no `@hono/zod-openapi`). Validate with
   `validate(target, schema)` from `src/lib/validator.ts`; it returns
@@ -60,28 +89,23 @@ wrangler.jsonc         Worker config: D1, R2, queues, rate limits, vars, secrets
 - **Files:** R2 binding `BUCKET`. The Worker serves objects at
   `GET /files/:key{.+}`. Uploads are magic-byte validated.
 
-## Commands
+## Web Conventions (`apps/web`)
 
-```bash
-pnpm install
-pnpm dev
-pnpm typecheck
-pnpm lint
-pnpm deploy
-
-pnpm db:generate
-pnpm db:migrate:local
-pnpm db:migrate:remote
-pnpm cf-typegen
-```
+- **API types:** generated into `src/types/openapi.ts` from the deployed
+  `/openapi.json` via `pnpm --filter diuqbank-web run api:types`. Regenerate
+  after backend contract changes.
+- **API base:** same-origin `/api` by default; the Vite dev server proxies it
+  to the deployed API (`VITE_DEV_API_PROXY_TARGET` overrides the target;
+  `VITE_API_BASE_URL` overrides the base at build time).
+- **Lint:** oxlint (not eslint).
 
 ## Gotchas
 
-- Verify before declaring done: `pnpm typecheck && pnpm lint`.
+- Verify before declaring done: `pnpm typecheck && pnpm lint` (from the root).
 - Secrets (`JWT_SECRET`, `ADMIN_EMAIL`, `PDF_PROCESSOR_API_KEY`,
   `GEMINI_API_KEY`) are Worker secrets; do not commit them. Local dev uses
-  `.dev.vars`.
+  `apps/api/.dev.vars`.
 - Do not install `@cloudflare/workers-types`; `wrangler types` generates
-  `worker-configuration.d.ts`.
+  `apps/api/worker-configuration.d.ts`.
 - Migrations are applied via `wrangler d1 migrations apply`, not the Drizzle
   client.

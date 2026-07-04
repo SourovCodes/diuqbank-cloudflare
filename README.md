@@ -1,47 +1,54 @@
-# DIU Question Bank API
+# DIU Question Bank
 
-A single Cloudflare Worker API for DIU Question Bank. It uses Hono, D1 + Drizzle,
-R2 for files, stateless Google-OAuth JWT auth, a throttled PDF queue, and a
-hand-written OpenAPI spec served with Scalar at `/docs`.
+pnpm workspace monorepo for DIU Question Bank — a public archive of DIU exam
+question papers, deployed entirely on Cloudflare.
+
+## Apps
+
+| App | Path | What it is |
+| --- | --- | --- |
+| `diuqbank-api` | [apps/api](apps/api) | Hono API on Cloudflare Workers (D1 + Drizzle, R2, PDF queue). Worker: `diuqbank-api-prod`. |
+| `diuqbank-web` | [apps/web](apps/web) | React 19 + Vite frontend, deployed as a Wrangler assets-only Worker. Worker: `diuqbank-web-prod`. |
+
+Each app has its own README with details.
 
 ## Development
 
+Requires Node and pnpm (version pinned via `packageManager` in `package.json`).
+
 ```bash
-pnpm install
-pnpm dev          # wrangler dev
+pnpm install       # install everything, once, from the root
+pnpm dev           # run api + web dev servers in parallel
+pnpm dev:api       # wrangler dev (port 8787)
+pnpm dev:web       # vite dev server (port 5173)
 ```
 
 ## Verification
 
 ```bash
-pnpm typecheck
-pnpm lint
+pnpm typecheck     # tsc --noEmit in every app
+pnpm lint          # eslint (api) + oxlint (web)
+pnpm build         # production build (web)
 ```
 
 ## Deployment
 
 ```bash
-pnpm deploy       # wrangler deploy --minify
+pnpm deploy:api
+pnpm deploy:web
 ```
 
-Runtime secrets such as `JWT_SECRET`, `ADMIN_EMAIL`, `PDF_PROCESSOR_API_KEY`,
-and `GEMINI_API_KEY` are Worker secrets and are not committed:
+## Database (D1)
 
 ```bash
-pnpm exec wrangler secret put JWT_SECRET
-pnpm exec wrangler secret put ADMIN_EMAIL
-pnpm exec wrangler secret put PDF_PROCESSOR_API_KEY
-pnpm exec wrangler secret put GEMINI_API_KEY
-```
-
-For local development, add those values to `.dev.vars`.
-
-## Database
-
-```bash
-pnpm db:generate        # generate a Drizzle migration after editing src/db/schema.ts
+pnpm db:generate        # generate a Drizzle migration
 pnpm db:migrate:local   # apply migrations to local D1
 pnpm db:migrate:remote  # apply migrations to remote D1
 ```
 
-Migrations are applied with Wrangler, not the Drizzle client.
+## Conventions
+
+- One lockfile (`pnpm-lock.yaml`) at the root; apps never have their own.
+- Run any app script from the root with `pnpm --filter <app> run <script>`.
+- Root scripts are thin `--filter` wrappers; app-specific behavior lives in the
+  app's own `package.json`.

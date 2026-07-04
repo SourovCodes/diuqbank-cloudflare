@@ -28,13 +28,13 @@ VITE_API_BASE_URL=/api
 VITE_DEV_API_PROXY_TARGET=https://diuqbank-api-prod.sourov-cse.workers.dev
 ```
 
-For a production build that should call a different API origin, set `VITE_API_BASE_URL` before running `npm run build`.
+For a production build that should call a different API origin, set `VITE_API_BASE_URL` before running `pnpm run build`.
 
 ## Development
 
 ```sh
-npm install
-npm run dev
+pnpm install
+pnpm run dev
 ```
 
 The dev server is pinned to port `5173` with `strictPort` enabled.
@@ -42,22 +42,22 @@ The dev server is pinned to port `5173` with `strictPort` enabled.
 ## Verification
 
 ```sh
-npm run lint
-npm run typecheck
-npm run build
-npm run deploy:dry-run
+pnpm run lint
+pnpm run typecheck
+pnpm run build
+pnpm run deploy:dry-run
 ```
 
 Refresh generated OpenAPI types after backend contract changes:
 
 ```sh
-npm run api:types
+pnpm run api:types
 ```
 
 ## Deploy
 
 ```sh
-npm run deploy
+pnpm run deploy
 ```
 
 Wrangler serves `dist` as static assets and uses SPA fallback handling for deep links such as `/questions/71`.
