@@ -5,6 +5,11 @@
   "main": "src/index.ts",
   "compatibility_date": "2026-06-20",
   "compatibility_flags": ["nodejs_compat"],
+  // Production hostname. `custom_domain` makes Wrangler manage the DNS record
+  // and TLS cert on the diuqbank.com zone. workers.dev stays enabled so older
+  // web bundles built against the workers.dev API origin keep working.
+  "routes": [{ "pattern": "api.diuqbank.com", "custom_domain": true }],
+  "workers_dev": true,
   "observability": {
     "enabled": true,
     "head_sampling_rate": 1
@@ -114,7 +119,7 @@
     "PDF_PROCESSOR_URL": "https://pdf-processor.diuqbank.com",
     // Comma-separated CORS allowlist. Requests from any other Origin are
     // rejected (no CORS headers). Add your production/custom domains here.
-    "WEB_ORIGINS": "https://diuqbank-web-prod.sourov-cse.workers.dev,https://diuqbank-web.sourov-cse.workers.dev,http://localhost:5173,http://localhost:5174,http://localhost:8787",
+    "WEB_ORIGINS": "https://diuqbank.com,https://www.diuqbank.com,https://diuqbank-web-prod.sourov-cse.workers.dev,https://diuqbank-web.sourov-cse.workers.dev,http://localhost:5173,http://localhost:5174,http://localhost:8787",
     // Account id, reused by the view-count cron to build the Analytics Engine
     // SQL API URL. Not exposed to the Worker via the top-level `account_id`, so
     // it must live here as a runtime var (public value — fine to commit).

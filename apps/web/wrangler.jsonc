@@ -2,6 +2,11 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "diuqbank-web-prod",
   "compatibility_date": "2026-07-01",
+  // Production hostname (already attached to this Worker; kept here so the
+  // config stays declarative). workers.dev stays enabled so the old URL keeps
+  // working for anyone who bookmarked it.
+  "routes": [{ "pattern": "diuqbank.com", "custom_domain": true }],
+  "workers_dev": true,
   // Assets-only Worker: serves the Vite build as static files, no server script.
   // "single-page-application" makes deep links (e.g. /questions/71) return index.html.
   "assets": {

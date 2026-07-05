@@ -42,7 +42,7 @@ import type {
   UserRole,
 } from "./types/api";
 
-const PRODUCTION_API_BASE = "https://diuqbank-api-prod.sourov-cse.workers.dev";
+const PRODUCTION_API_BASE = "https://api.diuqbank.com";
 const configuredApiBase = import.meta.env.VITE_API_BASE_URL?.trim();
 const API_BASE = (configuredApiBase || (import.meta.env.DEV ? "/api" : PRODUCTION_API_BASE))
   .replace(/\/+$/, "");

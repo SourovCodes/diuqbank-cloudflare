@@ -7,7 +7,7 @@
     "dev": "vite",
     "typecheck": "tsc --noEmit",
     "api:types": "pnpm --filter diuqbank-api run openapi:emit && openapi-typescript ../api/openapi.json -o src/types/openapi.ts",
-    "api:types:remote": "openapi-typescript https://diuqbank-api-prod.sourov-cse.workers.dev/openapi.json -o src/types/openapi.ts",
+    "api:types:remote": "openapi-typescript https://api.diuqbank.com/openapi.json -o src/types/openapi.ts",
     "verify": "pnpm run lint && pnpm run build",
     "build": "pnpm run typecheck && vite build",
     "lint": "oxlint",

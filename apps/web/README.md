@@ -30,7 +30,7 @@ Optional environment variables:
 
 ```sh
 VITE_API_BASE_URL=/api
-VITE_DEV_API_PROXY_TARGET=https://diuqbank-api-prod.sourov-cse.workers.dev
+VITE_DEV_API_PROXY_TARGET=https://api.diuqbank.com
 ```
 
 For a production build that should call a different API origin, set `VITE_API_BASE_URL` before running `pnpm run build`.
