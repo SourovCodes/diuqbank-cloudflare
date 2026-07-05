@@ -1,5 +1,5 @@
 import type { BatchItem } from "drizzle-orm/batch";
-import { count, inArray } from "drizzle-orm";
+import { inArray } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 
 import { getDb, type Db } from "../db/client";
@@ -7,7 +7,6 @@ import {
   courses,
   departments,
   examTypes,
-  manualSubmissions,
   questions,
   semesters,
   submissions,
@@ -21,7 +20,6 @@ export type MergeCounts = {
   itemsDeleted: number;
   questionsCombined: number;
   submissionsMoved: number;
-  manualSubmissionsMoved: number;
   coursesMerged?: number;
 };
 
@@ -57,8 +55,8 @@ const QSELECT = {
  * Reconcile a set of questions after a category remap. `finalOf` returns the
  * 4-tuple each question will have once the merge is applied; questions that
  * collapse to the same tuple are auto-merged — the lowest `id` survives, the
- * rest have their submissions/manual-submissions repointed to it and are
- * deleted (the `questions` table has no timestamp, so id is the age order).
+ * rest have their submissions repointed to it and are deleted (the
+ * `questions` table has no timestamp, so id is the age order).
  *
  * No transient unique-constraint violations are possible: loser questions are
  * deleted before any survivor's combo is updated, and distinct survivors always
@@ -99,12 +97,6 @@ function reconcileQuestions(
           .set({ questionId: survivor.id })
           .where(inArray(submissions.questionId, lids)),
       );
-      repoints.push(
-        db
-          .update(manualSubmissions)
-          .set({ questionId: survivor.id })
-          .where(inArray(manualSubmissions.questionId, lids)),
-      );
     }
     for (const col of QCOLS) {
       if (final[col] !== survivor[col]) {
@@ -116,7 +108,7 @@ function reconcileQuestions(
     }
   }
 
-  // Order: repoint submissions/manual → delete losers → update survivors.
+  // Order: repoint submissions → delete losers → update survivors.
   const statements: Stmt[] = [...repoints];
   if (loserIds.length) {
     statements.push(db.delete(questions).where(inArray(questions.id, loserIds)));
@@ -139,15 +131,6 @@ const combo = (q: AffectedQuestion): Combo => ({
   semesterId: q.semesterId,
   examTypeId: q.examTypeId,
 });
-
-async function countManualMoved(db: Db, loserQuestionIds: number[]): Promise<number> {
-  if (loserQuestionIds.length === 0) return 0;
-  const [{ value }] = await db
-    .select({ value: count() })
-    .from(manualSubmissions)
-    .where(inArray(manualSubmissions.questionId, loserQuestionIds));
-  return value;
-}
 
 const dedupe = (ids: number[]) => [...new Set(ids)];
 
@@ -181,7 +164,6 @@ export async function planSemesterMerge(
       itemsDeleted: loserIds.length,
       questionsCombined: r.questionsCombined,
       submissionsMoved: r.submissionsMoved,
-      manualSubmissionsMoved: await countManualMoved(db, r.loserIds),
     },
   };
 }
@@ -214,7 +196,6 @@ export async function planExamTypeMerge(
       itemsDeleted: loserIds.length,
       questionsCombined: r.questionsCombined,
       submissionsMoved: r.submissionsMoved,
-      manualSubmissionsMoved: await countManualMoved(db, r.loserIds),
     },
   };
 }
@@ -255,7 +236,6 @@ export async function planCourseMerge(
       itemsDeleted: loserIds.length,
       questionsCombined: r.questionsCombined,
       submissionsMoved: r.submissionsMoved,
-      manualSubmissionsMoved: await countManualMoved(db, r.loserIds),
     },
   };
 }
@@ -338,7 +318,6 @@ export async function planDepartmentMerge(
       coursesMerged,
       questionsCombined: r.questionsCombined,
       submissionsMoved: r.submissionsMoved,
-      manualSubmissionsMoved: await countManualMoved(db, r.loserIds),
     },
   };
 }

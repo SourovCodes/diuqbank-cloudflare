@@ -278,15 +278,6 @@ export default function AdminAutoSubmissionDetail() {
                   "published",
                 )}
               />
-              <DetailRow
-                label="Manual uploads"
-                value={formatTrackRecord(
-                  sub.contributorStats.manualApproved,
-                  sub.contributorStats.manualRejected,
-                  sub.contributorStats.manualPendingReview,
-                  "approved",
-                )}
-              />
             </dl>
           </div>
 

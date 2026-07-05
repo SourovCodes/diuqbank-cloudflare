@@ -15,9 +15,6 @@ import ContributorList from "./pages/ContributorList";
 import ContributorDetail from "./pages/ContributorDetail";
 import Login from "./pages/Login";
 import Profile from "./pages/Profile";
-import ManualSubmissionList from "./pages/ManualSubmissionList";
-import ManualSubmissionCreate from "./pages/ManualSubmissionCreate";
-import ManualSubmissionDetail from "./pages/ManualSubmissionDetail";
 import AutoSubmissionList from "./pages/AutoSubmissionList";
 import AutoSubmissionCreate from "./pages/AutoSubmissionCreate";
 import AutoSubmissionDetail from "./pages/AutoSubmissionDetail";
@@ -25,12 +22,6 @@ import NotFound from "./pages/NotFound";
 // Admin pages are lazy so the (much larger) public audience never downloads
 // them; Vite splits each into its own chunk loaded on first admin navigation.
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
-const AdminManualSubmissionList = lazy(
-  () => import("./pages/admin/AdminManualSubmissionList")
-);
-const AdminManualSubmissionDetail = lazy(
-  () => import("./pages/admin/AdminManualSubmissionDetail")
-);
 const AdminAutoSubmissionList = lazy(
   () => import("./pages/admin/AdminAutoSubmissionList")
 );
@@ -104,7 +95,7 @@ const navLinks: NavLinkItem[] = [
   { label: "Questions", to: "/questions" },
   { label: "Contributors", to: "/contributors" },
   // Guests are bounced to /login by RequireAuth and returned here after.
-  { label: "Upload", to: "/submissions/manual/new" },
+  { label: "Upload", to: "/submissions/auto/new" },
 ];
 
 const linkClass = ({ isActive }: NavLinkRenderProps) =>
@@ -178,7 +169,7 @@ function Navbar() {
           ))}
           {user ? (
             <>
-              <NavLink to="/submissions/manual" onClick={close} className={linkClass}>
+              <NavLink to="/submissions/auto" onClick={close} className={linkClass}>
                 <span className="block py-2">Your submissions</span>
               </NavLink>
               <NavLink to="/profile" onClick={close} className={linkClass}>
@@ -252,12 +243,9 @@ export default function App() {
         <Route path="/login" element={<Login />} />
 
         <Route element={<RequireAuth />}>
-          <Route path="/submissions" element={<Navigate to="/submissions/manual" replace />} />
+          <Route path="/submissions" element={<Navigate to="/submissions/auto" replace />} />
           <Route element={<DashboardLayout />}>
             <Route path="/profile" element={<Profile />} />
-            <Route path="/submissions/manual" element={<ManualSubmissionList />} />
-            <Route path="/submissions/manual/new" element={<ManualSubmissionCreate />} />
-            <Route path="/submissions/manual/:id" element={<ManualSubmissionDetail />} />
             <Route path="/submissions/auto" element={<AutoSubmissionList />} />
             <Route path="/submissions/auto/new" element={<AutoSubmissionCreate />} />
             <Route path="/submissions/auto/:id" element={<AutoSubmissionDetail />} />
@@ -268,14 +256,6 @@ export default function App() {
           <Route element={<AdminLayout />}>
             <Route element={<LazyOutlet />}>
               <Route path="/admin" element={<AdminDashboard />} />
-              <Route
-                path="/admin/manual-submissions"
-                element={<AdminManualSubmissionList />}
-              />
-              <Route
-                path="/admin/manual-submissions/:id"
-                element={<AdminManualSubmissionDetail />}
-              />
               <Route
                 path="/admin/auto-submissions"
                 element={<AdminAutoSubmissionList />}

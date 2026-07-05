@@ -16,17 +16,10 @@ export type ContributorSubmissionList =
 export type AuthConfig = components["schemas"]["AuthConfig"];
 export type AuthResponse = components["schemas"]["AuthResponse"];
 export type User = components["schemas"]["User"];
-export type ManualSubmission = components["schemas"]["ManualSubmission"];
-export type ManualSubmissionList =
-  components["schemas"]["ManualSubmissionList"];
 export type AutoSubmission = components["schemas"]["AutoSubmission"];
 export type AutoSubmissionList = components["schemas"]["AutoSubmissionList"];
 
 // --- Admin ---
-export type AdminManualSubmission =
-  components["schemas"]["AdminManualSubmission"];
-export type AdminManualSubmissionList =
-  components["schemas"]["AdminManualSubmissionList"];
 export type AdminAutoSubmission = components["schemas"]["AdminAutoSubmission"];
 export type AdminAutoSubmissionDetail =
   components["schemas"]["AdminAutoSubmissionDetail"];
@@ -52,8 +45,6 @@ export type MergeRequest = components["schemas"]["MergeRequest"];
 export type MergeSummary = components["schemas"]["MergeSummary"];
 
 // Admin mutation payloads
-export type UpdateManualSubmission =
-  components["schemas"]["UpdateManualSubmission"];
 export type UpdateAutoSubmission =
   components["schemas"]["UpdateAutoSubmission"];
 export type UpdateUser = components["schemas"]["UpdateUser"];
@@ -69,7 +60,6 @@ export type CreateQuestion = components["schemas"]["CreateQuestion"];
 export type UpdateQuestion = components["schemas"]["UpdateQuestion"];
 export type UpdateSubmission = components["schemas"]["UpdateSubmission"];
 
-export type ManualSubmissionStatus = ManualSubmission["status"];
 export type AutoSubmissionStatus = AutoSubmission["status"];
 export type UserRole = User["role"];
 

@@ -81,24 +81,6 @@ export type ContributorSubmission = {
   }
 }
 
-export type ManualSubmission = {
-  id: number
-  userId: number
-  status: 'pending_review' | 'approved' | 'rejected'
-  departmentName: string
-  departmentShortName: string
-  courseName: string
-  semesterName: string
-  examTypeName: string
-  note: string | null
-  rejectedReason: string | null
-  reviewedBy: number | null
-  questionId: number | null
-  submissionId: number | null
-  pdfUrl: string | null
-  createdAt: number
-}
-
 export type AutoSubmissionStatus =
   | 'processing'
   | 'needs_review'
@@ -187,33 +169,12 @@ export type AdminSubmission = {
 }
 
 /**
- * Detail variant of `AdminSubmission`: also carries the id of the auto/manual
+ * Detail variant of `AdminSubmission`: also carries the id of the auto
  * submission this live submission was published from (null when it wasn't
  * created through that pipeline).
  */
 export type AdminSubmissionDetail = AdminSubmission & {
   autoSubmissionId: number | null
-  manualSubmissionId: number | null
-}
-
-export type AdminManualSubmission = {
-  id: number
-  userId: number
-  contributor: User
-  departmentName: string
-  departmentShortName: string
-  courseName: string
-  semesterName: string
-  examTypeName: string
-  note: string | null
-  status: 'pending_review' | 'approved' | 'rejected'
-  rejectedReason: string | null
-  reviewedBy: number | null
-  reviewer: User | null
-  questionId: number | null
-  submissionId: number | null
-  pdfUrl: string | null
-  createdAt: number
 }
 
 export type AdminAutoSubmission = {
@@ -255,9 +216,6 @@ export type AdminContributorStats = {
   autoPublished: number
   autoRejected: number
   autoPendingReview: number
-  manualApproved: number
-  manualRejected: number
-  manualPendingReview: number
 }
 
 /** Detail variant of `AdminAutoSubmission`: adds the contributor's track record. */
@@ -277,7 +235,6 @@ export type MergeSummary = {
   itemsDeleted: number
   questionsCombined: number
   submissionsMoved: number
-  manualSubmissionsMoved: number
   coursesMerged?: number
 }
 

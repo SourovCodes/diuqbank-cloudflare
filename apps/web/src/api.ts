@@ -2,8 +2,6 @@ import type {
   AdminAutoSubmission,
   AdminAutoSubmissionDetail,
   AdminAutoSubmissionList,
-  AdminManualSubmission,
-  AdminManualSubmissionList,
   AdminQuestion,
   AdminQuestionList,
   AdminSubmission,
@@ -27,9 +25,6 @@ import type {
   ExamType,
   ExamTypeList,
   FilterOptions,
-  ManualSubmission,
-  ManualSubmissionList,
-  ManualSubmissionStatus,
   MergeRequest,
   MergeSummary,
   PaginationParams,
@@ -40,7 +35,6 @@ import type {
   Semester,
   SemesterList,
   UpdateAutoSubmission,
-  UpdateManualSubmission,
   UpdateQuestion,
   UpdateSubmission,
   UpdateUser,
@@ -197,23 +191,6 @@ export const uploadProfileImage = (file: File): Promise<User> => {
   }).then((r) => r.user);
 };
 
-// --- Manual submissions ---
-export const getManualSubmissions = (
-  params: PaginationParams
-): Promise<ManualSubmissionList> => get("/manual-submissions", params);
-
-export const getManualSubmission = (
-  id: string | number
-): Promise<ManualSubmission> => get(`/manual-submissions/${id}`);
-
-export const createManualSubmission = (
-  form: FormData
-): Promise<ManualSubmission> =>
-  request("/manual-submissions", { method: "POST", body: form });
-
-export const deleteManualSubmission = (id: number): Promise<void> =>
-  request(`/manual-submissions/${id}`, { method: "DELETE" });
-
 // --- Auto submissions ---
 export const getAutoSubmissions = (
   params: PaginationParams
@@ -232,15 +209,6 @@ export const deleteAutoSubmission = (id: number): Promise<void> =>
 // ---------------------------------------------------------------------------
 // Admin — every endpoint requires a bearer token from a `role: "admin"` account
 // ---------------------------------------------------------------------------
-
-export type AdminManualSubmissionParams = PaginationParams & {
-  status?: ManualSubmissionStatus;
-  userId?: number;
-  departmentName?: string;
-  courseName?: string;
-  semesterName?: string;
-  examTypeName?: string;
-};
 
 export type AdminAutoSubmissionParams = PaginationParams & {
   status?: AutoSubmissionStatus;
@@ -269,36 +237,6 @@ export type TaxonomyParams = PaginationParams & {
   search?: string;
   departmentId?: number; // courses only
 };
-
-// --- Manual submissions ---
-export const getAdminManualSubmissions = (
-  params: AdminManualSubmissionParams
-): Promise<AdminManualSubmissionList> =>
-  get("/admin/manual-submissions", params);
-
-export const getAdminManualSubmission = (
-  id: string | number
-): Promise<AdminManualSubmission> => get(`/admin/manual-submissions/${id}`);
-
-export const updateAdminManualSubmission = (
-  id: number,
-  body: UpdateManualSubmission
-): Promise<AdminManualSubmission> =>
-  patch(`/admin/manual-submissions/${id}`, body);
-
-export const approveManualSubmission = (
-  id: number
-): Promise<AdminManualSubmission> =>
-  post(`/admin/manual-submissions/${id}/approve`);
-
-export const rejectManualSubmission = (
-  id: number,
-  reason: string
-): Promise<AdminManualSubmission> =>
-  post(`/admin/manual-submissions/${id}/reject`, { reason });
-
-export const deleteAdminManualSubmission = (id: number): Promise<void> =>
-  del(`/admin/manual-submissions/${id}`);
 
 // --- Auto submissions ---
 export const getAdminAutoSubmissions = (

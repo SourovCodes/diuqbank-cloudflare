@@ -5,7 +5,6 @@ import { and, count, desc, eq, type SQL } from "drizzle-orm";
 import { getDb, type Db } from "../../db/client";
 import {
   autoSubmissions,
-  manualSubmissions,
   users,
   type AutoSubmission,
   type User,
@@ -104,17 +103,12 @@ const loadContributorStats = async (
   db: Db,
   userId: number,
 ): Promise<AdminContributorStats> => {
-  const [autoRows, manualRows, [contributor]] = await Promise.all([
+  const [autoRows, [contributor]] = await Promise.all([
     db
       .select({ status: autoSubmissions.status, value: count() })
       .from(autoSubmissions)
       .where(eq(autoSubmissions.userId, userId))
       .groupBy(autoSubmissions.status),
-    db
-      .select({ status: manualSubmissions.status, value: count() })
-      .from(manualSubmissions)
-      .where(eq(manualSubmissions.userId, userId))
-      .groupBy(manualSubmissions.status),
     db
       .select({ submissionCount: users.submissionCount })
       .from(users)
@@ -130,9 +124,6 @@ const loadContributorStats = async (
     autoPublished: countOf(autoRows, "published"),
     autoRejected: countOf(autoRows, "rejected"),
     autoPendingReview: countOf(autoRows, "needs_review"),
-    manualApproved: countOf(manualRows, "approved"),
-    manualRejected: countOf(manualRows, "rejected"),
-    manualPendingReview: countOf(manualRows, "pending_review"),
   };
 };
 

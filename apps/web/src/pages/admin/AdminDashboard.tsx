@@ -2,7 +2,6 @@ import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
   useAdminAutoSubmissions,
-  useAdminManualSubmissions,
   useAdminQuestions,
   useAdminSubmissions,
   useAdminUsers,
@@ -11,7 +10,6 @@ import {
   ChevronRightIcon,
   FileQuestionIcon,
   FileTextIcon,
-  InboxIcon,
   SparklesIcon,
   UsersIcon,
   type Icon,
@@ -137,11 +135,6 @@ export default function AdminDashboard() {
   }, []);
 
   // perPage: 1 — we only need `meta.total`, not the rows.
-  const manualPending = useAdminManualSubmissions({
-    page: 1,
-    perPage: 1,
-    status: "pending_review",
-  });
   const autoNeedsReview = useAdminAutoSubmissions({
     page: 1,
     perPage: 1,
@@ -161,13 +154,6 @@ export default function AdminDashboard() {
       <section>
         <SectionLabel>Needs attention</SectionLabel>
         <div className="grid gap-4 xl:grid-cols-2">
-          <QueueCard
-            icon={InboxIcon}
-            label="Manual submissions"
-            hint="Waiting for a reviewer"
-            count={manualPending.data?.meta.total}
-            to="/admin/manual-submissions"
-          />
           <QueueCard
             icon={SparklesIcon}
             label="Auto submissions"

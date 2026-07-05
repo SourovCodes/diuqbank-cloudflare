@@ -16,7 +16,6 @@ import autoSubmissions from "./routes/auto-submissions";
 import contributors from "./routes/contributors";
 import files from "./routes/files";
 import filterOptions from "./routes/filter-options";
-import manualSubmissions from "./routes/manual-submissions";
 import questions from "./routes/questions";
 import submissions from "./routes/submissions";
 import type { AppEnv, Bindings } from "./types";
@@ -133,7 +132,6 @@ app.route("/contributors", contributors);
 app.route("/questions", questions);
 app.route("/submissions", submissions);
 app.route("/filter-options", filterOptions);
-app.route("/manual-submissions", manualSubmissions);
 app.route("/auto-submissions", autoSubmissions);
 app.route("/admin", admin);
 

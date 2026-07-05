@@ -80,17 +80,6 @@ export default function AdminSubmissionDetail() {
                 </Link>
               </>
             )}
-            {sub.manualSubmissionId !== null && (
-              <>
-                {" · "}
-                <Link
-                  to={`/admin/manual-submissions/${sub.manualSubmissionId}`}
-                  className="font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400"
-                >
-                  View manual submission
-                </Link>
-              </>
-            )}
           </p>
         </div>
         <Badge

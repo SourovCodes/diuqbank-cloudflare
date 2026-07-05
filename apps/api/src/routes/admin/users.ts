@@ -3,12 +3,7 @@ import { HTTPException } from "hono/http-exception";
 import { and, count, desc, eq, like, or, type SQL } from "drizzle-orm";
 
 import { getDb } from "../../db/client";
-import {
-  autoSubmissions,
-  manualSubmissions,
-  submissions,
-  users,
-} from "../../db/schema";
+import { autoSubmissions, submissions, users } from "../../db/schema";
 import { bumpCache, invalidateUser } from "../../lib/cache";
 import { toAdminUser } from "../../lib/admin-shape";
 import { buildMeta } from "../../shared/utils/pagination";
@@ -142,16 +137,6 @@ route.delete("/:id", async (c) => {
   if (submissionCount > 0) {
     throw new HTTPException(409, {
       message: `Cannot delete: ${submissionCount} submission(s) reference this user`,
-    });
-  }
-
-  const [{ value: manualSubmissionCount }] = await db
-    .select({ value: count() })
-    .from(manualSubmissions)
-    .where(eq(manualSubmissions.userId, id));
-  if (manualSubmissionCount > 0) {
-    throw new HTTPException(409, {
-      message: `Cannot delete: ${manualSubmissionCount} manual submission(s) reference this user`,
     });
   }
 

@@ -95,7 +95,7 @@ function Hero() {
             Browse questions
           </Link>
           <Link
-            to="/submissions/manual/new"
+            to="/submissions/auto/new"
             className="rounded-lg border border-gray-300 px-6 py-3 text-sm font-semibold transition hover:bg-gray-50 active:scale-[0.98] dark:border-gray-700 dark:hover:bg-gray-900"
           >
             Contribute a paper
@@ -242,10 +242,10 @@ function Contribute() {
     <section className="container mx-auto px-4 py-16">
       <SectionHeading
         eyebrow="Give back"
-        title="Add a paper in two ways"
-        subtitle="Both start with a single PDF. Pick whichever suits you."
+        title="Add a paper in seconds"
+        subtitle="All it takes is a single PDF — the AI handles the rest."
       />
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-1">
         <ContributeCard
           to="/submissions/auto/new"
           badge="Fastest"
@@ -257,20 +257,6 @@ function Contribute() {
               strokeLinecap="round"
               strokeLinejoin="round"
               d="M13 3 4 14h7l-1 7 9-11h-7l1-7Z"
-            />
-          }
-        />
-        <ContributeCard
-          to="/submissions/manual/new"
-          badge="Full control"
-          title="Manual submission"
-          description="Prefer to enter the details yourself? Fill in the department, course, semester and exam type, then send it for review."
-          cta="Fill in the details"
-          icon={
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M11 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5m-1.5-9.5a2.1 2.1 0 0 1 3 3L12 16l-4 1 1-4 9.5-9.5Z"
             />
           }
         />
@@ -339,7 +325,7 @@ function ClosingCta() {
             Browse questions
           </Link>
           <Link
-            to="/submissions/manual/new"
+            to="/submissions/auto/new"
             className="rounded-lg border border-white/40 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/10 active:scale-[0.98]"
           >
             Contribute a paper

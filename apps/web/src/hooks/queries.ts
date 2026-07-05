@@ -11,8 +11,6 @@ import {
   getContributors,
   getContributorSubmissions,
   getFilterOptions,
-  getManualSubmission,
-  getManualSubmissions,
   getQuestions,
   getQuestion,
   getSubmissions,
@@ -138,22 +136,6 @@ export function useContributorSubmissions(
     queryFn: () => getContributorSubmissions(username as string, params),
     enabled: !!username,
     placeholderData: keepPreviousData,
-  });
-}
-
-export function useManualSubmissions(params: PaginationParams) {
-  return useQuery({
-    queryKey: ["manual-submissions", params],
-    queryFn: () => getManualSubmissions(params),
-    placeholderData: keepPreviousData,
-  });
-}
-
-export function useManualSubmission(id?: string) {
-  return useQuery({
-    queryKey: ["manual-submission", id],
-    queryFn: () => getManualSubmission(id as string),
-    enabled: !!id,
   });
 }
 

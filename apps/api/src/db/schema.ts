@@ -143,53 +143,6 @@ export const submissions = sqliteTable(
   ],
 );
 
-export const manualSubmissions = sqliteTable(
-  "manual_submissions",
-  {
-    id: integer("id").primaryKey({ autoIncrement: true }),
-    userId: integer("user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "restrict" }),
-    departmentName: text("department_name").notNull(),
-    departmentShortName: text("department_short_name").notNull(),
-    courseName: text("course_name").notNull(),
-    semesterName: text("semester_name").notNull(),
-    examTypeName: text("exam_type_name").notNull(),
-    note: text("note"),
-    pdfKey: text("pdf_key").notNull(),
-    status: text("status", {
-      enum: ["pending_review", "approved", "rejected"],
-    })
-      .notNull()
-      .default("pending_review"),
-    rejectedReason: text("rejected_reason"),
-    reviewedBy: integer("reviewed_by").references(() => users.id, {
-      onDelete: "set null",
-    }),
-    questionId: integer("question_id").references(() => questions.id, {
-      onDelete: "restrict",
-    }),
-    submissionId: integer("submission_id").references(() => submissions.id, {
-      onDelete: "restrict",
-    }),
-    createdAt: integer("created_at")
-      .notNull()
-      .default(sql`(unixepoch())`),
-  },
-  (table) => [
-    index("manual_submissions_user_id_idx").on(table.userId),
-    index("manual_submissions_status_idx").on(table.status),
-    check(
-      "manual_submissions_status_check",
-      sql`${table.status} IN ('pending_review', 'approved', 'rejected')`,
-    ),
-    check(
-      "manual_submissions_approval_links_check",
-      sql`(${table.status} = 'approved' AND ${table.questionId} IS NOT NULL AND ${table.submissionId} IS NOT NULL) OR (${table.status} <> 'approved' AND ${table.questionId} IS NULL AND ${table.submissionId} IS NULL)`,
-    ),
-  ],
-);
-
 export const autoSubmissions = sqliteTable(
   "auto_submissions",
   {
@@ -288,18 +241,11 @@ export const questionsRelations = relations(questions, ({ one, many }) => ({
     references: [examTypes.id],
   }),
   submissions: many(submissions),
-  manualSubmissions: many(manualSubmissions),
   autoSubmissions: many(autoSubmissions),
 }));
 
 export const usersRelations = relations(users, ({ many }) => ({
   submissions: many(submissions),
-  manualSubmissions: many(manualSubmissions, {
-    relationName: "manualSubmissionOwner",
-  }),
-  reviewedManualSubmissions: many(manualSubmissions, {
-    relationName: "manualSubmissionReviewer",
-  }),
   autoSubmissions: many(autoSubmissions, {
     relationName: "autoSubmissionOwner",
   }),
@@ -318,30 +264,6 @@ export const submissionsRelations = relations(submissions, ({ one }) => ({
     references: [users.id],
   }),
 }));
-
-export const manualSubmissionsRelations = relations(
-  manualSubmissions,
-  ({ one }) => ({
-    user: one(users, {
-      fields: [manualSubmissions.userId],
-      references: [users.id],
-      relationName: "manualSubmissionOwner",
-    }),
-    reviewer: one(users, {
-      fields: [manualSubmissions.reviewedBy],
-      references: [users.id],
-      relationName: "manualSubmissionReviewer",
-    }),
-    question: one(questions, {
-      fields: [manualSubmissions.questionId],
-      references: [questions.id],
-    }),
-    submission: one(submissions, {
-      fields: [manualSubmissions.submissionId],
-      references: [submissions.id],
-    }),
-  }),
-);
 
 export const autoSubmissionsRelations = relations(
   autoSubmissions,
@@ -375,6 +297,5 @@ export type Semester = typeof semesters.$inferSelect;
 export type ExamType = typeof examTypes.$inferSelect;
 export type Question = typeof questions.$inferSelect;
 export type Submission = typeof submissions.$inferSelect;
-export type ManualSubmission = typeof manualSubmissions.$inferSelect;
 export type AutoSubmission = typeof autoSubmissions.$inferSelect;
 export type NewAutoSubmission = typeof autoSubmissions.$inferInsert;

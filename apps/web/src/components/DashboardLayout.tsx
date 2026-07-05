@@ -1,12 +1,6 @@
 import { useAuth } from "../auth";
 import { SidebarLayout, type NavSection } from "./SidebarLayout";
-import {
-  FileTextIcon,
-  SparklesIcon,
-  UploadIcon,
-  UserIcon,
-  ZapIcon,
-} from "./icons";
+import { SparklesIcon, UserIcon, ZapIcon } from "./icons";
 
 const navSections: NavSection[] = [
   {
@@ -17,14 +11,12 @@ const navSections: NavSection[] = [
     label: "Submit paper",
     links: [
       { to: "/submissions/auto/new", icon: SparklesIcon, text: "AI auto submission" },
-      { to: "/submissions/manual/new", icon: UploadIcon, text: "Manual submission" },
     ],
   },
   {
     label: "My submissions",
     links: [
       { to: "/submissions/auto", icon: ZapIcon, text: "Auto submissions", end: true },
-      { to: "/submissions/manual", icon: FileTextIcon, text: "Manual submissions", end: true },
     ],
   },
 ];

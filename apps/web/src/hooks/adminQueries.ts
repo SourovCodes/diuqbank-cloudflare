@@ -2,8 +2,6 @@ import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import {
   getAdminAutoSubmission,
   getAdminAutoSubmissions,
-  getAdminManualSubmission,
-  getAdminManualSubmissions,
   getAdminQuestion,
   getAdminQuestions,
   getAdminSubmission,
@@ -11,30 +9,12 @@ import {
   getAdminUser,
   getAdminUsers,
   type AdminAutoSubmissionParams,
-  type AdminManualSubmissionParams,
   type AdminQuestionParams,
   type AdminSubmissionParams,
   type AdminUserParams,
   type TaxonomyApi,
   type TaxonomyParams,
 } from "../api";
-
-// --- Manual submissions ---
-export function useAdminManualSubmissions(params: AdminManualSubmissionParams) {
-  return useQuery({
-    queryKey: ["admin", "manual-submissions", params],
-    queryFn: () => getAdminManualSubmissions(params),
-    placeholderData: keepPreviousData,
-  });
-}
-
-export function useAdminManualSubmission(id?: string) {
-  return useQuery({
-    queryKey: ["admin", "manual-submission", id],
-    queryFn: () => getAdminManualSubmission(id as string),
-    enabled: !!id,
-  });
-}
 
 // --- Auto submissions ---
 export function useAdminAutoSubmissions(params: AdminAutoSubmissionParams) {

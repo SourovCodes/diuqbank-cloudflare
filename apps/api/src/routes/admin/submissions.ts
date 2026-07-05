@@ -3,7 +3,7 @@ import { HTTPException } from "hono/http-exception";
 import { and, count, desc, eq, sql, type SQL } from "drizzle-orm";
 
 import { getDb } from "../../db/client";
-import { autoSubmissions, manualSubmissions, submissions } from "../../db/schema";
+import { autoSubmissions, submissions } from "../../db/schema";
 import {
   invalidateSubmission,
   invalidateSubmissionEdit,
@@ -93,9 +93,9 @@ route.get("/:id", async (c) => {
   const db = getDb(c.env.DB);
   const origin = new URL(c.req.url).origin;
 
-  // The source auto/manual submission (if this submission was published from
-  // one) so the admin UI can link back to the review record.
-  const [row, autoSource, manualSource] = await Promise.all([
+  // The source auto submission (if this submission was published from one)
+  // so the admin UI can link back to the review record.
+  const [row, autoSource] = await Promise.all([
     db.query.submissions.findFirst({
       where: eq(submissions.id, id),
       with: submissionWith,
@@ -104,16 +104,11 @@ route.get("/:id", async (c) => {
       where: eq(autoSubmissions.submissionId, id),
       columns: { id: true },
     }),
-    db.query.manualSubmissions.findFirst({
-      where: eq(manualSubmissions.submissionId, id),
-      columns: { id: true },
-    }),
   ]);
   if (!row) throw new HTTPException(404, { message: "Submission not found" });
 
   return c.json(toAdminSubmissionDetail(row, origin, {
     autoSubmissionId: autoSource?.id ?? null,
-    manualSubmissionId: manualSource?.id ?? null,
   }));
 });
 
@@ -348,23 +343,11 @@ route.delete("/:id", async (c) => {
   });
   if (!row) throw new HTTPException(404, { message: "Submission not found" });
 
-  // Delete safety: both source-submission FKs are `restrict`.
-  const [[{ value: manualSubmissionCount }], [{ value: autoSubmissionCount }]] =
-    await Promise.all([
-      db
-        .select({ value: count() })
-        .from(manualSubmissions)
-        .where(eq(manualSubmissions.submissionId, id)),
-      db
-        .select({ value: count() })
-        .from(autoSubmissions)
-        .where(eq(autoSubmissions.submissionId, id)),
-    ]);
-  if (manualSubmissionCount > 0) {
-    throw new HTTPException(409, {
-      message: `Cannot delete: ${manualSubmissionCount} approved manual submission(s) reference this submission`,
-    });
-  }
+  // Delete safety: the source-submission FK is `restrict`.
+  const [{ value: autoSubmissionCount }] = await db
+    .select({ value: count() })
+    .from(autoSubmissions)
+    .where(eq(autoSubmissions.submissionId, id));
   if (autoSubmissionCount > 0) {
     throw new HTTPException(409, {
       message: `Cannot delete: ${autoSubmissionCount} approved auto submission(s) reference this submission`,

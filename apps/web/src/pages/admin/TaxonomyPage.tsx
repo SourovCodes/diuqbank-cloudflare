@@ -350,10 +350,6 @@ function mergeImpactLines(
       count: preview.submissionsMoved,
       text: `published ${plural(preview.submissionsMoved, "submission")} moved`,
     },
-    {
-      count: preview.manualSubmissionsMoved,
-      text: `manual ${plural(preview.manualSubmissionsMoved, "submission")} moved`,
-    },
     ...(preview.coursesMerged !== undefined
       ? [
           {
