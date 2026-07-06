@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { and, count, desc, eq } from "drizzle-orm";
+import { AUTO_SUBMISSIONS_ENABLED } from "@diuqbank/shared";
 
 import { getDb } from "../db/client";
 import { autoSubmissions, type AutoSubmission as AutoSubmissionRow } from "../db/schema";
@@ -77,6 +78,13 @@ route.post(
   pdfUploadBodyLimit,
   validate("form", autoSubmissionCreateForm),
   async (c) => {
+    // Temporary kill switch (see AUTO_SUBMISSIONS_ENABLED in @diuqbank/shared):
+    // reject new uploads while the feature is paused, before any R2/Gemini work.
+    if (!AUTO_SUBMISSIONS_ENABLED) {
+      throw new HTTPException(503, {
+        message: "Question uploads are temporarily paused. Please check back soon.",
+      });
+    }
     const { extraContext } = c.req.valid("form");
     const userId = c.get("user").sub;
     // Cap per-user upload rate before touching R2 or the paid Gemini path.

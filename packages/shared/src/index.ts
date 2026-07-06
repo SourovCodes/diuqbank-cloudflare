@@ -39,6 +39,15 @@ export const canonicalExamType = (name: string): AllowedExamType | null =>
     (t) => t.toLowerCase() === name.trim().toLowerCase(),
   ) ?? null;
 
+/**
+ * Feature flag (temporary kill switch): when `false`, the AI auto-submission
+ * upload path is disabled — the API rejects `POST /auto-submissions` with 503
+ * and the web app hides every upload entry point and shows a "paused" notice.
+ * Viewing/deleting existing submissions is unaffected. Flip back to `true` and
+ * redeploy both apps to re-enable.
+ */
+export const AUTO_SUBMISSIONS_ENABLED: boolean = false;
+
 /** Default page size for paginated list endpoints (matches `pageFields`). */
 export const DEFAULT_PER_PAGE = 20;
 
