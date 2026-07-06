@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "./index.css";
 import App from "./App";
 import { AuthProvider } from "./auth";
+import { RouteAnalytics } from "./components/RouteAnalytics";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -23,6 +24,7 @@ createRoot(root).render(
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <AuthProvider>
+          <RouteAnalytics />
           <App />
         </AuthProvider>
       </BrowserRouter>
