@@ -23,10 +23,7 @@ const route = new Hono<AppEnv>();
 
 route.use("*", requireAuth);
 
-const toAutoSubmission = (
-  row: AutoSubmissionRow,
-  origin: string,
-): AutoSubmission => ({
+const toAutoSubmission = (row: AutoSubmissionRow): AutoSubmission => ({
   id: row.id,
   status: row.status,
   isAcceptable: row.isAcceptable,
@@ -41,7 +38,7 @@ const toAutoSubmission = (
   rejectedReason: row.rejectedReason,
   questionId: row.questionId,
   submissionId: row.submissionId,
-  pdfUrl: fileUrlFor(origin, row.pdfKey),
+  pdfUrl: fileUrlFor(row.pdfKey),
   createdAt: row.createdAt,
 });
 
@@ -57,7 +54,6 @@ route.get("/", validate("query", autoSubmissionsListQuery), async (c) => {
   const { page, perPage } = c.req.valid("query");
   const userId = c.get("user").sub;
   const db = getDb(c.env.DB);
-  const origin = new URL(c.req.url).origin;
   const where = eq(autoSubmissions.userId, userId);
 
   const [items, [{ value: total }]] = await Promise.all([
@@ -71,7 +67,7 @@ route.get("/", validate("query", autoSubmissionsListQuery), async (c) => {
   ]);
 
   return c.json({
-    data: items.map((item) => toAutoSubmission(item, origin)),
+    data: items.map((item) => toAutoSubmission(item)),
     meta: buildMeta(page, perPage, total),
   });
 });
@@ -88,7 +84,6 @@ route.post(
     const body = await c.req.parseBody();
     const pdf = await parsePdfFile(body["pdf"]);
     const db = getDb(c.env.DB);
-    const origin = new URL(c.req.url).origin;
 
     const key = `auto-submissions/${crypto.randomUUID()}.pdf`;
     await c.env.BUCKET.put(key, pdf.buffer, {
@@ -124,7 +119,7 @@ route.post(
       });
     }
 
-    return c.json(toAutoSubmission(row, origin), 201);
+    return c.json(toAutoSubmission(row), 201);
   },
 );
 
@@ -142,7 +137,7 @@ route.get("/:id", async (c) => {
   if (!row) {
     throw new HTTPException(404, { message: "Auto submission not found" });
   }
-  return c.json(toAutoSubmission(row, new URL(c.req.url).origin));
+  return c.json(toAutoSubmission(row));
 });
 
 route.delete("/:id", async (c) => {

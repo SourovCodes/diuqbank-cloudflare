@@ -66,15 +66,12 @@ type AdminAutoSubmissionRow = AutoSubmission & {
   reviewer: EmbeddedUser | null;
 };
 
-const toAdminAutoSubmission = (
-  row: AdminAutoSubmissionRow,
-  origin: string,
-): AdminAutoSubmission => ({
+const toAdminAutoSubmission = (row: AdminAutoSubmissionRow): AdminAutoSubmission => ({
   id: row.id,
   userId: row.userId,
   legacyId: row.legacyId,
   legacyViews: row.legacyViews,
-  contributor: toAuthUser(row.user, origin),
+  contributor: toAuthUser(row.user),
   status: row.status,
   isAcceptable: row.isAcceptable,
   aiReasoning: row.aiReasoning,
@@ -89,10 +86,10 @@ const toAdminAutoSubmission = (
   processingError: row.processingError,
   rejectedReason: row.rejectedReason,
   reviewedBy: row.reviewedBy,
-  reviewer: row.reviewer ? toAuthUser(row.reviewer, origin) : null,
+  reviewer: row.reviewer ? toAuthUser(row.reviewer) : null,
   questionId: row.questionId,
   submissionId: row.submissionId,
-  pdfUrl: fileUrlFor(origin, row.pdfKey),
+  pdfUrl: fileUrlFor(row.pdfKey),
   createdAt: row.createdAt,
 });
 
@@ -127,18 +124,17 @@ const loadContributorStats = async (
   };
 };
 
-const loadAutoSubmission = async (db: Db, id: number, origin: string) => {
+const loadAutoSubmission = async (db: Db, id: number) => {
   const row = await db.query.autoSubmissions.findFirst({
     where: eq(autoSubmissions.id, id),
     with: lookupWith,
   });
-  return row ? toAdminAutoSubmission(row, origin) : null;
+  return row ? toAdminAutoSubmission(row) : null;
 };
 
 route.get("/", validate("query", adminAutoSubmissionsListQuery), async (c) => {
   const { page, perPage, status, userId } = c.req.valid("query");
   const db = getDb(c.env.DB);
-  const origin = new URL(c.req.url).origin;
 
   const filters: SQL[] = [];
   if (status) filters.push(eq(autoSubmissions.status, status));
@@ -160,7 +156,7 @@ route.get("/", validate("query", adminAutoSubmissionsListQuery), async (c) => {
   ]);
 
   return c.json({
-    data: items.map((item) => toAdminAutoSubmission(item, origin)),
+    data: items.map((item) => toAdminAutoSubmission(item)),
     meta: buildMeta(page, perPage, total),
   });
 });
@@ -172,7 +168,7 @@ route.get("/:id", async (c) => {
   }
 
   const db = getDb(c.env.DB);
-  const detail = await loadAutoSubmission(db, id, new URL(c.req.url).origin);
+  const detail = await loadAutoSubmission(db, id);
   if (!detail) {
     throw new HTTPException(404, { message: "Auto submission not found" });
   }
@@ -231,7 +227,7 @@ route.patch(
       .set(update)
       .where(eq(autoSubmissions.id, id));
 
-    const detail = await loadAutoSubmission(db, id, new URL(c.req.url).origin);
+    const detail = await loadAutoSubmission(db, id);
     if (!detail) {
       throw new HTTPException(404, { message: "Auto submission not found" });
     }
@@ -273,7 +269,7 @@ route.post("/:id/approve", async (c) => {
   }
 
   // publishAutoSubmission busts the relevant caches (taxonomy + submission).
-  const detail = await loadAutoSubmission(db, id, new URL(c.req.url).origin);
+  const detail = await loadAutoSubmission(db, id);
   if (!detail) {
     throw new HTTPException(500, {
       message: "Failed to load approved auto submission",
@@ -308,11 +304,7 @@ route.post("/:id/reprocess", async (c) => {
   // Re-enqueue on the throttled queue (self-marks failed if the enqueue throws).
   await startAutoSubmission(c.env, id);
 
-  const detail = await loadAutoSubmission(
-    getDb(c.env.DB),
-    id,
-    new URL(c.req.url).origin,
-  );
+  const detail = await loadAutoSubmission(getDb(c.env.DB), id);
   if (!detail) {
     throw new HTTPException(500, {
       message: "Failed to load reprocessed auto submission",
@@ -357,7 +349,7 @@ route.post(
       })
       .where(eq(autoSubmissions.id, id));
 
-    const detail = await loadAutoSubmission(db, id, new URL(c.req.url).origin);
+    const detail = await loadAutoSubmission(db, id);
     if (!detail) {
       throw new HTTPException(500, {
         message: "Failed to load rejected auto submission",

@@ -120,7 +120,6 @@ questionRoutes.get("/:id/submissions", (c) => {
     { versions: [`q:${id}`, "tax"], key: `questions:${id}:submissions` },
     async () => {
       const db = getDb(c.env.DB);
-      const origin = new URL(c.req.url).origin;
 
       // Confirm the question exists so a bad id is a clear 404, not an empty list.
       const question = await db.query.questions.findFirst({
@@ -158,8 +157,8 @@ questionRoutes.get("/:id/submissions", (c) => {
           viewCount: s.viewCount,
           createdAt: s.createdAt,
           // Prefer the watermarked file once it exists; fall back to the original.
-          pdfUrl: fileUrlFor(origin, s.watermarkedPdfKey ?? s.pdfKey),
-          contributor: s.user ? toContributorSummary(s.user, origin) : null,
+          pdfUrl: fileUrlFor(s.watermarkedPdfKey ?? s.pdfKey),
+          contributor: s.user ? toContributorSummary(s.user) : null,
         })),
       };
     },

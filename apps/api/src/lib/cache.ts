@@ -29,10 +29,9 @@ export const withCache = async <T>(
     opts.versions.map((name) => c.env.CACHE.get(`v:${name}`, { cacheTtl: 60 })),
   );
   const version = tokens.map((t) => t ?? "0").join(".");
-  // Responses embed absolute file URLs built from the request origin, so the
-  // origin is part of the cache identity.
-  const origin = new URL(c.req.url).origin;
-  const fullKey = `${version}:${origin}:${opts.key}`;
+  // File URLs in responses point at the fixed R2 public domain (see
+  // `fileUrlFor`), so responses no longer vary by request origin.
+  const fullKey = `${version}:${opts.key}`;
 
   const hit = await c.env.CACHE.get<T>(fullKey, "json");
   if (hit !== null) {

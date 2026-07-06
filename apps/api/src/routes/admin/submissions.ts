@@ -60,7 +60,6 @@ route.get("/", validate("query", submissionsListQuery), async (c) => {
   const { page, perPage, questionId, userId, watermarkStatus } =
     c.req.valid("query");
   const db = getDb(c.env.DB);
-  const origin = new URL(c.req.url).origin;
 
   const filters: SQL[] = [];
   if (questionId) filters.push(eq(submissions.questionId, questionId));
@@ -81,7 +80,7 @@ route.get("/", validate("query", submissionsListQuery), async (c) => {
   ]);
 
   return c.json({
-    data: items.map((s) => toAdminSubmission(s, origin)),
+    data: items.map((s) => toAdminSubmission(s)),
     meta: buildMeta(page, perPage, total),
   });
 });
@@ -91,7 +90,6 @@ route.get("/:id", async (c) => {
   if (id === null) throw new HTTPException(404, { message: "Submission not found" });
 
   const db = getDb(c.env.DB);
-  const origin = new URL(c.req.url).origin;
 
   // The source auto submission (if this submission was published from one)
   // so the admin UI can link back to the review record.
@@ -107,7 +105,7 @@ route.get("/:id", async (c) => {
   ]);
   if (!row) throw new HTTPException(404, { message: "Submission not found" });
 
-  return c.json(toAdminSubmissionDetail(row, origin, {
+  return c.json(toAdminSubmissionDetail(row, {
     autoSubmissionId: autoSource?.id ?? null,
   }));
 });
@@ -119,7 +117,6 @@ route.post("/", pdfUploadBodyLimit, validate("form", submissionCreateForm), asyn
   const pdf = await parsePdfFile(body["pdf"]);
 
   const db = getDb(c.env.DB);
-  const origin = new URL(c.req.url).origin;
 
   const key = `submissions/${crypto.randomUUID()}.pdf`;
   await c.env.BUCKET.put(key, pdf.buffer, {
@@ -161,7 +158,7 @@ route.post("/", pdfUploadBodyLimit, validate("form", submissionCreateForm), asyn
     );
   }
 
-  return c.json(toAdminSubmission(row, origin), 201);
+  return c.json(toAdminSubmission(row), 201);
 });
 
 route.patch("/:id", validate("json", submissionUpdateSchema), async (c) => {
@@ -174,7 +171,6 @@ route.patch("/:id", validate("json", submissionUpdateSchema), async (c) => {
   }
 
   const db = getDb(c.env.DB);
-  const origin = new URL(c.req.url).origin;
   const previous = await db.query.submissions.findFirst({
     where: eq(submissions.id, id),
     columns: { questionId: true },
@@ -208,7 +204,7 @@ route.patch("/:id", validate("json", submissionUpdateSchema), async (c) => {
     c.executionCtx.waitUntil(invalidation);
   }
 
-  return c.json(toAdminSubmission(row, origin));
+  return c.json(toAdminSubmission(row));
 });
 
 // Increment a submission's view count. The parent question's `view_count` (a
@@ -232,7 +228,6 @@ route.post("/:id/views", async (c) => {
   const by = parsed.data.by ?? 1;
 
   const db = getDb(c.env.DB);
-  const origin = new URL(c.req.url).origin;
 
   // Atomic bump (no read-modify-write race); the AFTER UPDATE OF view_count
   // trigger adjusts the question's summed view_count.
@@ -255,7 +250,7 @@ route.post("/:id/views", async (c) => {
     );
   }
 
-  return c.json(toAdminSubmission(row, origin));
+  return c.json(toAdminSubmission(row));
 });
 
 // Replace the PDF. A new file resets watermarking (status → awaiting, old
@@ -265,7 +260,6 @@ route.put("/:id/pdf", pdfUploadBodyLimit, async (c) => {
   if (id === null) throw new HTTPException(404, { message: "Submission not found" });
 
   const db = getDb(c.env.DB);
-  const origin = new URL(c.req.url).origin;
 
   const body = await c.req.parseBody();
   const pdf = await parsePdfFile(body["pdf"]);
@@ -322,7 +316,7 @@ route.put("/:id/pdf", pdfUploadBodyLimit, async (c) => {
     );
   }
 
-  return c.json(toAdminSubmission(row, origin));
+  return c.json(toAdminSubmission(row));
 });
 
 route.delete("/:id", async (c) => {

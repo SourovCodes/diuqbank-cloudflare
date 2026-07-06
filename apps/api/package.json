@@ -15,7 +15,6 @@
     "db:migrate:remote": "wrangler d1 migrations apply diuqbank-db-prod --remote",
     "cf-typegen": "wrangler types",
     "openapi:emit": "tsx scripts/emit-openapi.ts",
-    "wipe": "node scripts/wipe.mjs",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit"
   },

@@ -10,26 +10,31 @@ type UserRow = Pick<
   "id" | "name" | "email" | "username" | "role" | "imageKey" | "createdAt"
 >;
 
-/** Build the absolute, worker-served URL for a stored object key (served by `GET /files/:key`). */
-export const fileUrlFor = (origin: string, key: string | null): string | null =>
-  key ? `${origin}/files/${key}` : null;
+// Public custom domain of the production R2 bucket (diuqbank-files-prod).
+// Objects are served directly by Cloudflare — the API no longer proxies files.
+// Note: `wrangler dev` uploads land in the local simulated bucket, so files
+// created during local dev won't exist at this URL.
+const R2_PUBLIC_BASE = "https://r2.diuqbank.com";
 
-/** Build the absolute, worker-served URL for a stored image key. */
-export const imageUrlFor = (origin: string, imageKey: string | null): string | null =>
-  fileUrlFor(origin, imageKey);
+/** Build the public R2 URL for a stored object key. */
+export const fileUrlFor = (key: string | null): string | null =>
+  key ? `${R2_PUBLIC_BASE}/${key}` : null;
+
+/** Build the public R2 URL for a stored image key. */
+export const imageUrlFor = (imageKey: string | null): string | null =>
+  fileUrlFor(imageKey);
 
 /**
  * The public-safe user shape returned by auth endpoints. Centralised so every
- * endpoint that exposes a user stays in sync. `origin` is the request origin
- * (e.g. `https://api.example.com`) used to build absolute image URLs.
+ * endpoint that exposes a user stays in sync.
  */
-export const toAuthUser = (row: UserRow, origin: string): UserDTO => ({
+export const toAuthUser = (row: UserRow): UserDTO => ({
   id: row.id,
   name: row.name,
   email: row.email,
   username: row.username,
   role: row.role,
-  image: imageUrlFor(origin, row.imageKey),
+  image: imageUrlFor(row.imageKey),
   createdAt: row.createdAt,
 });
 
@@ -46,11 +51,11 @@ type ContributorRow = Pick<
  * `users.submission_count` column, which SQLite triggers keep in sync on every
  * submission insert/delete/move.
  */
-export const toContributor = (row: ContributorRow, origin: string): ContributorDTO => ({
+export const toContributor = (row: ContributorRow): ContributorDTO => ({
   id: row.id,
   name: row.name,
   username: row.username,
-  image: imageUrlFor(origin, row.imageKey),
+  image: imageUrlFor(row.imageKey),
   submissionCount: row.submissionCount,
   createdAt: row.createdAt,
 });
@@ -60,12 +65,11 @@ export type Contributor = ReturnType<typeof toContributor>;
 /** Minimal contributor reference embedded in a submission. */
 export const toContributorSummary = (
   row: Pick<User, "id" | "name" | "username" | "imageKey">,
-  origin: string,
 ): ContributorSummaryDTO => ({
   id: row.id,
   name: row.name,
   username: row.username,
-  image: imageUrlFor(origin, row.imageKey),
+  image: imageUrlFor(row.imageKey),
 });
 
 export type ContributorSummary = ReturnType<typeof toContributorSummary>;

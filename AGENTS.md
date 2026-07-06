@@ -98,8 +98,18 @@ builtin, not the app's deploy script.
   find-or-creates the user by email, and returns a 7-day HS256 JWT. `verify`
   from `hono/jwt` needs the algorithm as the third argument:
   `verify(t, secret, "HS256")`.
-- **Files:** R2 binding `BUCKET`. The Worker serves objects at
-  `GET /files/:key{.+}`. Uploads are magic-byte validated.
+- **Files:** R2 binding `BUCKET` for writes; objects are served publicly from
+  the bucket's custom domain `https://r2.diuqbank.com/<key>` (see `fileUrlFor`
+  in `src/lib/user-shape.ts`) — the Worker does not proxy files. Uploads are
+  magic-byte validated.
+
+## Production Safety
+
+This site is **live in production** (web: diuqbank.com, api: api.diuqbank.com,
+files: r2.diuqbank.com). Never delete or wipe data in the remote D1 database or
+the R2 bucket. Destructive commands (`wrangler d1 execute --remote` with
+DELETE/DROP, bucket deletions) require explicit human sign-off; migrations that
+drop tables/columns need the owner's approval.
 
 ## Web Conventions (`apps/web`)
 

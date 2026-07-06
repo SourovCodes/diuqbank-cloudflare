@@ -16,8 +16,8 @@ type AdminUserRow = Pick<
  * Admin-facing user shape: the full auth-user fields (incl. `email` and `role`)
  * plus a dynamically-computed `submissionCount`.
  */
-export const toAdminUser = (row: AdminUserRow, origin: string): AdminUserDTO => ({
-  ...toAuthUser(row, origin),
+export const toAdminUser = (row: AdminUserRow): AdminUserDTO => ({
+  ...toAuthUser(row),
   submissionCount: row.submissionCount,
 });
 
@@ -50,21 +50,21 @@ type AdminSubmissionRow = Pick<
  * Admin-facing submission shape: the full row plus the parent question (id +
  * human-readable title), the contributor summary, and absolute file URLs.
  */
-export const toAdminSubmission = (row: AdminSubmissionRow, origin: string): AdminSubmissionDTO => ({
+export const toAdminSubmission = (row: AdminSubmissionRow): AdminSubmissionDTO => ({
   id: row.id,
   question: {
     id: row.question.id,
     title: buildQuestionTitle(row.question),
   },
-  contributor: row.user ? toContributorSummary(row.user, origin) : null,
+  contributor: row.user ? toContributorSummary(row.user) : null,
   section: row.section,
   batch: row.batch,
   fileSize: row.fileSize,
   viewCount: row.viewCount,
   watermarkStatus: row.watermarkStatus,
   watermarkError: row.watermarkError,
-  pdfUrl: fileUrlFor(origin, row.pdfKey),
-  watermarkedPdfUrl: fileUrlFor(origin, row.watermarkedPdfKey),
+  pdfUrl: fileUrlFor(row.pdfKey),
+  watermarkedPdfUrl: fileUrlFor(row.watermarkedPdfKey),
   createdAt: row.createdAt,
 });
 
@@ -76,9 +76,8 @@ export type AdminSubmission = ReturnType<typeof toAdminSubmission>;
  */
 export const toAdminSubmissionDetail = (
   row: AdminSubmissionRow,
-  origin: string,
   source: { autoSubmissionId: number | null },
 ): AdminSubmissionDetailDTO => ({
-  ...toAdminSubmission(row, origin),
+  ...toAdminSubmission(row),
   autoSubmissionId: source.autoSubmissionId,
 });

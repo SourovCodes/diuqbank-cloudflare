@@ -133,8 +133,7 @@ auth.post(
     c.env.JWT_SECRET,
   );
 
-  const origin = new URL(c.req.url).origin;
-  return c.json({ token, user: toAuthUser(user, origin) }, createdNow ? 201 : 200);
+  return c.json({ token, user: toAuthUser(user) }, createdNow ? 201 : 200);
 });
 
 auth.get("/me", requireAuth, (c) => {
@@ -159,8 +158,7 @@ auth.get("/me", requireAuth, (c) => {
         throw new HTTPException(404, { message: "User not found" });
       }
 
-      const origin = new URL(c.req.url).origin;
-      return { user: toAuthUser(me, origin) };
+      return { user: toAuthUser(me) };
     },
   );
 });
@@ -187,8 +185,7 @@ auth.patch("/me", requireAuth, validate("json", profileUpdateSchema), async (c) 
 
   c.executionCtx.waitUntil(invalidateUser(c.env, payload.sub, updated.username));
 
-  const origin = new URL(c.req.url).origin;
-  return c.json({ user: toAuthUser(updated, origin) });
+  return c.json({ user: toAuthUser(updated) });
 });
 
 auth.put(
@@ -239,8 +236,7 @@ auth.put(
 
   c.executionCtx.waitUntil(invalidateUser(c.env, payload.sub, updated.username));
 
-  const origin = new URL(c.req.url).origin;
-  return c.json({ user: toAuthUser(updated, origin) });
+  return c.json({ user: toAuthUser(updated) });
 });
 
 export default auth;

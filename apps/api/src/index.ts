@@ -14,7 +14,6 @@ import admin from "./routes/admin";
 import auth from "./routes/auth";
 import autoSubmissions from "./routes/auto-submissions";
 import contributors from "./routes/contributors";
-import files from "./routes/files";
 import filterOptions from "./routes/filter-options";
 import questions from "./routes/questions";
 import submissions from "./routes/submissions";
@@ -58,16 +57,10 @@ app.use("*", async (c, next) => {
 });
 
 // Security headers. CSP is limited to frame-ancestors above so the Scalar /docs
-// page (which loads from jsdelivr) keeps working; CORP is relaxed to cross-origin
-// because this Worker also serves R2 files consumed by the web app on a different
-// origin.
-app.use(
-  "*",
-  secureHeaders({
-    xFrameOptions: "DENY",
-    crossOriginResourcePolicy: "cross-origin",
-  }),
-);
+// page (which loads from jsdelivr) keeps working. Files are served from the R2
+// public domain (r2.diuqbank.com), not this Worker, so no CORP relaxation is
+// needed.
+app.use("*", secureHeaders({ xFrameOptions: "DENY" }));
 
 // CORS locked to an env-configured allowlist (WEB_ORIGINS, comma-separated).
 // Requests from any other Origin get no CORS headers and are blocked by the
@@ -127,7 +120,6 @@ app.get("/docs", (c) =>
 );
 
 app.route("/auth", auth);
-app.route("/files", files);
 app.route("/contributors", contributors);
 app.route("/questions", questions);
 app.route("/submissions", submissions);

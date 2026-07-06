@@ -346,59 +346,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/files/{key}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Serve an uploaded file
-         * @description **Access:** `Public` — No authentication required.
-         *
-         *     Streams a stored file (e.g. a profile image) from object storage. Keys come from the `image` field on user objects. Responses are immutable and cacheable.
-         */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Object key, e.g. `users/<uuid>.png` (may contain slashes). */
-                    key: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description The file */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "image/*": string;
-                    };
-                };
-                /** @description Resource not found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/contributors": {
         parameters: {
             query?: never;
@@ -518,7 +465,7 @@ export interface paths {
          * List a contributor's submissions
          * @description **Access:** `Public` — No authentication required.
          *
-         *     A contributor's own submissions, newest first. Paginated. Each row carries its parent question (`id` + `title`) instead of the contributor, and links to its PDF via `pdfUrl` (served by `GET /files/:key`).
+         *     A contributor's own submissions, newest first. Paginated. Each row carries its parent question (`id` + `title`) instead of the contributor, and links to its PDF via `pdfUrl` (served from the public R2 domain).
          */
         get: {
             parameters: {
@@ -742,7 +689,7 @@ export interface paths {
          * List a question's submissions
          * @description **Access:** `Public` — No authentication required.
          *
-         *     **All** submissions for a question (no pagination — a single question has few). Each submission links to its PDF via `pdfUrl` (served by `GET /files/:key`) and includes the contributor, if any.
+         *     **All** submissions for a question (no pagination — a single question has few). Each submission links to its PDF via `pdfUrl` (served from the public R2 domain) and includes the contributor, if any.
          */
         get: {
             parameters: {
@@ -4261,77 +4208,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/admin/imports/auto-submissions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Import legacy submissions into the auto pipeline
-         * @description **Access:** `Admin` — Requires a bearer token from an account with `role: "admin"`.
-         *
-         *     Pulls up to `limit` (default 10) not-yet-imported submissions from the legacy diuqbank.com feed (oldest first), downloads each original PDF, find-or-creates the original uploader (copying their avatar on first import), records the legacy view count, and enqueues them for AI extraction. Deduped by legacy id, so calling it repeatedly walks the backlog.
-         */
-        post: {
-            parameters: {
-                query?: {
-                    /** @description How many to import this call (1–500). */
-                    limit?: number;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Import summary */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ImportAutoSubmissionsResult"];
-                    };
-                };
-                /** @description Validation failed or bad request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Missing or invalid bearer token */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Admin access required */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/admin/users": {
         parameters: {
             query?: never;
@@ -4790,7 +4666,7 @@ export interface components {
             viewCount: number;
             /** @description Unix epoch seconds (UTC) */
             createdAt: number;
-            /** @description Absolute URL to the submission PDF, served by `GET /files/:key`. */
+            /** @description Absolute URL to the submission PDF, served from the public R2 domain (`r2.diuqbank.com`). */
             pdfUrl: string | null;
         };
         ContributorSubmissionList: {
@@ -4827,7 +4703,7 @@ export interface components {
                 viewCount: number;
                 /** @description Unix epoch seconds (UTC) */
                 createdAt: number;
-                /** @description Absolute URL to the submission PDF, served by `GET /files/:key`. */
+                /** @description Absolute URL to the submission PDF, served from the public R2 domain (`r2.diuqbank.com`). */
                 pdfUrl: string | null;
             }[];
             meta: {
@@ -4907,7 +4783,7 @@ export interface components {
             viewCount: number;
             /** @description Unix epoch seconds (UTC) */
             createdAt: number;
-            /** @description Absolute URL to the submission PDF, served by `GET /files/:key`. */
+            /** @description Absolute URL to the submission PDF, served from the public R2 domain (`r2.diuqbank.com`). */
             pdfUrl: string | null;
             contributor: {
                 id: number;
@@ -4953,7 +4829,7 @@ export interface components {
                 viewCount: number;
                 /** @description Unix epoch seconds (UTC) */
                 createdAt: number;
-                /** @description Absolute URL to the submission PDF, served by `GET /files/:key`. */
+                /** @description Absolute URL to the submission PDF, served from the public R2 domain (`r2.diuqbank.com`). */
                 pdfUrl: string | null;
                 contributor: {
                     id: number;
@@ -4979,7 +4855,7 @@ export interface components {
             rejectedReason: string | null;
             questionId: number | null;
             submissionId: number | null;
-            /** @description Absolute URL to the uploaded PDF, served by `GET /files/:key`. */
+            /** @description Absolute URL to the uploaded PDF, served from the public R2 domain (`r2.diuqbank.com`). */
             pdfUrl: string | null;
             /** @description Unix epoch seconds (UTC) */
             createdAt: number;
@@ -5001,7 +4877,7 @@ export interface components {
                 rejectedReason: string | null;
                 questionId: number | null;
                 submissionId: number | null;
-                /** @description Absolute URL to the uploaded PDF, served by `GET /files/:key`. */
+                /** @description Absolute URL to the uploaded PDF, served from the public R2 domain (`r2.diuqbank.com`). */
                 pdfUrl: string | null;
                 /** @description Unix epoch seconds (UTC) */
                 createdAt: number;
@@ -5269,7 +5145,7 @@ export interface components {
             /** @enum {string} */
             watermarkStatus: "awaiting" | "completed" | "failed";
             watermarkError: string | null;
-            /** @description Absolute URL to the original PDF, served by `GET /files/:key`. */
+            /** @description Absolute URL to the original PDF, served from the public R2 domain (`r2.diuqbank.com`). */
             pdfUrl: string | null;
             /** @description Absolute URL to the watermarked PDF, if one has been generated. */
             watermarkedPdfUrl: string | null;
@@ -5297,7 +5173,7 @@ export interface components {
             /** @enum {string} */
             watermarkStatus: "awaiting" | "completed" | "failed";
             watermarkError: string | null;
-            /** @description Absolute URL to the original PDF, served by `GET /files/:key`. */
+            /** @description Absolute URL to the original PDF, served from the public R2 domain (`r2.diuqbank.com`). */
             pdfUrl: string | null;
             /** @description Absolute URL to the watermarked PDF, if one has been generated. */
             watermarkedPdfUrl: string | null;
@@ -5328,7 +5204,7 @@ export interface components {
                 /** @enum {string} */
                 watermarkStatus: "awaiting" | "completed" | "failed";
                 watermarkError: string | null;
-                /** @description Absolute URL to the original PDF, served by `GET /files/:key`. */
+                /** @description Absolute URL to the original PDF, served from the public R2 domain (`r2.diuqbank.com`). */
                 pdfUrl: string | null;
                 /** @description Absolute URL to the watermarked PDF, if one has been generated. */
                 watermarkedPdfUrl: string | null;
@@ -5393,7 +5269,7 @@ export interface components {
             } | null;
             questionId: number | null;
             submissionId: number | null;
-            /** @description Absolute URL to the uploaded PDF, served by `GET /files/:key`. */
+            /** @description Absolute URL to the uploaded PDF, served from the public R2 domain (`r2.diuqbank.com`). */
             pdfUrl: string | null;
             /** @description Unix epoch seconds (UTC) */
             createdAt: number;
@@ -5449,7 +5325,7 @@ export interface components {
             } | null;
             questionId: number | null;
             submissionId: number | null;
-            /** @description Absolute URL to the uploaded PDF, served by `GET /files/:key`. */
+            /** @description Absolute URL to the uploaded PDF, served from the public R2 domain (`r2.diuqbank.com`). */
             pdfUrl: string | null;
             /** @description Unix epoch seconds (UTC) */
             createdAt: number;
@@ -5514,7 +5390,7 @@ export interface components {
                 } | null;
                 questionId: number | null;
                 submissionId: number | null;
-                /** @description Absolute URL to the uploaded PDF, served by `GET /files/:key`. */
+                /** @description Absolute URL to the uploaded PDF, served from the public R2 domain (`r2.diuqbank.com`). */
                 pdfUrl: string | null;
                 /** @description Unix epoch seconds (UTC) */
                 createdAt: number;
@@ -5533,21 +5409,6 @@ export interface components {
             autoPublished: number;
             autoRejected: number;
             autoPendingReview: number;
-        };
-        ImportAutoSubmissionsResult: {
-            /** @description Auto-submissions created and enqueued for AI processing. */
-            imported: {
-                legacyId: number;
-                autoSubmissionId: number;
-                userId: number;
-            }[];
-            /** @description Items skipped due to a download/insert error. */
-            failed: {
-                legacyId: number;
-                error: string;
-            }[];
-            /** @description True if more un-imported legacy submissions likely remain. */
-            remaining: boolean;
         };
         AdminUser: {
             id: number;

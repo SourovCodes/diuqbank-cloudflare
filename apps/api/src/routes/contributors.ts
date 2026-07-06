@@ -41,7 +41,6 @@ contributors.get("/", validate("query", contributorsListQuery), (c) => {
     { versions: ["c:list"], key: `contributors:list:${page}:${perPage}` },
     async () => {
       const db = getDb(c.env.DB);
-      const origin = new URL(c.req.url).origin;
 
       const rows = await db
         .select({
@@ -64,7 +63,7 @@ contributors.get("/", validate("query", contributorsListQuery), (c) => {
         .where(gt(users.submissionCount, 0));
 
       return {
-        data: rows.map((row) => toContributor(row, origin)),
+        data: rows.map((row) => toContributor(row)),
         meta: buildMeta(page, perPage, total),
       };
     },
@@ -79,7 +78,6 @@ contributors.get("/:username", (c) => {
     { versions: [`c:${username}`], key: `contributors:${username}` },
     async () => {
       const db = getDb(c.env.DB);
-      const origin = new URL(c.req.url).origin;
 
       const [user] = await db
         .select({
@@ -98,7 +96,7 @@ contributors.get("/:username", (c) => {
         throw new HTTPException(404, { message: "Contributor not found" });
       }
 
-      return toContributor(user, origin);
+      return toContributor(user);
     },
   );
 });
@@ -124,7 +122,6 @@ contributors.get(
       },
       async () => {
         const db = getDb(c.env.DB);
-        const origin = new URL(c.req.url).origin;
 
         // Confirm the contributor exists so a bad username is a clear 404, not an
         // empty list.
@@ -178,7 +175,7 @@ contributors.get(
             viewCount: s.viewCount,
             createdAt: s.createdAt,
             // Prefer the watermarked file once it exists; fall back to the original.
-            pdfUrl: fileUrlFor(origin, s.watermarkedPdfKey ?? s.pdfKey),
+            pdfUrl: fileUrlFor(s.watermarkedPdfKey ?? s.pdfKey),
           })),
           meta: buildMeta(page, perPage, total),
         };

@@ -28,7 +28,6 @@ const adminUserColumns = {
 route.get("/", validate("query", usersListQuery), async (c) => {
   const { page, perPage, search, role } = c.req.valid("query");
   const db = getDb(c.env.DB);
-  const origin = new URL(c.req.url).origin;
 
   const filters: SQL[] = [];
   if (role) filters.push(eq(users.role, role));
@@ -55,7 +54,7 @@ route.get("/", validate("query", usersListQuery), async (c) => {
   ]);
 
   return c.json({
-    data: rows.map((u) => toAdminUser(u, origin)),
+    data: rows.map((u) => toAdminUser(u)),
     meta: buildMeta(page, perPage, total),
   });
 });
@@ -65,7 +64,6 @@ route.get("/:id", async (c) => {
   if (id === null) throw new HTTPException(404, { message: "User not found" });
 
   const db = getDb(c.env.DB);
-  const origin = new URL(c.req.url).origin;
 
   const [row] = await db
     .select(adminUserColumns)
@@ -74,7 +72,7 @@ route.get("/:id", async (c) => {
     .limit(1);
   if (!row) throw new HTTPException(404, { message: "User not found" });
 
-  return c.json(toAdminUser(row, origin));
+  return c.json(toAdminUser(row));
 });
 
 route.patch("/:id", validate("json", userUpdateSchema), async (c) => {
@@ -95,7 +93,6 @@ route.patch("/:id", validate("json", userUpdateSchema), async (c) => {
   }
 
   const db = getDb(c.env.DB);
-  const origin = new URL(c.req.url).origin;
 
   // A duplicate username surfaces as a UNIQUE constraint error → 409 via onError.
   const [updated] = await db
@@ -107,7 +104,7 @@ route.patch("/:id", validate("json", userUpdateSchema), async (c) => {
 
   c.executionCtx.waitUntil(invalidateUser(c.env, id, updated.username));
 
-  return c.json(toAdminUser(updated, origin));
+  return c.json(toAdminUser(updated));
 });
 
 route.delete("/:id", async (c) => {

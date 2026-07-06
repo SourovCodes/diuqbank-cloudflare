@@ -169,7 +169,7 @@ const publicSubmission = z.object({
   pdfUrl: z
     .string()
     .nullable()
-    .describe("Absolute URL to the submission PDF, served by `GET /files/:key`."),
+    .describe("Absolute URL to the submission PDF, served from the public R2 domain (`r2.diuqbank.com`)."),
   contributor: contributorSummary.nullable(),
 });
 
@@ -196,7 +196,7 @@ const contributorSubmission = z.object({
   pdfUrl: z
     .string()
     .nullable()
-    .describe("Absolute URL to the submission PDF, served by `GET /files/:key`."),
+    .describe("Absolute URL to the submission PDF, served from the public R2 domain (`r2.diuqbank.com`)."),
 });
 
 const contributorSubmissionList = z.object({
@@ -250,7 +250,7 @@ const autoSubmission = z.object({
   pdfUrl: z
     .string()
     .nullable()
-    .describe("Absolute URL to the uploaded PDF, served by `GET /files/:key`."),
+    .describe("Absolute URL to the uploaded PDF, served from the public R2 domain (`r2.diuqbank.com`)."),
   createdAt: z.number().int().describe("Unix epoch seconds (UTC)"),
 });
 
@@ -307,7 +307,7 @@ const adminSubmission = z.object({
   pdfUrl: z
     .string()
     .nullable()
-    .describe("Absolute URL to the original PDF, served by `GET /files/:key`."),
+    .describe("Absolute URL to the original PDF, served from the public R2 domain (`r2.diuqbank.com`)."),
   watermarkedPdfUrl: z
     .string()
     .nullable()
@@ -364,7 +364,7 @@ const adminAutoSubmission = z.object({
   pdfUrl: z
     .string()
     .nullable()
-    .describe("Absolute URL to the uploaded PDF, served by `GET /files/:key`."),
+    .describe("Absolute URL to the uploaded PDF, served from the public R2 domain (`r2.diuqbank.com`)."),
   createdAt: z.number().int().describe("Unix epoch seconds (UTC)"),
 });
 
@@ -389,24 +389,6 @@ const adminContributorStats = z
 
 const adminAutoSubmissionDetail = adminAutoSubmission.extend({
   contributorStats: adminContributorStats,
-});
-
-const importAutoSubmissionsResult = z.object({
-  imported: z
-    .array(
-      z.object({
-        legacyId: z.number().int(),
-        autoSubmissionId: z.number().int(),
-        userId: z.number().int(),
-      }),
-    )
-    .describe("Auto-submissions created and enqueued for AI processing."),
-  failed: z
-    .array(z.object({ legacyId: z.number().int(), error: z.string() }))
-    .describe("Items skipped due to a download/insert error."),
-  remaining: z
-    .boolean()
-    .describe("True if more un-imported legacy submissions likely remain."),
 });
 
 const adminUser = z.object({
@@ -540,7 +522,6 @@ const componentSchemas = {
   AdminAutoSubmissionDetail: toSchema(adminAutoSubmissionDetail),
   AdminAutoSubmissionList: toSchema(adminAutoSubmissionList),
   AdminContributorStats: toSchema(adminContributorStats),
-  ImportAutoSubmissionsResult: toSchema(importAutoSubmissionsResult),
   AdminUser: toSchema(adminUser),
   AdminUserList: toSchema(adminUserList),
 };
@@ -1266,31 +1247,6 @@ const adminPaths = {
       },
     },
   },
-  "/admin/imports/auto-submissions": {
-    post: {
-      tags: ["admin-imports"],
-      summary: "Import legacy submissions into the auto pipeline",
-      ...authFields(
-        "Admin",
-        "Pulls up to `limit` (default 10) not-yet-imported submissions from the legacy diuqbank.com feed (oldest first), downloads each original PDF, find-or-creates the original uploader (copying their avatar on first import), records the legacy view count, and enqueues them for AI extraction. Deduped by legacy id, so calling it repeatedly walks the backlog.",
-      ),
-      parameters: [
-        {
-          name: "limit",
-          in: "query",
-          required: false,
-          schema: { type: "integer", minimum: 1, maximum: 500, default: 10 },
-          description: "How many to import this call (1–500).",
-        },
-      ],
-      responses: {
-        "200": okJson("Import summary", ref("ImportAutoSubmissionsResult")),
-        "400": commonErrors["400"],
-        "401": commonErrors["401"],
-        "403": commonErrors["403"],
-      },
-    },
-  },
   "/admin/users": {
     get: {
       tags: ["admin-users"],
@@ -1411,10 +1367,6 @@ export const buildOpenApiDoc = () => ({
         "Sign in with Google and manage the currently signed-in user (profile, avatar).",
     },
     {
-      name: "files",
-      description: "Public file serving for uploaded objects (e.g. profile images).",
-    },
-    {
       name: "contributors",
       description: "Public read access to contributors (users who have submitted).",
     },
@@ -1445,10 +1397,6 @@ export const buildOpenApiDoc = () => ({
       name: "admin-auto-submissions",
       description: "Admin: review and manage AI auto-submissions.",
     },
-    {
-      name: "admin-imports",
-      description: "Admin: bulk-import legacy submissions into the auto pipeline.",
-    },
     { name: "admin-users", description: "Admin: manage users." },
   ],
   "x-tagGroups": [
@@ -1456,7 +1404,6 @@ export const buildOpenApiDoc = () => ({
       name: "Non-admin",
       tags: [
         "auth",
-        "files",
         "contributors",
         "questions",
         "submissions",
@@ -1474,7 +1421,6 @@ export const buildOpenApiDoc = () => ({
         "admin-questions",
         "admin-submissions",
         "admin-auto-submissions",
-        "admin-imports",
         "admin-users",
       ],
     },
@@ -1572,32 +1518,6 @@ export const buildOpenApiDoc = () => ({
         },
       },
     },
-    "/files/{key}": {
-      get: {
-        tags: ["files"],
-        summary: "Serve an uploaded file",
-        ...authFields(
-          "Public",
-          "Streams a stored file (e.g. a profile image) from object storage. Keys come from the `image` field on user objects. Responses are immutable and cacheable.",
-        ),
-        parameters: [
-          {
-            name: "key",
-            in: "path",
-            required: true,
-            schema: { type: "string" },
-            description: "Object key, e.g. `users/<uuid>.png` (may contain slashes).",
-          },
-        ],
-        responses: {
-          "200": {
-            description: "The file",
-            content: { "image/*": { schema: { type: "string", format: "binary" } } },
-          },
-          "404": commonErrors["404"],
-        },
-      },
-    },
     "/contributors": {
       get: {
         tags: ["contributors"],
@@ -1642,7 +1562,7 @@ export const buildOpenApiDoc = () => ({
         summary: "List a contributor's submissions",
         ...authFields(
           "Public",
-          "A contributor's own submissions, newest first. Paginated. Each row carries its parent question (`id` + `title`) instead of the contributor, and links to its PDF via `pdfUrl` (served by `GET /files/:key`).",
+          "A contributor's own submissions, newest first. Paginated. Each row carries its parent question (`id` + `title`) instead of the contributor, and links to its PDF via `pdfUrl` (served from the public R2 domain).",
         ),
         parameters: [
           {
@@ -1718,7 +1638,7 @@ export const buildOpenApiDoc = () => ({
         summary: "List a question's submissions",
         ...authFields(
           "Public",
-          "**All** submissions for a question (no pagination — a single question has few). Each submission links to its PDF via `pdfUrl` (served by `GET /files/:key`) and includes the contributor, if any.",
+          "**All** submissions for a question (no pagination — a single question has few). Each submission links to its PDF via `pdfUrl` (served from the public R2 domain) and includes the contributor, if any.",
         ),
         parameters: [
           {
