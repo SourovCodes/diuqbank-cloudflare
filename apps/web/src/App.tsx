@@ -30,6 +30,7 @@ const AdminAutoSubmissionDetail = lazy(
 );
 const AdminUserList = lazy(() => import("./pages/admin/AdminUserList"));
 const AdminUserDetail = lazy(() => import("./pages/admin/AdminUserDetail"));
+const AdminBackups = lazy(() => import("./pages/admin/AdminBackups"));
 const AdminQuestionList = lazy(() => import("./pages/admin/AdminQuestionList"));
 const AdminQuestionDetail = lazy(
   () => import("./pages/admin/AdminQuestionDetail")
@@ -274,6 +275,7 @@ export default function App() {
               <Route path="/admin/exam-types" element={<AdminExamTypes />} />
               <Route path="/admin/users" element={<AdminUserList />} />
               <Route path="/admin/users/:id" element={<AdminUserDetail />} />
+              <Route path="/admin/backups" element={<AdminBackups />} />
             </Route>
           </Route>
         </Route>

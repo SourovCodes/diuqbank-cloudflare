@@ -33,6 +33,8 @@ export type AdminSubmission = components["schemas"]["AdminSubmission"];
 export type AdminSubmissionDetail =
   components["schemas"]["AdminSubmissionDetail"];
 export type AdminSubmissionList = components["schemas"]["AdminSubmissionList"];
+export type BackupArtifact = components["schemas"]["BackupArtifact"];
+export type BackupMeta = components["schemas"]["BackupMeta"];
 export type Department = components["schemas"]["Department"];
 export type DepartmentList = components["schemas"]["DepartmentList"];
 export type Course = components["schemas"]["Course"];

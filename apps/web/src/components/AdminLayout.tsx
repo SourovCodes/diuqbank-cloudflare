@@ -5,6 +5,7 @@ import {
   ArrowLeftIcon,
   BookOpenIcon,
   CalendarIcon,
+  DatabaseIcon,
   FileQuestionIcon,
   FileTextIcon,
   GaugeIcon,
@@ -44,6 +45,10 @@ const navSections: NavSection[] = [
   {
     label: "People",
     links: [{ to: "/admin/users", icon: UsersIcon, text: "Users" }],
+  },
+  {
+    label: "System",
+    links: [{ to: "/admin/backups", icon: DatabaseIcon, text: "Backups" }],
   },
 ];
 

@@ -9,6 +9,7 @@ import type {
   AdminSubmissionList,
   AdminUser,
   AdminUserList,
+  BackupMeta,
   AuthConfig,
   AuthResponse,
   AutoSubmission,
@@ -127,6 +128,32 @@ async function readErrorMessage(res: Response): Promise<string | null> {
   } catch {
     return null;
   }
+}
+
+/**
+ * Fetch an authenticated binary response and trigger a browser download. Used
+ * for admin file downloads that can't be a plain `<a href>` because they need
+ * the bearer token in the `Authorization` header.
+ */
+async function downloadFile(path: string, filename: string): Promise<void> {
+  const url = new URL(`${API_BASE}${path}`, window.location.origin);
+  const headers: Record<string, string> = {};
+  if (authToken) headers.Authorization = `Bearer ${authToken}`;
+
+  const res = await fetch(url, { headers });
+  if (!res.ok) {
+    if (res.status === 401 && authToken) setAuthToken(null);
+    throw new Error((await readErrorMessage(res)) || `${res.status} ${res.statusText}`);
+  }
+
+  const blobUrl = URL.createObjectURL(await res.blob());
+  const a = document.createElement("a");
+  a.href = blobUrl;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(blobUrl);
 }
 
 // --- Public catalogue ---
@@ -285,6 +312,31 @@ export const updateAdminUser = (
 
 export const deleteAdminUser = (id: number): Promise<void> =>
   del(`/admin/users/${id}`);
+
+// --- Backups ---
+/** Latest backup-run metadata; `null` when no snapshot has been produced yet. */
+export async function getBackupMeta(): Promise<BackupMeta | null> {
+  const url = new URL(`${API_BASE}/admin/backups`, window.location.origin);
+  const headers: Record<string, string> = {};
+  if (authToken) headers.Authorization = `Bearer ${authToken}`;
+
+  const res = await fetch(url, { headers });
+  if (res.status === 404) return null; // no backup generated yet
+  if (!res.ok) {
+    if (res.status === 401 && authToken) setAuthToken(null);
+    throw new Error((await readErrorMessage(res)) || `${res.status} ${res.statusText}`);
+  }
+  return res.json() as Promise<BackupMeta>;
+}
+
+/** Generate a fresh snapshot now (same routine as the 6-hourly cron). */
+export const runBackup = (): Promise<BackupMeta> => post("/admin/backups/run");
+
+export const downloadBackupManifest = (): Promise<void> =>
+  downloadFile("/admin/backups/manifest", "files-manifest.json");
+
+export const downloadBackupDatabase = (): Promise<void> =>
+  downloadFile("/admin/backups/database", "database-backup.sql");
 
 // --- Questions ---
 export const getAdminQuestions = (

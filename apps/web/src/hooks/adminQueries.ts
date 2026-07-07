@@ -8,6 +8,7 @@ import {
   getAdminSubmissions,
   getAdminUser,
   getAdminUsers,
+  getBackupMeta,
   type AdminAutoSubmissionParams,
   type AdminQuestionParams,
   type AdminSubmissionParams,
@@ -84,6 +85,16 @@ export function useAdminSubmission(id?: string) {
     queryKey: ["admin", "submission", id],
     queryFn: () => getAdminSubmission(id as string),
     enabled: !!id,
+  });
+}
+
+// --- Backups ---
+export function useBackupMeta() {
+  return useQuery({
+    queryKey: ["admin", "backups"],
+    queryFn: getBackupMeta,
+    // A single-item status view; don't spin on transient errors.
+    retry: false,
   });
 }
 
