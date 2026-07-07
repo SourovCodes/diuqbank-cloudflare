@@ -406,6 +406,21 @@ const adminUserList = z.object({
   meta: paginationMeta,
 });
 
+// Backup run metadata (from `backup-meta.json`), returned by GET /admin/backups
+// and POST /admin/backups/run.
+const backupArtifact = z.object({
+  key: z.string().describe("Object key in the private backup bucket."),
+  size: z.number().int().nullable().describe("Size in bytes, or null if it failed."),
+  status: z.enum(["ok", "failed"]),
+  error: z.string().nullable().describe("Failure detail when `status` is `failed`."),
+});
+const backupMeta = z.object({
+  generatedAt: z.string().describe("ISO 8601 timestamp of when the run started."),
+  fileCount: z.number().int().describe("Referenced files captured in the manifest."),
+  manifest: backupArtifact,
+  database: backupArtifact,
+});
+
 const componentSchemas = {
   GoogleSignIn: toSchema(googleSignInSchema),
   AuthConfig: toSchema(authConfig),
@@ -524,6 +539,8 @@ const componentSchemas = {
   AdminContributorStats: toSchema(adminContributorStats),
   AdminUser: toSchema(adminUser),
   AdminUserList: toSchema(adminUserList),
+  BackupArtifact: toSchema(backupArtifact),
+  BackupMeta: toSchema(backupMeta),
 };
 
 // ---------------------------------------------------------------------------
@@ -1312,6 +1329,75 @@ const adminPaths = {
       },
     },
   },
+  "/admin/backups": {
+    get: {
+      tags: ["admin-backups"],
+      summary: "Get latest backup metadata",
+      ...authFields(
+        "Admin",
+        "Metadata about the most recent backup run: timestamp, referenced-file count, and per-artifact byte size and status. `404` until the first run.",
+      ),
+      responses: {
+        "200": okJson("OK", ref("BackupMeta")),
+        "401": commonErrors["401"],
+        "403": commonErrors["403"],
+        "404": errResp("No backup has been generated yet"),
+      },
+    },
+  },
+  "/admin/backups/manifest": {
+    get: {
+      tags: ["admin-backups"],
+      summary: "Download the referenced-files manifest",
+      ...authFields(
+        "Admin",
+        "Downloads `files-manifest.json`: for every R2 object the database references, its download URL, folder path, and file name. Regenerated every 6 hours.",
+      ),
+      responses: {
+        "200": {
+          description: "The manifest JSON.",
+          content: { "application/json": { schema: { type: "object" } } },
+        },
+        "401": commonErrors["401"],
+        "403": commonErrors["403"],
+        "404": errResp("No manifest has been generated yet"),
+      },
+    },
+  },
+  "/admin/backups/database": {
+    get: {
+      tags: ["admin-backups"],
+      summary: "Download the database SQL dump",
+      ...authFields(
+        "Admin",
+        "Downloads the latest D1 SQL dump (`database-backup.sql`, schema + data). Regenerated every 6 hours.",
+      ),
+      responses: {
+        "200": {
+          description: "The SQL dump.",
+          content: { "application/sql": { schema: { type: "string", format: "binary" } } },
+        },
+        "401": commonErrors["401"],
+        "403": commonErrors["403"],
+        "404": errResp("No database backup has been generated yet"),
+      },
+    },
+  },
+  "/admin/backups/run": {
+    post: {
+      tags: ["admin-backups"],
+      summary: "Generate a backup snapshot now",
+      ...authFields(
+        "Admin",
+        "Runs the same routine as the 6-hourly cron on demand: rewrites the files manifest and D1 SQL dump, and returns the run metadata.",
+      ),
+      responses: {
+        "200": okJson("Backup complete", ref("BackupMeta")),
+        "401": commonErrors["401"],
+        "403": commonErrors["403"],
+      },
+    },
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -1398,6 +1484,10 @@ export const buildOpenApiDoc = () => ({
       description: "Admin: review and manage AI auto-submissions.",
     },
     { name: "admin-users", description: "Admin: manage users." },
+    {
+      name: "admin-backups",
+      description: "Admin: download the referenced-files manifest and DB backup.",
+    },
   ],
   "x-tagGroups": [
     {
@@ -1422,6 +1512,7 @@ export const buildOpenApiDoc = () => ({
         "admin-submissions",
         "admin-auto-submissions",
         "admin-users",
+        "admin-backups",
       ],
     },
   ],

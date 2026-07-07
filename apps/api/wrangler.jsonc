@@ -26,6 +26,16 @@
     {
       "binding": "BUCKET",
       "bucket_name": "diuqbank-files-prod"
+    },
+    // Private archive bucket for the 6-hourly backup cron (src/lib/backup.ts):
+    // the referenced-files manifest + the D1 SQL dump land here. Deliberately
+    // has NO public custom domain (unlike diuqbank-files-prod / r2.diuqbank.com)
+    // so the DB dump's user PII is never publicly reachable — downloads go only
+    // through the admin-gated /admin/backups endpoints. Create it before deploy:
+    //   wrangler r2 bucket create diuqbank-backups-prod
+    {
+      "binding": "BACKUP_BUCKET",
+      "bucket_name": "diuqbank-backups-prod"
     }
   ],
   // KV cache for the public read endpoints (+ /auth/me). Invalidated by
@@ -45,8 +55,12 @@
   // consumer = src/cron.ts) reads these back via the Analytics Engine SQL API
   // and flushes summed counts into `submissions.view_count`.
   "analytics_engine_datasets": [{ "binding": "VIEWS", "dataset": "diuqbank_views" }],
-  // Flush the buffered views into D1 every 15 minutes. Handler = src/cron.ts.
-  "triggers": { "crons": ["*/15 * * * *"] },
+  // Cron schedules — both dispatch to the single `scheduled` handler
+  // (src/cron.ts), which branches on `controller.cron`:
+  //  - `*/15 * * * *` flushes buffered submission views from WAE into D1.
+  //  - `0 */6 * * *` runs the backup job (src/lib/backup.ts): writes the
+  //    referenced-files manifest + a fresh D1 SQL dump to BACKUP_BUCKET.
+  "triggers": { "crons": ["*/15 * * * *", "0 */6 * * *"] },
   // Two throttled queues, one consumer (src/queue.ts dispatches on `kind`):
   //  - diuqbank-pdf: watermark jobs. Bounds concurrent load on the external
   //    PDF Processor. Host limits (100 entry processes, 4 cores, 4G RAM) sit
@@ -123,7 +137,11 @@
     // Account id, reused by the view-count cron to build the Analytics Engine
     // SQL API URL. Not exposed to the Worker via the top-level `account_id`, so
     // it must live here as a runtime var (public value — fine to commit).
-    "CF_ACCOUNT_ID": "fa8625f86a085605ee19ba16ccfc9615"
+    "CF_ACCOUNT_ID": "fa8625f86a085605ee19ba16ccfc9615",
+    // D1 database id, used by the backup cron to build the D1 export REST API
+    // URL. Mirrors `d1_databases[0].database_id` above (that value isn't exposed
+    // to the Worker runtime). Public value — fine to commit.
+    "CF_D1_DATABASE_ID": "e11286c4-bc44-4956-bc4e-8ce1817359fe"
   },
   "secrets": {
     "required": [
@@ -139,7 +157,10 @@
       "RECAPTCHA_SECRET_KEY",
       // Cloudflare API token (scope: Account Analytics → Read) the view-count
       // cron uses to query the Analytics Engine SQL API. Local dev: `.dev.vars`.
-      "CF_ANALYTICS_API_TOKEN"
+      "CF_ANALYTICS_API_TOKEN",
+      // Cloudflare API token (scope: Account → D1 → Read) the 6-hourly backup
+      // cron uses to call the D1 export REST API. Local dev: `.dev.vars`.
+      "CF_D1_API_TOKEN"
     ]
   }
 }

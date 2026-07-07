@@ -14,7 +14,7 @@ type UserRow = Pick<
 // Objects are served directly by Cloudflare — the API no longer proxies files.
 // Note: `wrangler dev` uploads land in the local simulated bucket, so files
 // created during local dev won't exist at this URL.
-const R2_PUBLIC_BASE = "https://r2.diuqbank.com";
+export const R2_PUBLIC_BASE = "https://r2.diuqbank.com";
 
 /** Build the public R2 URL for a stored object key. */
 export const fileUrlFor = (key: string | null): string | null =>

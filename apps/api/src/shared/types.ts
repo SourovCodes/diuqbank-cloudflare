@@ -225,6 +225,29 @@ export type AdminAutoSubmissionDetail = AdminAutoSubmission & {
 
 export type AdminUser = User & { submissionCount: number }
 
+// --- Admin: backups ---
+
+/** One artifact produced by a backup run (the files manifest or the DB dump). */
+export type BackupArtifact = {
+  /** Object key in the private backup bucket. */
+  key: string
+  /** Size in bytes, or null if this artifact failed to generate. */
+  size: number | null
+  status: 'ok' | 'failed'
+  /** Failure detail when `status` is `failed`, else null. */
+  error: string | null
+}
+
+/** Metadata describing the most recent backup run (from `backup-meta.json`). */
+export type BackupMeta = {
+  /** ISO 8601 timestamp of when the run started. */
+  generatedAt: string
+  /** Number of referenced files captured in the manifest. */
+  fileCount: number
+  manifest: BackupArtifact
+  database: BackupArtifact
+}
+
 /**
  * Impact of a category merge (departments / courses / semesters / exam types).
  * Returned both as the `preview` of a `dryRun` request and as the `summary` of

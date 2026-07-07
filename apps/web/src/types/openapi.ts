@@ -4495,6 +4495,269 @@ export interface paths {
         };
         trace?: never;
     };
+    "/admin/backups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get latest backup metadata
+         * @description **Access:** `Admin` — Requires a bearer token from an account with `role: "admin"`.
+         *
+         *     Metadata about the most recent backup run: timestamp, referenced-file count, and per-artifact byte size and status. `404` until the first run.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["BackupMeta"];
+                    };
+                };
+                /** @description Missing or invalid bearer token */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Admin access required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description No backup has been generated yet */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/backups/manifest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download the referenced-files manifest
+         * @description **Access:** `Admin` — Requires a bearer token from an account with `role: "admin"`.
+         *
+         *     Downloads `files-manifest.json`: for every R2 object the database references, its download URL, folder path, and file name. Regenerated every 6 hours.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The manifest JSON. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+                /** @description Missing or invalid bearer token */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Admin access required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description No manifest has been generated yet */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/backups/database": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download the database SQL dump
+         * @description **Access:** `Admin` — Requires a bearer token from an account with `role: "admin"`.
+         *
+         *     Downloads the latest D1 SQL dump (`database-backup.sql`, schema + data). Regenerated every 6 hours.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The SQL dump. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/sql": string;
+                    };
+                };
+                /** @description Missing or invalid bearer token */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Admin access required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description No database backup has been generated yet */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/backups/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Generate a backup snapshot now
+         * @description **Access:** `Admin` — Requires a bearer token from an account with `role: "admin"`.
+         *
+         *     Runs the same routine as the 6-hourly cron on demand: rewrites the files manifest and D1 SQL dump, and returns the run metadata.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Backup complete */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["BackupMeta"];
+                    };
+                };
+                /** @description Missing or invalid bearer token */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Admin access required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -5442,6 +5705,42 @@ export interface components {
                 perPage: number;
                 total: number;
                 totalPages: number;
+            };
+        };
+        BackupArtifact: {
+            /** @description Object key in the private backup bucket. */
+            key: string;
+            /** @description Size in bytes, or null if it failed. */
+            size: number | null;
+            /** @enum {string} */
+            status: "ok" | "failed";
+            /** @description Failure detail when `status` is `failed`. */
+            error: string | null;
+        };
+        BackupMeta: {
+            /** @description ISO 8601 timestamp of when the run started. */
+            generatedAt: string;
+            /** @description Referenced files captured in the manifest. */
+            fileCount: number;
+            manifest: {
+                /** @description Object key in the private backup bucket. */
+                key: string;
+                /** @description Size in bytes, or null if it failed. */
+                size: number | null;
+                /** @enum {string} */
+                status: "ok" | "failed";
+                /** @description Failure detail when `status` is `failed`. */
+                error: string | null;
+            };
+            database: {
+                /** @description Object key in the private backup bucket. */
+                key: string;
+                /** @description Size in bytes, or null if it failed. */
+                size: number | null;
+                /** @enum {string} */
+                status: "ok" | "failed";
+                /** @description Failure detail when `status` is `failed`. */
+                error: string | null;
             };
         };
     };

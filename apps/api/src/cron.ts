@@ -2,6 +2,7 @@ import { eq, inArray, sql } from "drizzle-orm";
 
 import { getDb } from "./db/client";
 import { submissions } from "./db/schema";
+import { runBackups } from "./lib/backup";
 import { bumpCache } from "./lib/cache";
 import type { Bindings } from "./types";
 
@@ -31,16 +32,13 @@ type SqlApiResponse = {
 };
 
 /**
- * Scheduled consumer: flush buffered submission views from Analytics Engine into
- * D1. Runs every 15 minutes (wrangler.jsonc `triggers.crons`). Reads the last
- * complete bucket via the Analytics Engine SQL API, applies summed counts to
- * `submissions.view_count` in one batch (the AFTER-UPDATE trigger keeps each
- * question's summed `view_count` in sync), then bumps the affected caches once.
+ * Flush buffered submission views from Analytics Engine into D1. Runs every 15
+ * minutes (the 15-minute cron trigger). Reads the last complete bucket via the
+ * Analytics Engine SQL API, applies summed counts to `submissions.view_count`
+ * in one batch (the AFTER-UPDATE trigger keeps each question's summed
+ * `view_count` in sync), then bumps the affected caches once.
  */
-export const handleScheduled = async (
-  _controller: ScheduledController,
-  env: Bindings,
-): Promise<void> => {
+const flushViewCounts = async (env: Bindings): Promise<void> => {
   const res = await fetch(
     `https://api.cloudflare.com/client/v4/accounts/${env.CF_ACCOUNT_ID}/analytics_engine/sql`,
     {
@@ -97,5 +95,28 @@ export const handleScheduled = async (
   if (tokens.size > 0) {
     tokens.add("q:list");
     await bumpCache(env, ...tokens);
+  }
+};
+
+/**
+ * Scheduled consumer. All cron triggers (wrangler.jsonc `triggers.crons`) invoke
+ * this one handler, so it dispatches on `controller.cron`:
+ *  - the 15-minute trigger → flush buffered submission views into D1.
+ *  - the 6-hour trigger → run the backup job (files manifest + D1 SQL dump).
+ */
+export const handleScheduled = async (
+  controller: ScheduledController,
+  env: Bindings,
+): Promise<void> => {
+  switch (controller.cron) {
+    case "0 */6 * * *":
+      await runBackups(env);
+      return;
+    case "*/15 * * * *":
+      await flushViewCounts(env);
+      return;
+    default:
+      console.warn(`Unhandled cron trigger: ${controller.cron}`);
+      return;
   }
 };

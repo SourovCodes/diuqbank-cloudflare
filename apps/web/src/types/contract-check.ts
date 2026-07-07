@@ -35,6 +35,8 @@ export type ContractChecks = [
   Expect<Eq<Schemas["AdminAutoSubmissionDetail"], dto.AdminAutoSubmissionDetail>>,
   Expect<Eq<Schemas["AdminContributorStats"], dto.AdminContributorStats>>,
   Expect<Eq<Schemas["AdminUser"], dto.AdminUser>>,
+  Expect<Eq<Schemas["BackupArtifact"], dto.BackupArtifact>>,
+  Expect<Eq<Schemas["BackupMeta"], dto.BackupMeta>>,
   Expect<Eq<Schemas["MergeSummary"], dto.MergeSummary>>,
   Expect<Eq<Schemas["ErrorResponse"], dto.ApiErrorResponse>>,
 ];

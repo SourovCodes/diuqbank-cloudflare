@@ -3,6 +3,7 @@ import { Hono } from "hono";
 import { requireAdmin, requireAuth } from "../../middleware/auth";
 import type { AppEnv } from "../../types";
 import autoSubmissions from "./auto-submissions";
+import backups from "./backups";
 import courses from "./courses";
 import departments from "./departments";
 import examTypes from "./exam-types";
@@ -24,5 +25,6 @@ admin.route("/auto-submissions", autoSubmissions);
 admin.route("/questions", questions);
 admin.route("/submissions", submissions);
 admin.route("/users", users);
+admin.route("/backups", backups);
 
 export default admin;
