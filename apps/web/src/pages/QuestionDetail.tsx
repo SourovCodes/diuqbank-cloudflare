@@ -6,6 +6,7 @@ import { Badge } from "../components/ui/Badge";
 import { StatusPage } from "../components/ui/StatusPage";
 import { PdfPreview } from "../components/submissions/SubmissionParts";
 import { SubmissionViewTracker } from "../components/submissions/SubmissionViewTracker";
+import { AdSlot } from "../components/AdSlot";
 import { cx } from "../lib/cx";
 import { formatBytes, formatCount, formatDate } from "../lib/format";
 import type { QuestionDetail as QuestionDetailData } from "../types/api";
@@ -132,6 +133,8 @@ export default function QuestionDetail() {
               </p>
             </div>
           )}
+
+          <AdSlot name="question-below-viewer" />
         </div>
 
         {showSubmissionSidebar && (
@@ -252,10 +255,14 @@ export default function QuestionDetail() {
                   )}
                 </section>
               )}
+
+              <AdSlot name="question-sidebar" className="hidden !my-0 lg:block" />
             </div>
           </aside>
         )}
       </div>
+
+      <AdSlot name="question-bottom" />
     </main>
   );
 }

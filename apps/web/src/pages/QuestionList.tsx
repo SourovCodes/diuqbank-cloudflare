@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { useFilterOptions, useQuestions } from "../hooks/queries";
 import { FilterBar } from "../components/questions/FilterBar";
 import { QuestionCard, QuestionCardSkeleton } from "../components/questions/QuestionCard";
+import { AdSlot } from "../components/AdSlot";
 import { Pagination } from "../components/ui/Pagination";
 import { cx } from "../lib/cx";
 import { parsePositiveIntParam } from "../lib/searchParams";
@@ -133,6 +134,8 @@ export default function QuestionList() {
               result.data.map((q) => <QuestionCard key={q.id} question={q} />)
             )}
           </div>
+
+          {result.data.length > 0 && <AdSlot name="questions-list" />}
 
           <Pagination meta={result.meta} onPageChange={goToPage} />
         </>

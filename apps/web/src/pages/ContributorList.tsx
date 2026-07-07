@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useContributors } from "../hooks/queries";
 import { Pagination } from "../components/ui/Pagination";
+import { AdSlot } from "../components/AdSlot";
 import { SkeletonCard } from "../components/ui/Card";
 import { cx } from "../lib/cx";
 import { formatDate } from "../lib/format";
@@ -77,6 +78,8 @@ export default function ContributorList() {
               ))
             )}
           </div>
+
+          {result.data.length > 0 && <AdSlot name="contributors-list" />}
 
           <Pagination meta={result.meta} onPageChange={goToPage} />
         </>

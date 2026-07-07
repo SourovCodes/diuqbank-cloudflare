@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { useContributors, useFilterOptions, useQuestions } from "../hooks/queries";
+import { AdSlot } from "../components/AdSlot";
 import type { Contributor } from "../types/api";
 
 const EMPTY_FILTERS = {
@@ -42,6 +43,9 @@ export default function Home() {
       <Hero />
       <Stats stats={stats} />
       <BrowseByDepartment />
+      <div className="container mx-auto px-4">
+        <AdSlot name="home-inline" />
+      </div>
       <Contributors contributors={topContributors} total={contributors?.meta.total} />
       <Contribute />
       <ClosingCta />
