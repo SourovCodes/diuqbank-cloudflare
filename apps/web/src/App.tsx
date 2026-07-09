@@ -217,6 +217,24 @@ function Footer() {
           © {new Date().getFullYear()} DIUQBank. All rights reserved.
         </span>
       </div>
+      {/* Required attribution: the floating reCAPTCHA badge is hidden site-wide. */}
+      <div className="container mx-auto px-4 pb-4 text-center text-[11px] text-gray-400 sm:text-left dark:text-gray-500">
+        This site is protected by reCAPTCHA and the Google{" "}
+        <a
+          href="https://policies.google.com/privacy"
+          className="underline hover:text-gray-600 dark:hover:text-gray-300"
+        >
+          Privacy Policy
+        </a>{" "}
+        and{" "}
+        <a
+          href="https://policies.google.com/terms"
+          className="underline hover:text-gray-600 dark:hover:text-gray-300"
+        >
+          Terms of Service
+        </a>{" "}
+        apply.
+      </div>
     </footer>
   );
 }

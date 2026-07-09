@@ -20,7 +20,7 @@ route.post("/:id/views", validate("json", submissionViewSchema), async (c) => {
   if (id === null) throw new HTTPException(404, { message: "Submission not found" });
 
   const { token } = c.req.valid("json");
-  const ok = await verifyRecaptcha(c.env.RECAPTCHA_SECRET_KEY, token);
+  const ok = await verifyRecaptcha(c.env.RECAPTCHA_SECRET_KEY, token, "submission_view");
   if (!ok) throw new HTTPException(403, { message: "reCAPTCHA verification failed" });
 
   // indexes: sampling is keyed per submission so a hot submission's views are

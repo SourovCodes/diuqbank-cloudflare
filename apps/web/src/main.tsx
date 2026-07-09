@@ -6,6 +6,9 @@ import "./index.css";
 import App from "./App";
 import { AuthProvider } from "./auth";
 import { RouteAnalytics } from "./components/RouteAnalytics";
+import { warmRecaptcha } from "./lib/recaptcha";
+
+warmRecaptcha();
 
 const queryClient = new QueryClient({
   defaultOptions: {

@@ -75,3 +75,10 @@ html.dark {
     height: calc(100dvh - 10rem);
   }
 }
+
+/* reCAPTCHA v3 runs site-wide for scoring context. The floating badge is
+   hidden per Google's FAQ, which requires the attribution text shown in the
+   footer instead. */
+.grecaptcha-badge {
+  visibility: hidden;
+}
