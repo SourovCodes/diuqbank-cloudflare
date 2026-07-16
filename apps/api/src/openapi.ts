@@ -1,3 +1,4 @@
+import { ALLOWED_EXAM_TYPES } from "@diuqbank/shared";
 import { z } from "zod";
 
 import { courseCreateSchema, courseUpdateSchema } from "./shared/schemas/admin/courses";
@@ -13,6 +14,10 @@ import {
   adminAutoSubmissionRejectSchema,
   adminAutoSubmissionUpdateSchema,
 } from "./shared/schemas/admin/auto-submissions";
+import {
+  adminManualSubmissionRejectSchema,
+  adminManualSubmissionUpdateSchema,
+} from "./shared/schemas/admin/manual-submissions";
 import {
   questionCreateSchema,
   questionUpdateSchema,
@@ -259,6 +264,32 @@ const autoSubmissionList = z.object({
   meta: paginationMeta,
 });
 
+const manualSubmissionStatusEnum = z.enum(["pending", "published", "rejected"]);
+
+const manualSubmission = z.object({
+  id: z.number().int(),
+  status: manualSubmissionStatusEnum,
+  departmentName: z.string().nullable(),
+  courseName: z.string().nullable(),
+  semesterName: z.string().nullable(),
+  examTypeName: z.string().nullable(),
+  section: z.string().nullable(),
+  batch: z.string().nullable(),
+  rejectedReason: z.string().nullable(),
+  questionId: z.number().int().nullable(),
+  submissionId: z.number().int().nullable(),
+  pdfUrl: z
+    .string()
+    .nullable()
+    .describe("Absolute URL to the uploaded PDF, served from the public R2 domain (`r2.diuqbank.com`)."),
+  createdAt: z.number().int().describe("Unix epoch seconds (UTC)"),
+});
+
+const manualSubmissionList = z.object({
+  data: z.array(manualSubmission),
+  meta: paginationMeta,
+});
+
 // --- Admin read models ----------------------------------------------------
 
 const departmentList = z.object({
@@ -326,6 +357,13 @@ const adminSubmissionDetail = adminSubmission.extend({
     .describe(
       "Id of the auto submission this submission was published from, if any.",
     ),
+  manualSubmissionId: z
+    .number()
+    .int()
+    .nullable()
+    .describe(
+      "Id of the manual submission this submission was published from, if any.",
+    ),
 });
 
 const adminAutoSubmission = z.object({
@@ -373,6 +411,47 @@ const adminAutoSubmissionList = z.object({
   meta: paginationMeta,
 });
 
+const adminManualSubmission = z.object({
+  id: z.number().int(),
+  userId: z.number().int(),
+  legacyId: z
+    .number()
+    .int()
+    .nullable()
+    .describe("Source id when bulk-imported from legacy diuqbank.com; else null."),
+  legacyViews: z
+    .number()
+    .int()
+    .nullable()
+    .describe(
+      "View count carried over from the legacy site; seeds the submission's view count on publish. Null for normal uploads.",
+    ),
+  contributor: user,
+  status: manualSubmissionStatusEnum,
+  departmentName: z.string().nullable(),
+  courseName: z.string().nullable(),
+  semesterName: z.string().nullable(),
+  examTypeName: z.string().nullable(),
+  section: z.string().nullable(),
+  batch: z.string().nullable(),
+  fileSize: z.number().int().describe("Size of the uploaded PDF in bytes."),
+  rejectedReason: z.string().nullable(),
+  reviewedBy: z.number().int().nullable(),
+  reviewer: user.nullable(),
+  questionId: z.number().int().nullable(),
+  submissionId: z.number().int().nullable(),
+  pdfUrl: z
+    .string()
+    .nullable()
+    .describe("Absolute URL to the uploaded PDF, served from the public R2 domain (`r2.diuqbank.com`)."),
+  createdAt: z.number().int().describe("Unix epoch seconds (UTC)"),
+});
+
+const adminManualSubmissionList = z.object({
+  data: z.array(adminManualSubmission),
+  meta: paginationMeta,
+});
+
 const adminContributorStats = z
   .object({
     liveSubmissionCount: z
@@ -382,13 +461,38 @@ const adminContributorStats = z
     autoPublished: z.number().int(),
     autoRejected: z.number().int(),
     autoPendingReview: z.number().int(),
+    manualPublished: z.number().int(),
+    manualRejected: z.number().int(),
+    manualPending: z.number().int(),
   })
   .describe(
-    "Review-history overview of a contributor, so admins can judge the uploader's track record at a glance.",
+    "Review-history overview of a contributor across both upload pipelines, so admins can judge the uploader's track record at a glance.",
   );
 
 const adminAutoSubmissionDetail = adminAutoSubmission.extend({
   contributorStats: adminContributorStats,
+});
+
+const taxonomyMatches = z
+  .object({
+    departmentId: z.number().int().nullable(),
+    courseId: z
+      .number()
+      .int()
+      .nullable()
+      .describe(
+        "Matched within the matched department; always null while the department is unmatched.",
+      ),
+    semesterId: z.number().int().nullable(),
+    examTypeId: z.number().int().nullable(),
+  })
+  .describe(
+    "Which existing taxonomy entity each free-text value resolves to (case-insensitive), or null when none exists yet. Approving requires every id to be non-null.",
+  );
+
+const adminManualSubmissionDetail = adminManualSubmission.extend({
+  contributorStats: adminContributorStats,
+  taxonomyMatches,
 });
 
 const adminUser = z.object({
@@ -475,6 +579,45 @@ const componentSchemas = {
     required: ["pdf"],
   },
 
+  ManualSubmission: toSchema(manualSubmission),
+  ManualSubmissionList: toSchema(manualSubmissionList),
+  ManualSubmissionCreateForm: {
+    type: "object",
+    properties: {
+      pdf: {
+        type: "string",
+        format: "binary",
+        description: "PDF file (max 20 MB).",
+      },
+      departmentName: {
+        type: "string",
+        maxLength: 100,
+        description:
+          "Department name as free text. Pick an existing department when possible; new values need an admin to create the department before the submission can be approved.",
+      },
+      courseName: {
+        type: "string",
+        maxLength: 150,
+        description:
+          "Course name as free text (scoped to the department). New values need an admin to create the course before approval.",
+      },
+      semesterName: {
+        type: "string",
+        maxLength: 100,
+        description:
+          "Semester name as free text, e.g. \"Spring 25\". New values need an admin to create the semester before approval.",
+      },
+      examTypeName: {
+        type: "string",
+        enum: [...ALLOWED_EXAM_TYPES],
+        description: "One of the platform's allowed exam types.",
+      },
+      section: { type: "string", maxLength: 100, description: "Optional section label." },
+      batch: { type: "string", maxLength: 100, description: "Optional batch label." },
+    },
+    required: ["pdf", "departmentName", "courseName", "semesterName", "examTypeName"],
+  },
+
   // Admin request bodies (derived from the route validation schemas).
   MergeRequest: toSchema(mergeSchema),
   MergeSummary: toSchema(mergeSummary),
@@ -490,6 +633,8 @@ const componentSchemas = {
   UpdateQuestion: toSchema(questionUpdateSchema),
   UpdateAutoSubmission: toSchema(adminAutoSubmissionUpdateSchema),
   RejectAutoSubmission: toSchema(adminAutoSubmissionRejectSchema),
+  UpdateManualSubmission: toSchema(adminManualSubmissionUpdateSchema),
+  RejectManualSubmission: toSchema(adminManualSubmissionRejectSchema),
   UpdateSubmission: toSchema(submissionUpdateSchema),
   IncrementSubmissionView: toSchema(submissionViewIncrementSchema),
   SubmissionView: toSchema(submissionViewSchema),
@@ -536,7 +681,11 @@ const componentSchemas = {
   AdminAutoSubmission: toSchema(adminAutoSubmission),
   AdminAutoSubmissionDetail: toSchema(adminAutoSubmissionDetail),
   AdminAutoSubmissionList: toSchema(adminAutoSubmissionList),
+  AdminManualSubmission: toSchema(adminManualSubmission),
+  AdminManualSubmissionDetail: toSchema(adminManualSubmissionDetail),
+  AdminManualSubmissionList: toSchema(adminManualSubmissionList),
   AdminContributorStats: toSchema(adminContributorStats),
+  TaxonomyMatches: toSchema(taxonomyMatches),
   AdminUser: toSchema(adminUser),
   AdminUserList: toSchema(adminUserList),
   BackupArtifact: toSchema(backupArtifact),
@@ -838,6 +987,26 @@ const autoSubmissionFilterParams = [
   },
 ];
 
+const manualSubmissionFilterParams = [
+  {
+    name: "status",
+    in: "query",
+    required: false,
+    schema: {
+      type: "string",
+      enum: ["pending", "published", "rejected"],
+    },
+    description: "Filter by review status.",
+  },
+  {
+    name: "userId",
+    in: "query",
+    required: false,
+    schema: { type: "integer", minimum: 1 },
+    description: "Filter by submitting user id.",
+  },
+];
+
 const userFilterParams = [
   searchParam("name, email, or username"),
   {
@@ -1046,7 +1215,7 @@ const adminPaths = {
       summary: "Get a submission by id",
       ...authFields(
         "Admin",
-        "A single submission with its question, contributor, file URLs, and the id of the auto submission it was published from (if any).",
+        "A single submission with its question, contributor, file URLs, and the id of the auto or manual submission it was published from (if any).",
       ),
       parameters: [idPathParam("Submission")],
       responses: {
@@ -1086,7 +1255,7 @@ const adminPaths = {
         "401": commonErrors["401"],
         "403": commonErrors["403"],
         "404": commonErrors["404"],
-        "409": errResp("An approved auto submission references this submission"),
+        "409": errResp("An approved auto or manual submission references this submission"),
       },
     },
   },
@@ -1261,6 +1430,120 @@ const adminPaths = {
         "409": errResp(
           "Only non-processing, unpublished auto submissions can be reprocessed",
         ),
+      },
+    },
+  },
+  "/admin/manual-submissions": {
+    get: {
+      tags: ["admin-manual-submissions"],
+      summary: "List manual submissions",
+      ...authFields(
+        "Admin",
+        "Paginated review queue for manual submissions. Filter by status or user. `pending` rows are the ones awaiting an admin.",
+      ),
+      parameters: [...pageParams, ...manualSubmissionFilterParams],
+      responses: {
+        "200": okJson("OK", ref("AdminManualSubmissionList")),
+        "400": commonErrors["400"],
+        "401": commonErrors["401"],
+        "403": commonErrors["403"],
+      },
+    },
+  },
+  "/admin/manual-submissions/{id}": {
+    get: {
+      tags: ["admin-manual-submissions"],
+      summary: "Get a manual submission",
+      ...authFields(
+        "Admin",
+        "Returns the uploader's metadata, submitter, reviewer, PDF URL, linked records once published, the contributor's review-history stats, and `taxonomyMatches` — which existing taxonomy entity each free-text value resolves to (null = missing; approval is blocked until every value matches).",
+      ),
+      parameters: [idPathParam("Manual submission")],
+      responses: {
+        "200": okJson("OK", ref("AdminManualSubmissionDetail")),
+        "401": commonErrors["401"],
+        "403": commonErrors["403"],
+        "404": commonErrors["404"],
+      },
+    },
+    patch: {
+      tags: ["admin-manual-submissions"],
+      summary: "Edit a manual submission",
+      ...authFields(
+        "Admin",
+        "Corrects the uploader's metadata (department, course, semester, exam type, section, batch) before approving — e.g. to align a free-text value with an existing taxonomy entity. Published rows are immutable.",
+      ),
+      parameters: [idPathParam("Manual submission")],
+      requestBody: {
+        required: true,
+        content: json(ref("UpdateManualSubmission")),
+      },
+      responses: {
+        "200": okJson("Updated", ref("AdminManualSubmissionDetail")),
+        "400": commonErrors["400"],
+        "401": commonErrors["401"],
+        "403": commonErrors["403"],
+        "404": commonErrors["404"],
+        "409": errResp("Published manual submissions cannot be edited"),
+      },
+    },
+    delete: {
+      tags: ["admin-manual-submissions"],
+      summary: "Delete a manual submission",
+      ...authFields(
+        "Admin",
+        "Deletes the manual-submission record and its original uploaded PDF. The published live submission (with its own copied PDF) is unaffected.",
+      ),
+      parameters: [idPathParam("Manual submission")],
+      responses: {
+        "204": noContent,
+        "401": commonErrors["401"],
+        "403": commonErrors["403"],
+        "404": commonErrors["404"],
+      },
+    },
+  },
+  "/admin/manual-submissions/{id}/approve": {
+    post: {
+      tags: ["admin-manual-submissions"],
+      summary: "Approve a manual submission",
+      ...authFields(
+        "Admin",
+        "Publishes a pending manual submission as a live submission. Every free-text taxonomy value must resolve to an EXISTING entity (case-insensitive) — this endpoint never creates taxonomy; a `409` lists the missing entities so the admin can create them (or edit the values) first. On success the question row is find-or-created from the resolved ids, the PDF is copied into `submissions/`, the live submission is created and linked, and the reviewing admin is recorded.",
+      ),
+      parameters: [idPathParam("Manual submission")],
+      responses: {
+        "200": okJson("Approved", ref("AdminManualSubmissionDetail")),
+        "400": errResp("Required metadata is missing — fill it in before approving"),
+        "401": commonErrors["401"],
+        "403": commonErrors["403"],
+        "404": commonErrors["404"],
+        "409": errResp(
+          "Missing taxonomy entities, already published, or the PDF is missing from storage",
+        ),
+      },
+    },
+  },
+  "/admin/manual-submissions/{id}/reject": {
+    post: {
+      tags: ["admin-manual-submissions"],
+      summary: "Reject a manual submission",
+      ...authFields(
+        "Admin",
+        "Rejects an unpublished manual submission with a required reason and records the reviewing admin.",
+      ),
+      parameters: [idPathParam("Manual submission")],
+      requestBody: {
+        required: true,
+        content: json(ref("RejectManualSubmission")),
+      },
+      responses: {
+        "200": okJson("Rejected", ref("AdminManualSubmissionDetail")),
+        "400": commonErrors["400"],
+        "401": commonErrors["401"],
+        "403": commonErrors["403"],
+        "404": commonErrors["404"],
+        "409": errResp("Published manual submissions cannot be rejected"),
       },
     },
   },
@@ -1473,6 +1756,11 @@ export const buildOpenApiDoc = () => ({
       description:
         "Signed-in users: upload a PDF for AI extraction and auto-publishing.",
     },
+    {
+      name: "manual-submissions",
+      description:
+        "Signed-in users: upload a PDF with its metadata typed as free text; an admin reviews it before it goes live.",
+    },
     { name: "admin-departments", description: "Admin: manage departments." },
     { name: "admin-courses", description: "Admin: manage courses." },
     { name: "admin-semesters", description: "Admin: manage semesters." },
@@ -1482,6 +1770,10 @@ export const buildOpenApiDoc = () => ({
     {
       name: "admin-auto-submissions",
       description: "Admin: review and manage AI auto-submissions.",
+    },
+    {
+      name: "admin-manual-submissions",
+      description: "Admin: review and manage manual submissions.",
     },
     { name: "admin-users", description: "Admin: manage users." },
     {
@@ -1499,6 +1791,7 @@ export const buildOpenApiDoc = () => ({
         "submissions",
         "filter-options",
         "auto-submissions",
+        "manual-submissions",
       ],
     },
     {
@@ -1511,6 +1804,7 @@ export const buildOpenApiDoc = () => ({
         "admin-questions",
         "admin-submissions",
         "admin-auto-submissions",
+        "admin-manual-submissions",
         "admin-users",
         "admin-backups",
       ],
@@ -1827,6 +2121,72 @@ export const buildOpenApiDoc = () => ({
           "401": commonErrors["401"],
           "404": commonErrors["404"],
           "409": errResp("Published auto submissions cannot be deleted by users"),
+        },
+      },
+    },
+    "/manual-submissions": {
+      get: {
+        tags: ["manual-submissions"],
+        summary: "List your manual submissions",
+        ...authFields(
+          "User",
+          "Returns only manual submissions owned by the authenticated user, newest first.",
+        ),
+        parameters: pageParams,
+        responses: {
+          "200": okJson("OK", ref("ManualSubmissionList")),
+          "400": commonErrors["400"],
+          "401": commonErrors["401"],
+        },
+      },
+      post: {
+        tags: ["manual-submissions"],
+        summary: "Create a manual submission",
+        ...authFields(
+          "User",
+          "Uploads a PDF plus the paper's metadata as free text (department, course, semester, exam type; the UI suggests existing values but new ones are allowed). The submission starts as `pending` and becomes a live submission once an admin approves it.",
+        ),
+        requestBody: {
+          required: true,
+          content: multipart("ManualSubmissionCreateForm"),
+        },
+        responses: {
+          "201": okJson("Created", ref("ManualSubmission")),
+          "400": commonErrors["400"],
+          "401": commonErrors["401"],
+          "413": errResp("PDF exceeds the 20 MB size limit"),
+          "429": errResp("Upload rate limit exceeded"),
+        },
+      },
+    },
+    "/manual-submissions/{id}": {
+      get: {
+        tags: ["manual-submissions"],
+        summary: "Get one of your manual submissions",
+        ...authFields(
+          "User",
+          "A single manual submission you own, including its review status, the rejection reason if any, and the linked live submission once published.",
+        ),
+        parameters: [idPathParam("Manual submission")],
+        responses: {
+          "200": okJson("OK", ref("ManualSubmission")),
+          "401": commonErrors["401"],
+          "404": commonErrors["404"],
+        },
+      },
+      delete: {
+        tags: ["manual-submissions"],
+        summary: "Delete your manual submission",
+        ...authFields(
+          "User",
+          "Deletes a manual submission only when it belongs to the authenticated user, then removes its PDF from storage. Published manual submissions cannot be deleted by users.",
+        ),
+        parameters: [idPathParam("Manual submission")],
+        responses: {
+          "204": noContent,
+          "401": commonErrors["401"],
+          "404": commonErrors["404"],
+          "409": errResp("Published manual submissions cannot be deleted by users"),
         },
       },
     },

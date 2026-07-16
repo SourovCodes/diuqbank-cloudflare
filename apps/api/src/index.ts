@@ -15,6 +15,7 @@ import auth from "./routes/auth";
 import autoSubmissions from "./routes/auto-submissions";
 import contributors from "./routes/contributors";
 import filterOptions from "./routes/filter-options";
+import manualSubmissions from "./routes/manual-submissions";
 import questions from "./routes/questions";
 import submissions from "./routes/submissions";
 import type { AppEnv, Bindings } from "./types";
@@ -125,6 +126,7 @@ app.route("/questions", questions);
 app.route("/submissions", submissions);
 app.route("/filter-options", filterOptions);
 app.route("/auto-submissions", autoSubmissions);
+app.route("/manual-submissions", manualSubmissions);
 app.route("/admin", admin);
 
 // ---------------------------------------------------------------------------

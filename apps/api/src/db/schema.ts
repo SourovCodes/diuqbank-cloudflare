@@ -202,6 +202,62 @@ export const autoSubmissions = sqliteTable(
   ],
 );
 
+export const manualSubmissions = sqliteTable(
+  "manual_submissions",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    // Set only for rows bulk-imported from the legacy diuqbank.com site; null for
+    // normal user uploads. Unique so an import can't pull the same source twice
+    // (SQLite allows many NULLs, so normal uploads are unaffected).
+    legacyId: integer("legacy_id").unique(),
+    // View count carried over from the legacy site; seeds the live submission's
+    // view_count on publish. Null for normal user uploads.
+    legacyViews: integer("legacy_views"),
+    pdfKey: text("pdf_key").notNull(),
+    fileSize: integer("file_size").notNull(),
+    status: text("status", {
+      enum: ["pending", "published", "rejected"],
+    })
+      .notNull()
+      .default("pending"),
+    // Free-text taxonomy values typed by the uploader. Nullable because rows
+    // imported from elsewhere may be partial; the approve route refuses to
+    // publish until every value resolves to an existing taxonomy entity (the
+    // admin creates the entity or edits the value to match one).
+    departmentName: text("department_name"),
+    courseName: text("course_name"),
+    semesterName: text("semester_name"),
+    examTypeName: text("exam_type_name"),
+    section: text("section"),
+    batch: text("batch"),
+    // Review / linkage.
+    rejectedReason: text("rejected_reason"),
+    reviewedBy: integer("reviewed_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    questionId: integer("question_id").references(() => questions.id, {
+      onDelete: "restrict",
+    }),
+    submissionId: integer("submission_id").references(() => submissions.id, {
+      onDelete: "restrict",
+    }),
+    createdAt: integer("created_at")
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (table) => [
+    index("manual_submissions_user_id_idx").on(table.userId),
+    index("manual_submissions_status_idx").on(table.status),
+    check(
+      "manual_submissions_status_check",
+      sql`${table.status} IN ('pending', 'published', 'rejected')`,
+    ),
+  ],
+);
+
 export const coursesRelations = relations(courses, ({ one, many }) => ({
   department: one(departments, {
     fields: [courses.departmentId],
@@ -242,6 +298,7 @@ export const questionsRelations = relations(questions, ({ one, many }) => ({
   }),
   submissions: many(submissions),
   autoSubmissions: many(autoSubmissions),
+  manualSubmissions: many(manualSubmissions),
 }));
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -251,6 +308,12 @@ export const usersRelations = relations(users, ({ many }) => ({
   }),
   reviewedAutoSubmissions: many(autoSubmissions, {
     relationName: "autoSubmissionReviewer",
+  }),
+  manualSubmissions: many(manualSubmissions, {
+    relationName: "manualSubmissionOwner",
+  }),
+  reviewedManualSubmissions: many(manualSubmissions, {
+    relationName: "manualSubmissionReviewer",
   }),
 }));
 
@@ -289,6 +352,30 @@ export const autoSubmissionsRelations = relations(
   }),
 );
 
+export const manualSubmissionsRelations = relations(
+  manualSubmissions,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [manualSubmissions.userId],
+      references: [users.id],
+      relationName: "manualSubmissionOwner",
+    }),
+    reviewer: one(users, {
+      fields: [manualSubmissions.reviewedBy],
+      references: [users.id],
+      relationName: "manualSubmissionReviewer",
+    }),
+    question: one(questions, {
+      fields: [manualSubmissions.questionId],
+      references: [questions.id],
+    }),
+    submission: one(submissions, {
+      fields: [manualSubmissions.submissionId],
+      references: [submissions.id],
+    }),
+  }),
+);
+
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type Department = typeof departments.$inferSelect;
@@ -299,3 +386,5 @@ export type Question = typeof questions.$inferSelect;
 export type Submission = typeof submissions.$inferSelect;
 export type AutoSubmission = typeof autoSubmissions.$inferSelect;
 export type NewAutoSubmission = typeof autoSubmissions.$inferInsert;
+export type ManualSubmission = typeof manualSubmissions.$inferSelect;
+export type NewManualSubmission = typeof manualSubmissions.$inferInsert;

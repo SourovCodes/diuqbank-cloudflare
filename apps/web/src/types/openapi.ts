@@ -1048,6 +1048,250 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/manual-submissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List your manual submissions
+         * @description **Access:** `User` — Requires a bearer token. Open to any signed-in user (admins included).
+         *
+         *     Returns only manual submissions owned by the authenticated user, newest first.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description 1-based page number. */
+                    page?: number;
+                    /** @description Items per page (max 100). */
+                    perPage?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ManualSubmissionList"];
+                    };
+                };
+                /** @description Validation failed or bad request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Missing or invalid bearer token */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /**
+         * Create a manual submission
+         * @description **Access:** `User` — Requires a bearer token. Open to any signed-in user (admins included).
+         *
+         *     Uploads a PDF plus the paper's metadata as free text (department, course, semester, exam type; the UI suggests existing values but new ones are allowed). The submission starts as `pending` and becomes a live submission once an admin approves it.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "multipart/form-data": components["schemas"]["ManualSubmissionCreateForm"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ManualSubmission"];
+                    };
+                };
+                /** @description Validation failed or bad request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Missing or invalid bearer token */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description PDF exceeds the 20 MB size limit */
+                413: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Upload rate limit exceeded */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/manual-submissions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get one of your manual submissions
+         * @description **Access:** `User` — Requires a bearer token. Open to any signed-in user (admins included).
+         *
+         *     A single manual submission you own, including its review status, the rejection reason if any, and the linked live submission once published.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Manual submission id. */
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ManualSubmission"];
+                    };
+                };
+                /** @description Missing or invalid bearer token */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Resource not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        /**
+         * Delete your manual submission
+         * @description **Access:** `User` — Requires a bearer token. Open to any signed-in user (admins included).
+         *
+         *     Deletes a manual submission only when it belongs to the authenticated user, then removes its PDF from storage. Published manual submissions cannot be deleted by users.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Manual submission id. */
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Deleted — no content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Missing or invalid bearer token */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Resource not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Published manual submissions cannot be deleted by users */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/departments": {
         parameters: {
             query?: never;
@@ -3301,7 +3545,7 @@ export interface paths {
          * Get a submission by id
          * @description **Access:** `Admin` — Requires a bearer token from an account with `role: "admin"`.
          *
-         *     A single submission with its question, contributor, file URLs, and the id of the auto submission it was published from (if any).
+         *     A single submission with its question, contributor, file URLs, and the id of the auto or manual submission it was published from (if any).
          */
         get: {
             parameters: {
@@ -3407,7 +3651,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description An approved auto submission references this submission */
+                /** @description An approved auto or manual submission references this submission */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -4192,6 +4436,466 @@ export interface paths {
                     };
                 };
                 /** @description Only non-processing, unpublished auto submissions can be reprocessed */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/manual-submissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List manual submissions
+         * @description **Access:** `Admin` — Requires a bearer token from an account with `role: "admin"`.
+         *
+         *     Paginated review queue for manual submissions. Filter by status or user. `pending` rows are the ones awaiting an admin.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description 1-based page number. */
+                    page?: number;
+                    /** @description Items per page (max 100). */
+                    perPage?: number;
+                    /** @description Filter by review status. */
+                    status?: "pending" | "published" | "rejected";
+                    /** @description Filter by submitting user id. */
+                    userId?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AdminManualSubmissionList"];
+                    };
+                };
+                /** @description Validation failed or bad request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Missing or invalid bearer token */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Admin access required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/manual-submissions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a manual submission
+         * @description **Access:** `Admin` — Requires a bearer token from an account with `role: "admin"`.
+         *
+         *     Returns the uploader's metadata, submitter, reviewer, PDF URL, linked records once published, the contributor's review-history stats, and `taxonomyMatches` — which existing taxonomy entity each free-text value resolves to (null = missing; approval is blocked until every value matches).
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Manual submission id. */
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AdminManualSubmissionDetail"];
+                    };
+                };
+                /** @description Missing or invalid bearer token */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Admin access required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Resource not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        /**
+         * Delete a manual submission
+         * @description **Access:** `Admin` — Requires a bearer token from an account with `role: "admin"`.
+         *
+         *     Deletes the manual-submission record and its original uploaded PDF. The published live submission (with its own copied PDF) is unaffected.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Manual submission id. */
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Deleted — no content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Missing or invalid bearer token */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Admin access required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Resource not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        /**
+         * Edit a manual submission
+         * @description **Access:** `Admin` — Requires a bearer token from an account with `role: "admin"`.
+         *
+         *     Corrects the uploader's metadata (department, course, semester, exam type, section, batch) before approving — e.g. to align a free-text value with an existing taxonomy entity. Published rows are immutable.
+         */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Manual submission id. */
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UpdateManualSubmission"];
+                };
+            };
+            responses: {
+                /** @description Updated */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AdminManualSubmissionDetail"];
+                    };
+                };
+                /** @description Validation failed or bad request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Missing or invalid bearer token */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Admin access required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Resource not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Published manual submissions cannot be edited */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/admin/manual-submissions/{id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve a manual submission
+         * @description **Access:** `Admin` — Requires a bearer token from an account with `role: "admin"`.
+         *
+         *     Publishes a pending manual submission as a live submission. Every free-text taxonomy value must resolve to an EXISTING entity (case-insensitive) — this endpoint never creates taxonomy; a `409` lists the missing entities so the admin can create them (or edit the values) first. On success the question row is find-or-created from the resolved ids, the PDF is copied into `submissions/`, the live submission is created and linked, and the reviewing admin is recorded.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Manual submission id. */
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Approved */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AdminManualSubmissionDetail"];
+                    };
+                };
+                /** @description Required metadata is missing — fill it in before approving */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Missing or invalid bearer token */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Admin access required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Resource not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Missing taxonomy entities, already published, or the PDF is missing from storage */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/manual-submissions/{id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reject a manual submission
+         * @description **Access:** `Admin` — Requires a bearer token from an account with `role: "admin"`.
+         *
+         *     Rejects an unpublished manual submission with a required reason and records the reviewing admin.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Manual submission id. */
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["RejectManualSubmission"];
+                };
+            };
+            responses: {
+                /** @description Rejected */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AdminManualSubmissionDetail"];
+                    };
+                };
+                /** @description Validation failed or bad request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Missing or invalid bearer token */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Admin access required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Resource not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Published manual submissions cannot be rejected */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -5161,6 +5865,72 @@ export interface components {
             /** @description Optional hint for the AI (e.g. department or semester) to resolve ambiguity. */
             extraContext?: string;
         };
+        ManualSubmission: {
+            id: number;
+            /** @enum {string} */
+            status: "pending" | "published" | "rejected";
+            departmentName: string | null;
+            courseName: string | null;
+            semesterName: string | null;
+            examTypeName: string | null;
+            section: string | null;
+            batch: string | null;
+            rejectedReason: string | null;
+            questionId: number | null;
+            submissionId: number | null;
+            /** @description Absolute URL to the uploaded PDF, served from the public R2 domain (`r2.diuqbank.com`). */
+            pdfUrl: string | null;
+            /** @description Unix epoch seconds (UTC) */
+            createdAt: number;
+        };
+        ManualSubmissionList: {
+            data: {
+                id: number;
+                /** @enum {string} */
+                status: "pending" | "published" | "rejected";
+                departmentName: string | null;
+                courseName: string | null;
+                semesterName: string | null;
+                examTypeName: string | null;
+                section: string | null;
+                batch: string | null;
+                rejectedReason: string | null;
+                questionId: number | null;
+                submissionId: number | null;
+                /** @description Absolute URL to the uploaded PDF, served from the public R2 domain (`r2.diuqbank.com`). */
+                pdfUrl: string | null;
+                /** @description Unix epoch seconds (UTC) */
+                createdAt: number;
+            }[];
+            meta: {
+                page: number;
+                perPage: number;
+                total: number;
+                totalPages: number;
+            };
+        };
+        ManualSubmissionCreateForm: {
+            /**
+             * Format: binary
+             * @description PDF file (max 20 MB).
+             */
+            pdf: string;
+            /** @description Department name as free text. Pick an existing department when possible; new values need an admin to create the department before the submission can be approved. */
+            departmentName: string;
+            /** @description Course name as free text (scoped to the department). New values need an admin to create the course before approval. */
+            courseName: string;
+            /** @description Semester name as free text, e.g. "Spring 25". New values need an admin to create the semester before approval. */
+            semesterName: string;
+            /**
+             * @description One of the platform's allowed exam types.
+             * @enum {string}
+             */
+            examTypeName: "Midterm" | "Final" | "Quiz" | "Lab Midterm" | "Lab Final";
+            /** @description Optional section label. */
+            section?: string;
+            /** @description Optional batch label. */
+            batch?: string;
+        };
         MergeRequest: {
             keepId: number;
             mergeIds: number[];
@@ -5226,6 +5996,18 @@ export interface components {
             extraContext?: string;
         };
         RejectAutoSubmission: {
+            reason: string;
+        };
+        UpdateManualSubmission: {
+            departmentName?: string;
+            courseName?: string;
+            semesterName?: string;
+            /** @enum {string} */
+            examTypeName?: "Midterm" | "Final" | "Quiz" | "Lab Midterm" | "Lab Final";
+            section?: string;
+            batch?: string;
+        };
+        RejectManualSubmission: {
             reason: string;
         };
         UpdateSubmission: {
@@ -5444,6 +6226,8 @@ export interface components {
             createdAt: number;
             /** @description Id of the auto submission this submission was published from, if any. */
             autoSubmissionId: number | null;
+            /** @description Id of the manual submission this submission was published from, if any. */
+            manualSubmissionId: number | null;
         };
         AdminSubmissionList: {
             data: {
@@ -5592,13 +6376,16 @@ export interface components {
             pdfUrl: string | null;
             /** @description Unix epoch seconds (UTC) */
             createdAt: number;
-            /** @description Review-history overview of a contributor, so admins can judge the uploader's track record at a glance. */
+            /** @description Review-history overview of a contributor across both upload pipelines, so admins can judge the uploader's track record at a glance. */
             contributorStats: {
                 /** @description Live submissions currently on the site. */
                 liveSubmissionCount: number;
                 autoPublished: number;
                 autoRejected: number;
                 autoPendingReview: number;
+                manualPublished: number;
+                manualRejected: number;
+                manualPending: number;
             };
         };
         AdminAutoSubmissionList: {
@@ -5665,13 +6452,207 @@ export interface components {
                 totalPages: number;
             };
         };
-        /** @description Review-history overview of a contributor, so admins can judge the uploader's track record at a glance. */
+        AdminManualSubmission: {
+            id: number;
+            userId: number;
+            /** @description Source id when bulk-imported from legacy diuqbank.com; else null. */
+            legacyId: number | null;
+            /** @description View count carried over from the legacy site; seeds the submission's view count on publish. Null for normal uploads. */
+            legacyViews: number | null;
+            contributor: {
+                id: number;
+                name: string;
+                /** Format: email */
+                email: string;
+                username: string;
+                /** @enum {string} */
+                role: "admin" | "user";
+                /** @description Absolute URL to the profile image, or null if none is set. */
+                image: string | null;
+                /** @description Unix epoch seconds (UTC) */
+                createdAt: number;
+            };
+            /** @enum {string} */
+            status: "pending" | "published" | "rejected";
+            departmentName: string | null;
+            courseName: string | null;
+            semesterName: string | null;
+            examTypeName: string | null;
+            section: string | null;
+            batch: string | null;
+            /** @description Size of the uploaded PDF in bytes. */
+            fileSize: number;
+            rejectedReason: string | null;
+            reviewedBy: number | null;
+            reviewer: {
+                id: number;
+                name: string;
+                /** Format: email */
+                email: string;
+                username: string;
+                /** @enum {string} */
+                role: "admin" | "user";
+                /** @description Absolute URL to the profile image, or null if none is set. */
+                image: string | null;
+                /** @description Unix epoch seconds (UTC) */
+                createdAt: number;
+            } | null;
+            questionId: number | null;
+            submissionId: number | null;
+            /** @description Absolute URL to the uploaded PDF, served from the public R2 domain (`r2.diuqbank.com`). */
+            pdfUrl: string | null;
+            /** @description Unix epoch seconds (UTC) */
+            createdAt: number;
+        };
+        AdminManualSubmissionDetail: {
+            id: number;
+            userId: number;
+            /** @description Source id when bulk-imported from legacy diuqbank.com; else null. */
+            legacyId: number | null;
+            /** @description View count carried over from the legacy site; seeds the submission's view count on publish. Null for normal uploads. */
+            legacyViews: number | null;
+            contributor: {
+                id: number;
+                name: string;
+                /** Format: email */
+                email: string;
+                username: string;
+                /** @enum {string} */
+                role: "admin" | "user";
+                /** @description Absolute URL to the profile image, or null if none is set. */
+                image: string | null;
+                /** @description Unix epoch seconds (UTC) */
+                createdAt: number;
+            };
+            /** @enum {string} */
+            status: "pending" | "published" | "rejected";
+            departmentName: string | null;
+            courseName: string | null;
+            semesterName: string | null;
+            examTypeName: string | null;
+            section: string | null;
+            batch: string | null;
+            /** @description Size of the uploaded PDF in bytes. */
+            fileSize: number;
+            rejectedReason: string | null;
+            reviewedBy: number | null;
+            reviewer: {
+                id: number;
+                name: string;
+                /** Format: email */
+                email: string;
+                username: string;
+                /** @enum {string} */
+                role: "admin" | "user";
+                /** @description Absolute URL to the profile image, or null if none is set. */
+                image: string | null;
+                /** @description Unix epoch seconds (UTC) */
+                createdAt: number;
+            } | null;
+            questionId: number | null;
+            submissionId: number | null;
+            /** @description Absolute URL to the uploaded PDF, served from the public R2 domain (`r2.diuqbank.com`). */
+            pdfUrl: string | null;
+            /** @description Unix epoch seconds (UTC) */
+            createdAt: number;
+            /** @description Review-history overview of a contributor across both upload pipelines, so admins can judge the uploader's track record at a glance. */
+            contributorStats: {
+                /** @description Live submissions currently on the site. */
+                liveSubmissionCount: number;
+                autoPublished: number;
+                autoRejected: number;
+                autoPendingReview: number;
+                manualPublished: number;
+                manualRejected: number;
+                manualPending: number;
+            };
+            /** @description Which existing taxonomy entity each free-text value resolves to (case-insensitive), or null when none exists yet. Approving requires every id to be non-null. */
+            taxonomyMatches: {
+                departmentId: number | null;
+                /** @description Matched within the matched department; always null while the department is unmatched. */
+                courseId: number | null;
+                semesterId: number | null;
+                examTypeId: number | null;
+            };
+        };
+        AdminManualSubmissionList: {
+            data: {
+                id: number;
+                userId: number;
+                /** @description Source id when bulk-imported from legacy diuqbank.com; else null. */
+                legacyId: number | null;
+                /** @description View count carried over from the legacy site; seeds the submission's view count on publish. Null for normal uploads. */
+                legacyViews: number | null;
+                contributor: {
+                    id: number;
+                    name: string;
+                    /** Format: email */
+                    email: string;
+                    username: string;
+                    /** @enum {string} */
+                    role: "admin" | "user";
+                    /** @description Absolute URL to the profile image, or null if none is set. */
+                    image: string | null;
+                    /** @description Unix epoch seconds (UTC) */
+                    createdAt: number;
+                };
+                /** @enum {string} */
+                status: "pending" | "published" | "rejected";
+                departmentName: string | null;
+                courseName: string | null;
+                semesterName: string | null;
+                examTypeName: string | null;
+                section: string | null;
+                batch: string | null;
+                /** @description Size of the uploaded PDF in bytes. */
+                fileSize: number;
+                rejectedReason: string | null;
+                reviewedBy: number | null;
+                reviewer: {
+                    id: number;
+                    name: string;
+                    /** Format: email */
+                    email: string;
+                    username: string;
+                    /** @enum {string} */
+                    role: "admin" | "user";
+                    /** @description Absolute URL to the profile image, or null if none is set. */
+                    image: string | null;
+                    /** @description Unix epoch seconds (UTC) */
+                    createdAt: number;
+                } | null;
+                questionId: number | null;
+                submissionId: number | null;
+                /** @description Absolute URL to the uploaded PDF, served from the public R2 domain (`r2.diuqbank.com`). */
+                pdfUrl: string | null;
+                /** @description Unix epoch seconds (UTC) */
+                createdAt: number;
+            }[];
+            meta: {
+                page: number;
+                perPage: number;
+                total: number;
+                totalPages: number;
+            };
+        };
+        /** @description Review-history overview of a contributor across both upload pipelines, so admins can judge the uploader's track record at a glance. */
         AdminContributorStats: {
             /** @description Live submissions currently on the site. */
             liveSubmissionCount: number;
             autoPublished: number;
             autoRejected: number;
             autoPendingReview: number;
+            manualPublished: number;
+            manualRejected: number;
+            manualPending: number;
+        };
+        /** @description Which existing taxonomy entity each free-text value resolves to (case-insensitive), or null when none exists yet. Approving requires every id to be non-null. */
+        TaxonomyMatches: {
+            departmentId: number | null;
+            /** @description Matched within the matched department; always null while the department is unmatched. */
+            courseId: number | null;
+            semesterId: number | null;
+            examTypeId: number | null;
         };
         AdminUser: {
             id: number;

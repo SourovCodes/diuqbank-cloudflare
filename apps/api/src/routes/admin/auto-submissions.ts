@@ -5,7 +5,6 @@ import { and, count, desc, eq, type SQL } from "drizzle-orm";
 import { getDb, type Db } from "../../db/client";
 import {
   autoSubmissions,
-  users,
   type AutoSubmission,
   type User,
 } from "../../db/schema";
@@ -13,12 +12,12 @@ import { buildMeta } from "../../shared/utils/pagination";
 import type {
   AdminAutoSubmission,
   AdminAutoSubmissionDetail,
-  AdminContributorStats,
 } from "../../shared/types";
 import {
   publishAutoSubmission,
   startAutoSubmission,
 } from "../../lib/auto-submission";
+import { loadContributorStats } from "../../lib/contributor-stats";
 import { parseId } from "../../lib/parse-id";
 import { fileUrlFor, toAuthUser } from "../../lib/user-shape";
 import { validate } from "../../lib/validator";
@@ -92,37 +91,6 @@ const toAdminAutoSubmission = (row: AdminAutoSubmissionRow): AdminAutoSubmission
   pdfUrl: fileUrlFor(row.pdfKey),
   createdAt: row.createdAt,
 });
-
-// Review-history overview of the contributor (shown next to the PDF so the
-// reviewer can judge the uploader's track record). Counts include the row
-// currently under review.
-const loadContributorStats = async (
-  db: Db,
-  userId: number,
-): Promise<AdminContributorStats> => {
-  const [autoRows, [contributor]] = await Promise.all([
-    db
-      .select({ status: autoSubmissions.status, value: count() })
-      .from(autoSubmissions)
-      .where(eq(autoSubmissions.userId, userId))
-      .groupBy(autoSubmissions.status),
-    db
-      .select({ submissionCount: users.submissionCount })
-      .from(users)
-      .where(eq(users.id, userId))
-      .limit(1),
-  ]);
-
-  const countOf = (rows: { status: string; value: number }[], status: string) =>
-    rows.find((r) => r.status === status)?.value ?? 0;
-
-  return {
-    liveSubmissionCount: contributor?.submissionCount ?? 0,
-    autoPublished: countOf(autoRows, "published"),
-    autoRejected: countOf(autoRows, "rejected"),
-    autoPendingReview: countOf(autoRows, "needs_review"),
-  };
-};
 
 const loadAutoSubmission = async (db: Db, id: number) => {
   const row = await db.query.autoSubmissions.findFirst({

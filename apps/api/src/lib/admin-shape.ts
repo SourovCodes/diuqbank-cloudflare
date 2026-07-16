@@ -71,13 +71,14 @@ export const toAdminSubmission = (row: AdminSubmissionRow): AdminSubmissionDTO =
 export type AdminSubmission = ReturnType<typeof toAdminSubmission>;
 
 /**
- * Detail variant: the base admin shape plus the id of the auto submission
- * this submission was published from (null when there is none).
+ * Detail variant: the base admin shape plus the id of the auto or manual
+ * submission this submission was published from (null when there is none).
  */
 export const toAdminSubmissionDetail = (
   row: AdminSubmissionRow,
-  source: { autoSubmissionId: number | null },
+  source: { autoSubmissionId: number | null; manualSubmissionId: number | null },
 ): AdminSubmissionDetailDTO => ({
   ...toAdminSubmission(row),
   autoSubmissionId: source.autoSubmissionId,
+  manualSubmissionId: source.manualSubmissionId,
 });

@@ -8,6 +8,7 @@ import {
   courses,
   departments,
   examTypes,
+  manualSubmissions,
   questions,
   semesters,
   submissions,
@@ -98,15 +99,21 @@ function reconcileQuestions(
           .set({ questionId: survivor.id })
           .where(inArray(submissions.questionId, lids)),
       );
-      // Published auto-submissions link to the question they were published to
-      // via `auto_submissions.question_id` (onDelete: restrict). Repoint them
-      // onto the survivor too, otherwise deleting the loser questions below
-      // fails with a FOREIGN KEY constraint error.
+      // Published auto/manual submissions link to the question they were
+      // published to via their `question_id` (onDelete: restrict). Repoint
+      // them onto the survivor too, otherwise deleting the loser questions
+      // below fails with a FOREIGN KEY constraint error.
       repoints.push(
         db
           .update(autoSubmissions)
           .set({ questionId: survivor.id })
           .where(inArray(autoSubmissions.questionId, lids)),
+      );
+      repoints.push(
+        db
+          .update(manualSubmissions)
+          .set({ questionId: survivor.id })
+          .where(inArray(manualSubmissions.questionId, lids)),
       );
     }
     for (const col of QCOLS) {

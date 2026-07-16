@@ -2,6 +2,8 @@ import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import {
   getAdminAutoSubmission,
   getAdminAutoSubmissions,
+  getAdminManualSubmission,
+  getAdminManualSubmissions,
   getAdminQuestion,
   getAdminQuestions,
   getAdminSubmission,
@@ -10,6 +12,7 @@ import {
   getAdminUsers,
   getBackupMeta,
   type AdminAutoSubmissionParams,
+  type AdminManualSubmissionParams,
   type AdminQuestionParams,
   type AdminSubmissionParams,
   type AdminUserParams,
@@ -34,6 +37,23 @@ export function useAdminAutoSubmission(id?: string) {
     // Poll while the AI pipeline is still working so review status stays live.
     refetchInterval: (query) =>
       query.state.data?.status === "processing" ? 3000 : false,
+  });
+}
+
+// --- Manual submissions ---
+export function useAdminManualSubmissions(params: AdminManualSubmissionParams) {
+  return useQuery({
+    queryKey: ["admin", "manual-submissions", params],
+    queryFn: () => getAdminManualSubmissions(params),
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useAdminManualSubmission(id?: string) {
+  return useQuery({
+    queryKey: ["admin", "manual-submission", id],
+    queryFn: () => getAdminManualSubmission(id as string),
+    enabled: !!id,
   });
 }
 

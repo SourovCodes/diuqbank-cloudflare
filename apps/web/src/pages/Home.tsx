@@ -99,7 +99,7 @@ function Hero() {
             Browse questions
           </Link>
           <Link
-            to="/submissions/auto/new"
+            to="/submissions/new"
             className="rounded-lg border border-gray-300 px-6 py-3 text-sm font-semibold transition hover:bg-gray-50 active:scale-[0.98] dark:border-gray-700 dark:hover:bg-gray-900"
           >
             Contribute a paper
@@ -246,15 +246,15 @@ function Contribute() {
     <section className="container mx-auto px-4 py-16">
       <SectionHeading
         eyebrow="Give back"
-        title="Add a paper in seconds"
-        subtitle="All it takes is a single PDF — the AI handles the rest."
+        title="Add a paper in minutes"
+        subtitle="Upload the PDF, fill in the details, and a reviewer publishes it."
       />
       <div className="grid gap-4 md:grid-cols-1">
         <ContributeCard
-          to="/submissions/auto/new"
-          badge="Fastest"
-          title="AI-assisted upload"
-          description="Drop in a PDF and let the AI read it — it fills in the department, course, semester and exam type for you."
+          to="/submissions/new"
+          badge="Simple"
+          title="Upload a question paper"
+          description="Drop in a PDF and pick the department, course, semester and exam type — or type new ones. A reviewer checks it before it goes live."
           cta="Upload a PDF"
           icon={
             <path
@@ -329,7 +329,7 @@ function ClosingCta() {
             Browse questions
           </Link>
           <Link
-            to="/submissions/auto/new"
+            to="/submissions/new"
             className="rounded-lg border border-white/40 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/10 active:scale-[0.98]"
           >
             Contribute a paper

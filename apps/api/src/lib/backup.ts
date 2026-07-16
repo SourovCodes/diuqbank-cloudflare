@@ -1,5 +1,5 @@
 import { getDb } from "../db/client";
-import { autoSubmissions, submissions, users } from "../db/schema";
+import { autoSubmissions, manualSubmissions, submissions, users } from "../db/schema";
 import type { BackupArtifact, BackupMeta } from "../shared/types";
 import type { Bindings } from "../types";
 import { R2_PUBLIC_BASE, fileUrlFor } from "./user-shape";
@@ -44,7 +44,7 @@ const errMsg = (e: unknown) => (e instanceof Error ? e.message : String(e));
 export const buildFileManifest = async (env: Bindings): Promise<FileManifest> => {
   const db = getDb(env.DB);
 
-  const [userRows, submissionRows, autoRows] = await Promise.all([
+  const [userRows, submissionRows, autoRows, manualRows] = await Promise.all([
     db.select({ id: users.id, key: users.imageKey }).from(users),
     db
       .select({
@@ -61,6 +61,13 @@ export const buildFileManifest = async (env: Bindings): Promise<FileManifest> =>
         fileSize: autoSubmissions.fileSize,
       })
       .from(autoSubmissions),
+    db
+      .select({
+        id: manualSubmissions.id,
+        key: manualSubmissions.pdfKey,
+        fileSize: manualSubmissions.fileSize,
+      })
+      .from(manualSubmissions),
   ]);
 
   const byKey = new Map<string, ManifestFile>();
@@ -97,6 +104,9 @@ export const buildFileManifest = async (env: Bindings): Promise<FileManifest> =>
   }
   for (const r of autoRows) {
     add(r.key, r.fileSize, { table: "auto_submissions", column: "pdf_key", id: r.id });
+  }
+  for (const r of manualRows) {
+    add(r.key, r.fileSize, { table: "manual_submissions", column: "pdf_key", id: r.id });
   }
 
   const files = [...byKey.values()].sort((a, b) => a.key.localeCompare(b.key));

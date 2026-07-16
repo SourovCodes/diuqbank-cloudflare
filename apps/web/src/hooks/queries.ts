@@ -7,6 +7,8 @@ import {
 import {
   getAutoSubmission,
   getAutoSubmissions,
+  getManualSubmission,
+  getManualSubmissions,
   getContributor,
   getContributors,
   getContributorSubmissions,
@@ -155,5 +157,21 @@ export function useAutoSubmission(id?: string) {
     // Auto-submissions are processed async by an AI pipeline — poll while it works.
     refetchInterval: (query) =>
       query.state.data?.status === "processing" ? 3000 : false,
+  });
+}
+
+export function useManualSubmissions(params: PaginationParams) {
+  return useQuery({
+    queryKey: ["manual-submissions", params],
+    queryFn: () => getManualSubmissions(params),
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useManualSubmission(id?: string) {
+  return useQuery({
+    queryKey: ["manual-submission", id],
+    queryFn: () => getManualSubmission(id as string),
+    enabled: !!id,
   });
 }

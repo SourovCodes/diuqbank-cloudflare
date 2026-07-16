@@ -18,6 +18,9 @@ export type AuthResponse = components["schemas"]["AuthResponse"];
 export type User = components["schemas"]["User"];
 export type AutoSubmission = components["schemas"]["AutoSubmission"];
 export type AutoSubmissionList = components["schemas"]["AutoSubmissionList"];
+export type ManualSubmission = components["schemas"]["ManualSubmission"];
+export type ManualSubmissionList =
+  components["schemas"]["ManualSubmissionList"];
 
 // --- Admin ---
 export type AdminAutoSubmission = components["schemas"]["AdminAutoSubmission"];
@@ -25,6 +28,13 @@ export type AdminAutoSubmissionDetail =
   components["schemas"]["AdminAutoSubmissionDetail"];
 export type AdminAutoSubmissionList =
   components["schemas"]["AdminAutoSubmissionList"];
+export type AdminManualSubmission =
+  components["schemas"]["AdminManualSubmission"];
+export type AdminManualSubmissionDetail =
+  components["schemas"]["AdminManualSubmissionDetail"];
+export type AdminManualSubmissionList =
+  components["schemas"]["AdminManualSubmissionList"];
+export type TaxonomyMatches = components["schemas"]["TaxonomyMatches"];
 export type AdminUser = components["schemas"]["AdminUser"];
 export type AdminUserList = components["schemas"]["AdminUserList"];
 export type AdminQuestion = components["schemas"]["AdminQuestion"];
@@ -49,6 +59,8 @@ export type MergeSummary = components["schemas"]["MergeSummary"];
 // Admin mutation payloads
 export type UpdateAutoSubmission =
   components["schemas"]["UpdateAutoSubmission"];
+export type UpdateManualSubmission =
+  components["schemas"]["UpdateManualSubmission"];
 export type UpdateUser = components["schemas"]["UpdateUser"];
 export type CreateDepartment = components["schemas"]["CreateDepartment"];
 export type UpdateDepartment = components["schemas"]["UpdateDepartment"];
@@ -63,6 +75,7 @@ export type UpdateQuestion = components["schemas"]["UpdateQuestion"];
 export type UpdateSubmission = components["schemas"]["UpdateSubmission"];
 
 export type AutoSubmissionStatus = AutoSubmission["status"];
+export type ManualSubmissionStatus = ManualSubmission["status"];
 export type UserRole = User["role"];
 
 export type QuestionFilters = {

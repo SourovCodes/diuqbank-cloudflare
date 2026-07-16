@@ -110,6 +110,27 @@ export type AutoSubmission = {
   createdAt: number
 }
 
+export type ManualSubmissionStatus = 'pending' | 'published' | 'rejected'
+
+// Manual submission (user uploads a PDF and types the taxonomy values as free
+// text; an admin reviews it before it becomes a live submission). The name
+// fields are nullable because rows imported from elsewhere may be partial.
+export type ManualSubmission = {
+  id: number
+  status: ManualSubmissionStatus
+  departmentName: string | null
+  courseName: string | null
+  semesterName: string | null
+  examTypeName: string | null
+  section: string | null
+  batch: string | null
+  rejectedReason: string | null
+  questionId: number | null
+  submissionId: number | null
+  pdfUrl: string | null
+  createdAt: number
+}
+
 export type PaginationMeta = {
   page: number
   perPage: number
@@ -169,12 +190,13 @@ export type AdminSubmission = {
 }
 
 /**
- * Detail variant of `AdminSubmission`: also carries the id of the auto
- * submission this live submission was published from (null when it wasn't
- * created through that pipeline).
+ * Detail variant of `AdminSubmission`: also carries the id of the auto or
+ * manual submission this live submission was published from (null when it
+ * wasn't created through that pipeline).
  */
 export type AdminSubmissionDetail = AdminSubmission & {
   autoSubmissionId: number | null
+  manualSubmissionId: number | null
 }
 
 export type AdminAutoSubmission = {
@@ -206,9 +228,35 @@ export type AdminAutoSubmission = {
   createdAt: number
 }
 
+export type AdminManualSubmission = {
+  id: number
+  userId: number
+  /** Source submission id when bulk-imported from legacy diuqbank.com; else null. */
+  legacyId: number | null
+  /** View count carried over from the legacy site; else null. */
+  legacyViews: number | null
+  contributor: User
+  status: ManualSubmissionStatus
+  departmentName: string | null
+  courseName: string | null
+  semesterName: string | null
+  examTypeName: string | null
+  section: string | null
+  batch: string | null
+  fileSize: number
+  rejectedReason: string | null
+  reviewedBy: number | null
+  reviewer: User | null
+  questionId: number | null
+  submissionId: number | null
+  pdfUrl: string | null
+  createdAt: number
+}
+
 /**
- * Review-history overview of a contributor, shown alongside a submission under
- * review so admins can judge the uploader's track record at a glance.
+ * Review-history overview of a contributor across both upload pipelines,
+ * shown alongside a submission under review so admins can judge the
+ * uploader's track record at a glance.
  */
 export type AdminContributorStats = {
   /** Live submissions currently on the site (`users.submission_count`). */
@@ -216,11 +264,37 @@ export type AdminContributorStats = {
   autoPublished: number
   autoRejected: number
   autoPendingReview: number
+  manualPublished: number
+  manualRejected: number
+  manualPending: number
 }
 
 /** Detail variant of `AdminAutoSubmission`: adds the contributor's track record. */
 export type AdminAutoSubmissionDetail = AdminAutoSubmission & {
   contributorStats: AdminContributorStats
+}
+
+/**
+ * Which existing taxonomy entity each free-text value on a manual submission
+ * resolves to (case-insensitive match), or null when no entity with that name
+ * exists yet. Approving requires every id to be non-null — the admin either
+ * creates the missing entity or edits the value to match an existing one.
+ */
+export type TaxonomyMatches = {
+  departmentId: number | null
+  /** Matched within the matched department; always null while the department is unmatched. */
+  courseId: number | null
+  semesterId: number | null
+  examTypeId: number | null
+}
+
+/**
+ * Detail variant of `AdminManualSubmission`: adds the contributor's track
+ * record and the taxonomy resolution used to gate the approve action.
+ */
+export type AdminManualSubmissionDetail = AdminManualSubmission & {
+  contributorStats: AdminContributorStats
+  taxonomyMatches: TaxonomyMatches
 }
 
 export type AdminUser = User & { submissionCount: number }

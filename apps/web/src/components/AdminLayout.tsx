@@ -9,6 +9,7 @@ import {
   FileQuestionIcon,
   FileTextIcon,
   GaugeIcon,
+  InboxIcon,
   LandmarkIcon,
   PenLineIcon,
   SparklesIcon,
@@ -23,6 +24,11 @@ const navSections: NavSection[] = [
   {
     label: "Review",
     links: [
+      {
+        to: "/admin/manual-submissions",
+        icon: InboxIcon,
+        text: "Review queue",
+      },
       { to: "/admin/auto-submissions", icon: SparklesIcon, text: "Auto queue" },
     ],
   },

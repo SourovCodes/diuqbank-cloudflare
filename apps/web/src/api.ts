@@ -2,6 +2,8 @@ import type {
   AdminAutoSubmission,
   AdminAutoSubmissionDetail,
   AdminAutoSubmissionList,
+  AdminManualSubmissionDetail,
+  AdminManualSubmissionList,
   AdminQuestion,
   AdminQuestionList,
   AdminSubmission,
@@ -26,6 +28,9 @@ import type {
   ExamType,
   ExamTypeList,
   FilterOptions,
+  ManualSubmission,
+  ManualSubmissionList,
+  ManualSubmissionStatus,
   MergeRequest,
   MergeSummary,
   PaginationParams,
@@ -36,6 +41,7 @@ import type {
   Semester,
   SemesterList,
   UpdateAutoSubmission,
+  UpdateManualSubmission,
   UpdateQuestion,
   UpdateSubmission,
   UpdateUser,
@@ -233,12 +239,34 @@ export const createAutoSubmission = (form: FormData): Promise<AutoSubmission> =>
 export const deleteAutoSubmission = (id: number): Promise<void> =>
   request(`/auto-submissions/${id}`, { method: "DELETE" });
 
+// --- Manual submissions ---
+export const getManualSubmissions = (
+  params: PaginationParams
+): Promise<ManualSubmissionList> => get("/manual-submissions", params);
+
+export const getManualSubmission = (
+  id: string | number
+): Promise<ManualSubmission> => get(`/manual-submissions/${id}`);
+
+export const createManualSubmission = (
+  form: FormData
+): Promise<ManualSubmission> =>
+  request("/manual-submissions", { method: "POST", body: form });
+
+export const deleteManualSubmission = (id: number): Promise<void> =>
+  request(`/manual-submissions/${id}`, { method: "DELETE" });
+
 // ---------------------------------------------------------------------------
 // Admin — every endpoint requires a bearer token from a `role: "admin"` account
 // ---------------------------------------------------------------------------
 
 export type AdminAutoSubmissionParams = PaginationParams & {
   status?: AutoSubmissionStatus;
+  userId?: number;
+};
+
+export type AdminManualSubmissionParams = PaginationParams & {
+  status?: ManualSubmissionStatus;
   userId?: number;
 };
 
@@ -297,6 +325,37 @@ export const reprocessAutoSubmission = (
 
 export const deleteAdminAutoSubmission = (id: number): Promise<void> =>
   del(`/admin/auto-submissions/${id}`);
+
+// --- Manual submissions ---
+export const getAdminManualSubmissions = (
+  params: AdminManualSubmissionParams
+): Promise<AdminManualSubmissionList> =>
+  get("/admin/manual-submissions", params);
+
+export const getAdminManualSubmission = (
+  id: string | number
+): Promise<AdminManualSubmissionDetail> =>
+  get(`/admin/manual-submissions/${id}`);
+
+export const updateAdminManualSubmission = (
+  id: number,
+  body: UpdateManualSubmission
+): Promise<AdminManualSubmissionDetail> =>
+  patch(`/admin/manual-submissions/${id}`, body);
+
+export const approveManualSubmission = (
+  id: number
+): Promise<AdminManualSubmissionDetail> =>
+  post(`/admin/manual-submissions/${id}/approve`);
+
+export const rejectManualSubmission = (
+  id: number,
+  reason: string
+): Promise<AdminManualSubmissionDetail> =>
+  post(`/admin/manual-submissions/${id}/reject`, { reason });
+
+export const deleteAdminManualSubmission = (id: number): Promise<void> =>
+  del(`/admin/manual-submissions/${id}`);
 
 // --- Users ---
 export const getAdminUsers = (params: AdminUserParams): Promise<AdminUserList> =>
