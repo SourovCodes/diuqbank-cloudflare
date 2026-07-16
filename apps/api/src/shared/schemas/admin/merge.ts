@@ -11,7 +11,9 @@ import { z } from "zod";
 export const mergeSchema = z
   .object({
     keepId: z.number().int().positive(),
-    mergeIds: z.array(z.number().int().positive()).min(1),
+    // Capped so id lists in the merge SQL stay within D1's 100-bound-parameter
+    // limit per statement (question-scale lists are chunked in lib/merge.ts).
+    mergeIds: z.array(z.number().int().positive()).min(1).max(40),
     dryRun: z.boolean().optional().default(false),
   })
   .refine((d) => !d.mergeIds.includes(d.keepId), {

@@ -94,26 +94,32 @@ function reconcileQuestions(
       loserIds.push(...lids);
       submissionsMoved += losers.reduce((s, l) => s + l.submissionCount, 0);
       repoints.push(
-        db
-          .update(submissions)
-          .set({ questionId: survivor.id })
-          .where(inArray(submissions.questionId, lids)),
+        ...chunked(lids, (c) =>
+          db
+            .update(submissions)
+            .set({ questionId: survivor.id })
+            .where(inArray(submissions.questionId, c)),
+        ),
       );
       // Published auto/manual submissions link to the question they were
       // published to via their `question_id` (onDelete: restrict). Repoint
       // them onto the survivor too, otherwise deleting the loser questions
       // below fails with a FOREIGN KEY constraint error.
       repoints.push(
-        db
-          .update(autoSubmissions)
-          .set({ questionId: survivor.id })
-          .where(inArray(autoSubmissions.questionId, lids)),
+        ...chunked(lids, (c) =>
+          db
+            .update(autoSubmissions)
+            .set({ questionId: survivor.id })
+            .where(inArray(autoSubmissions.questionId, c)),
+        ),
       );
       repoints.push(
-        db
-          .update(manualSubmissions)
-          .set({ questionId: survivor.id })
-          .where(inArray(manualSubmissions.questionId, lids)),
+        ...chunked(lids, (c) =>
+          db
+            .update(manualSubmissions)
+            .set({ questionId: survivor.id })
+            .where(inArray(manualSubmissions.questionId, c)),
+        ),
       );
     }
     for (const col of QCOLS) {
@@ -129,19 +135,30 @@ function reconcileQuestions(
   // Order: repoint submissions → delete losers → update survivors.
   const statements: Stmt[] = [...repoints];
   if (loserIds.length) {
-    statements.push(db.delete(questions).where(inArray(questions.id, loserIds)));
+    statements.push(...chunked(loserIds, (c) => db.delete(questions).where(inArray(questions.id, c))));
   }
   for (const { col, value, ids } of colUpdates.values()) {
     statements.push(
-      db
-        .update(questions)
-        .set({ [col]: value } as Partial<typeof questions.$inferInsert>)
-        .where(inArray(questions.id, ids)),
+      ...chunked(ids, (c) =>
+        db
+          .update(questions)
+          .set({ [col]: value } as Partial<typeof questions.$inferInsert>)
+          .where(inArray(questions.id, c)),
+      ),
     );
   }
 
   return { statements, questionsCombined: loserIds.length, submissionsMoved, loserIds };
 }
+
+// D1 caps bound parameters at 100 per statement, and the question-id lists
+// here scale with table size — split them so no single statement exceeds it.
+const ID_CHUNK = 50;
+const chunked = (ids: number[], build: (chunk: number[]) => Stmt): Stmt[] => {
+  const out: Stmt[] = [];
+  for (let i = 0; i < ids.length; i += ID_CHUNK) out.push(build(ids.slice(i, i + ID_CHUNK)));
+  return out;
+};
 
 const combo = (q: AffectedQuestion): Combo => ({
   departmentId: q.departmentId,
