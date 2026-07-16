@@ -9,7 +9,7 @@ import type { AppEnv } from "../types";
  * (`unsafe.bindings`, type `ratelimit`); they are colo-local, so they bound how
  * fast a single user/IP can hammer an endpoint rather than acting as a global
  * quota. That is exactly what we want here: keep one caller from flooding the
- * shared PDF queue or the login endpoint.
+ * shared PDF queue, the paid Gemini path, or the login endpoint.
  */
 export const enforceRateLimit = async (
   limiter: RateLimit,

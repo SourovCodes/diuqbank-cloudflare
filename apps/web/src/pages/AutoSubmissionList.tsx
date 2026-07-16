@@ -1,22 +1,22 @@
 import { useEffect } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { useManualSubmissions } from "../hooks/queries";
+import { useAutoSubmissions } from "../hooks/queries";
 import { Pagination } from "../components/ui/Pagination";
 import { SubmissionCard } from "../components/submissions/SubmissionCard";
 import { SkeletonCard } from "../components/ui/Card";
 import { cx } from "../lib/cx";
 import { parsePositiveIntParam } from "../lib/searchParams";
 
-export default function SubmissionList() {
+export default function AutoSubmissionList() {
   const [searchParams, setSearchParams] = useSearchParams();
   const page = parsePositiveIntParam(searchParams, "page");
-  const { data, isPending, isError, error, isFetching } = useManualSubmissions({
+  const { data, isPending, isError, error, isFetching } = useAutoSubmissions({
     page,
     perPage: 12,
   });
 
   useEffect(() => {
-    document.title = "Your submissions | DIUQBank";
+    document.title = "Auto submissions | DIUQBank";
   }, []);
 
   function goToPage(next: number) {
@@ -35,15 +35,15 @@ export default function SubmissionList() {
             Your submissions
           </h1>
           <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-            Uploads awaiting review, published, or rejected.
+            Papers processed by the AI pipeline.
             {data?.meta.total ? ` ${data.meta.total} total.` : ""}
           </p>
         </div>
         <Link
-          to="/submissions/new"
+          to="/submissions/auto/new"
           className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
         >
-          New upload
+          New AI upload
         </Link>
       </div>
 
@@ -60,14 +60,14 @@ export default function SubmissionList() {
       ) : data.data.length === 0 ? (
         <div className="rounded-xl border border-dashed border-gray-200 py-16 text-center dark:border-gray-800">
           <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-            No submissions yet
+            No AI submissions yet
           </h2>
           <p className="mx-auto mt-1 max-w-sm text-sm text-gray-500 dark:text-gray-400">
-            Upload a question paper PDF with its details — a reviewer publishes
-            it once it checks out.
+            Just upload a PDF — our AI reads the paper and fills in the details
+            for you.
           </p>
           <Link
-            to="/submissions/new"
+            to="/submissions/auto/new"
             className="mt-5 inline-flex rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
           >
             Upload a PDF
@@ -88,8 +88,8 @@ export default function SubmissionList() {
               return (
                 <SubmissionCard
                   key={sub.id}
-                  to={`/submissions/${sub.id}`}
-                  title={sub.courseName ?? "Untitled"}
+                  to={`/submissions/auto/${sub.id}`}
+                  title={sub.courseName ?? "Processing…"}
                   meta={meta || null}
                   status={sub.status}
                   createdAt={sub.createdAt}

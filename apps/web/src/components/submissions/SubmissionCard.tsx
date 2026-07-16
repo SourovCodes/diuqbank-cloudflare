@@ -1,13 +1,13 @@
 import { Link } from "react-router-dom";
 import { SubmissionStatusBadge } from "../ui/SubmissionStatusBadge";
-import type { ManualSubmission } from "../../types/api";
+import type { AutoSubmission } from "../../types/api";
 import { formatDate } from "../../lib/format";
 
 type Props = {
   to: string;
   title: string;
   meta: string | null;
-  status: ManualSubmission["status"];
+  status: AutoSubmission["status"];
   createdAt: number;
 };
 

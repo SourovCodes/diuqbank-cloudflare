@@ -3,7 +3,7 @@ import { HTTPException } from "hono/http-exception";
 import { and, count, desc, eq, like, or, type SQL } from "drizzle-orm";
 
 import { getDb } from "../../db/client";
-import { manualSubmissions, submissions, users } from "../../db/schema";
+import { autoSubmissions, submissions, users } from "../../db/schema";
 import { bumpCache, invalidateUser } from "../../lib/cache";
 import { toAdminUser } from "../../lib/admin-shape";
 import { buildMeta } from "../../shared/utils/pagination";
@@ -137,15 +137,15 @@ route.delete("/:id", async (c) => {
     });
   }
 
-  // `manual_submissions.user_id` is also `restrict`; pre-count so an owned
-  // manual submission returns a clean 409 instead of a raw FK-constraint 400.
-  const [{ value: manualSubmissionCount }] = await db
+  // `auto_submissions.user_id` is also `restrict`; pre-count so an owned
+  // auto-submission returns a clean 409 instead of a raw FK-constraint 400.
+  const [{ value: autoSubmissionCount }] = await db
     .select({ value: count() })
-    .from(manualSubmissions)
-    .where(eq(manualSubmissions.userId, id));
-  if (manualSubmissionCount > 0) {
+    .from(autoSubmissions)
+    .where(eq(autoSubmissions.userId, id));
+  if (autoSubmissionCount > 0) {
     throw new HTTPException(409, {
-      message: `Cannot delete: ${manualSubmissionCount} manual submission(s) reference this user`,
+      message: `Cannot delete: ${autoSubmissionCount} auto submission(s) reference this user`,
     });
   }
 

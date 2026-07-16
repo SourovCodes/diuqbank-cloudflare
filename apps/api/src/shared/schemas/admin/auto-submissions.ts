@@ -4,21 +4,24 @@ import { z } from "zod";
 import { pageFields } from "../../utils/pagination";
 import { taxonomyName } from "../taxonomy-name";
 
-export const manualSubmissionStatus = z.enum([
-  "pending",
+export const autoSubmissionStatus = z.enum([
+  "processing",
+  "needs_review",
   "published",
   "rejected",
+  "failed",
 ]);
 
-export const adminManualSubmissionsListQuery = z.object({
+export const adminAutoSubmissionsListQuery = z.object({
   ...pageFields,
-  status: manualSubmissionStatus.optional(),
+  status: autoSubmissionStatus.optional(),
   userId: z.coerce.number().int().positive().optional(),
 });
 
-// Admins can correct the uploader's metadata before approving. All fields are
-// optional (partial); section/batch may be cleared by sending an empty string.
-export const adminManualSubmissionUpdateSchema = z
+// Admins can correct the AI-extracted metadata before approving. All fields are
+// optional (partial); section/batch/extraContext may be cleared by sending an
+// empty string.
+export const adminAutoSubmissionUpdateSchema = z
   .object({
     departmentName: taxonomyName(100),
     courseName: taxonomyName(150),
@@ -26,13 +29,14 @@ export const adminManualSubmissionUpdateSchema = z
     examTypeName: z.enum(ALLOWED_EXAM_TYPES),
     section: z.string().trim().max(100),
     batch: z.string().trim().max(100),
+    extraContext: z.string().trim().max(1000),
   })
   .partial();
 
-export const adminManualSubmissionRejectSchema = z.object({
+export const adminAutoSubmissionRejectSchema = z.object({
   reason: z.string().trim().min(1).max(1000),
 });
 
-export type AdminManualSubmissionUpdateInput = z.infer<
-  typeof adminManualSubmissionUpdateSchema
+export type AdminAutoSubmissionUpdateInput = z.infer<
+  typeof adminAutoSubmissionUpdateSchema
 >;

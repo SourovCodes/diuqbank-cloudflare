@@ -1,6 +1,7 @@
 import type {
-  AdminManualSubmissionDetail,
-  AdminManualSubmissionList,
+  AdminAutoSubmission,
+  AdminAutoSubmissionDetail,
+  AdminAutoSubmissionList,
   AdminQuestion,
   AdminQuestionList,
   AdminSubmission,
@@ -11,6 +12,9 @@ import type {
   BackupMeta,
   AuthConfig,
   AuthResponse,
+  AutoSubmission,
+  AutoSubmissionList,
+  AutoSubmissionStatus,
   Contributor,
   ContributorList,
   ContributorSubmissionList,
@@ -22,9 +26,6 @@ import type {
   ExamType,
   ExamTypeList,
   FilterOptions,
-  ManualSubmission,
-  ManualSubmissionList,
-  ManualSubmissionStatus,
   MergeRequest,
   MergeSummary,
   PaginationParams,
@@ -34,7 +35,7 @@ import type {
   QuestionSubmissions,
   Semester,
   SemesterList,
-  UpdateManualSubmission,
+  UpdateAutoSubmission,
   UpdateQuestion,
   UpdateSubmission,
   UpdateUser,
@@ -217,29 +218,27 @@ export const uploadProfileImage = (file: File): Promise<User> => {
   }).then((r) => r.user);
 };
 
-// --- Manual submissions ---
-export const getManualSubmissions = (
+// --- Auto submissions ---
+export const getAutoSubmissions = (
   params: PaginationParams
-): Promise<ManualSubmissionList> => get("/manual-submissions", params);
+): Promise<AutoSubmissionList> => get("/auto-submissions", params);
 
-export const getManualSubmission = (
+export const getAutoSubmission = (
   id: string | number
-): Promise<ManualSubmission> => get(`/manual-submissions/${id}`);
+): Promise<AutoSubmission> => get(`/auto-submissions/${id}`);
 
-export const createManualSubmission = (
-  form: FormData
-): Promise<ManualSubmission> =>
-  request("/manual-submissions", { method: "POST", body: form });
+export const createAutoSubmission = (form: FormData): Promise<AutoSubmission> =>
+  request("/auto-submissions", { method: "POST", body: form });
 
-export const deleteManualSubmission = (id: number): Promise<void> =>
-  request(`/manual-submissions/${id}`, { method: "DELETE" });
+export const deleteAutoSubmission = (id: number): Promise<void> =>
+  request(`/auto-submissions/${id}`, { method: "DELETE" });
 
 // ---------------------------------------------------------------------------
 // Admin — every endpoint requires a bearer token from a `role: "admin"` account
 // ---------------------------------------------------------------------------
 
-export type AdminManualSubmissionParams = PaginationParams & {
-  status?: ManualSubmissionStatus;
+export type AdminAutoSubmissionParams = PaginationParams & {
+  status?: AutoSubmissionStatus;
   userId?: number;
 };
 
@@ -266,36 +265,38 @@ export type TaxonomyParams = PaginationParams & {
   departmentId?: number; // courses only
 };
 
-// --- Manual submissions ---
-export const getAdminManualSubmissions = (
-  params: AdminManualSubmissionParams
-): Promise<AdminManualSubmissionList> =>
-  get("/admin/manual-submissions", params);
+// --- Auto submissions ---
+export const getAdminAutoSubmissions = (
+  params: AdminAutoSubmissionParams
+): Promise<AdminAutoSubmissionList> => get("/admin/auto-submissions", params);
 
-export const getAdminManualSubmission = (
+export const getAdminAutoSubmission = (
   id: string | number
-): Promise<AdminManualSubmissionDetail> =>
-  get(`/admin/manual-submissions/${id}`);
+): Promise<AdminAutoSubmissionDetail> => get(`/admin/auto-submissions/${id}`);
 
-export const updateAdminManualSubmission = (
+export const updateAdminAutoSubmission = (
   id: number,
-  body: UpdateManualSubmission
-): Promise<AdminManualSubmissionDetail> =>
-  patch(`/admin/manual-submissions/${id}`, body);
+  body: UpdateAutoSubmission
+): Promise<AdminAutoSubmission> => patch(`/admin/auto-submissions/${id}`, body);
 
-export const approveManualSubmission = (
+export const approveAutoSubmission = (
   id: number
-): Promise<AdminManualSubmissionDetail> =>
-  post(`/admin/manual-submissions/${id}/approve`);
+): Promise<AdminAutoSubmission> =>
+  post(`/admin/auto-submissions/${id}/approve`);
 
-export const rejectManualSubmission = (
+export const rejectAutoSubmission = (
   id: number,
   reason: string
-): Promise<AdminManualSubmissionDetail> =>
-  post(`/admin/manual-submissions/${id}/reject`, { reason });
+): Promise<AdminAutoSubmission> =>
+  post(`/admin/auto-submissions/${id}/reject`, { reason });
 
-export const deleteAdminManualSubmission = (id: number): Promise<void> =>
-  del(`/admin/manual-submissions/${id}`);
+export const reprocessAutoSubmission = (
+  id: number
+): Promise<AdminAutoSubmission> =>
+  post(`/admin/auto-submissions/${id}/reprocess`);
+
+export const deleteAdminAutoSubmission = (id: number): Promise<void> =>
+  del(`/admin/auto-submissions/${id}`);
 
 // --- Users ---
 export const getAdminUsers = (params: AdminUserParams): Promise<AdminUserList> =>

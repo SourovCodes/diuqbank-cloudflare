@@ -4,11 +4,14 @@ import type { AuthPayload } from "./lib/jwt";
 export type Bindings = Env;
 
 /**
- * Messages on the throttled `PDF_QUEUE` (its max_concurrency bounds concurrent
- * load on the external PDF Processor). The `kind` discriminator is kept so
- * stale messages from removed pipelines can be recognized and dropped.
+ * Messages on the two throttled queues, both drained by the same consumer
+ * (src/queue.ts dispatches on `kind`): watermark jobs ride `PDF_QUEUE`
+ * (bounds concurrent PDF Processor load), ai-submission jobs ride
+ * `GEMINI_QUEUE` (max_concurrency 1 — Gemini calls are strictly serialized).
  */
-export type PdfQueueMessage = { kind: "watermark"; submissionId: number };
+export type PdfQueueMessage =
+  | { kind: "watermark"; submissionId: number }
+  | { kind: "ai-submission"; autoSubmissionId: number };
 
 /** Hono environment: bindings + context variables set by middleware. */
 export type AppEnv = {

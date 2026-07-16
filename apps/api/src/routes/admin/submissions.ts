@@ -3,7 +3,7 @@ import { HTTPException } from "hono/http-exception";
 import { and, count, desc, eq, sql, type SQL } from "drizzle-orm";
 
 import { getDb } from "../../db/client";
-import { manualSubmissions, submissions } from "../../db/schema";
+import { autoSubmissions, submissions } from "../../db/schema";
 import {
   invalidateSubmission,
   invalidateSubmissionEdit,
@@ -91,22 +91,22 @@ route.get("/:id", async (c) => {
 
   const db = getDb(c.env.DB);
 
-  // The source manual submission (if this submission was published from one)
+  // The source auto submission (if this submission was published from one)
   // so the admin UI can link back to the review record.
-  const [row, manualSource] = await Promise.all([
+  const [row, autoSource] = await Promise.all([
     db.query.submissions.findFirst({
       where: eq(submissions.id, id),
       with: submissionWith,
     }),
-    db.query.manualSubmissions.findFirst({
-      where: eq(manualSubmissions.submissionId, id),
+    db.query.autoSubmissions.findFirst({
+      where: eq(autoSubmissions.submissionId, id),
       columns: { id: true },
     }),
   ]);
   if (!row) throw new HTTPException(404, { message: "Submission not found" });
 
   return c.json(toAdminSubmissionDetail(row, {
-    manualSubmissionId: manualSource?.id ?? null,
+    autoSubmissionId: autoSource?.id ?? null,
   }));
 });
 
@@ -338,13 +338,13 @@ route.delete("/:id", async (c) => {
   if (!row) throw new HTTPException(404, { message: "Submission not found" });
 
   // Delete safety: the source-submission FK is `restrict`.
-  const [{ value: manualSubmissionCount }] = await db
+  const [{ value: autoSubmissionCount }] = await db
     .select({ value: count() })
-    .from(manualSubmissions)
-    .where(eq(manualSubmissions.submissionId, id));
-  if (manualSubmissionCount > 0) {
+    .from(autoSubmissions)
+    .where(eq(autoSubmissions.submissionId, id));
+  if (autoSubmissionCount > 0) {
     throw new HTTPException(409, {
-      message: `Cannot delete: ${manualSubmissionCount} approved manual submission(s) reference this submission`,
+      message: `Cannot delete: ${autoSubmissionCount} approved auto submission(s) reference this submission`,
     });
   }
 
