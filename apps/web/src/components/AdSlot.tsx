@@ -52,6 +52,7 @@ type AdUnit = {
 export type AdSlotName =
   | "home-inline"
   | "questions-list"
+  | "questions-sidebar"
   | "question-below-viewer"
   | "question-sidebar"
   | "question-bottom"
@@ -63,6 +64,9 @@ const AD_UNITS: Record<AdSlotName, AdUnit> = {
   // Shared in-feed unit (reused on the contributors list — different page, so
   // the same unit id appearing twice across the site is fine).
   "questions-list": { slot: "4676286761", type: "in-feed", size: "feed", layoutKey: "-gw-3+1f-3d+2z" },
+  // Sidebar display unit on the questions list — reuses the question-detail
+  // sidebar unit id (different page, so sharing the id is fine).
+  "questions-sidebar": { slot: "9106486369", type: "display", size: "rectangle" },
   "question-below-viewer": { slot: "9433789424", type: "in-article", size: "article" },
   // "Sidebar" display unit.
   "question-sidebar": { slot: "9106486369", type: "display", size: "rectangle" },

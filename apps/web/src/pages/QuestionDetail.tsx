@@ -261,8 +261,6 @@ export default function QuestionDetail() {
           </aside>
         )}
       </div>
-
-      <AdSlot name="question-bottom" />
     </main>
   );
 }

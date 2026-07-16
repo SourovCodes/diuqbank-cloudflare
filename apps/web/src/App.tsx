@@ -244,7 +244,12 @@ function Layout() {
     <div className="flex min-h-screen flex-col bg-white text-gray-900 dark:bg-gray-950 dark:text-gray-100">
       <TopLoader />
       <Navbar />
-      <Outlet />
+      {/* Grows to fill the viewport so the footer is always pinned to the
+          bottom, even on pages whose content is shorter than the screen. The
+          flex column lets pages that set `flex-1` on their root still stretch. */}
+      <div className="flex flex-1 flex-col">
+        <Outlet />
+      </div>
       <Footer />
     </div>
   );

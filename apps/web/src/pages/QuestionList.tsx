@@ -96,50 +96,58 @@ export default function QuestionList() {
         />
       </div>
 
-      {isError ? (
-        <p className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
-          Failed to load questions: {error.message}
-        </p>
-      ) : isPending ? (
-        <div className="flex flex-col gap-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <QuestionCardSkeleton key={i} />
-          ))}
-        </div>
-      ) : (
-        <>
-          <p className="mb-3 text-sm text-gray-500 dark:text-gray-400">
-            <span className="font-bold text-gray-900 dark:text-gray-100">
-              {result.meta.total.toLocaleString()}
-            </span>{" "}
-            {result.meta.total === 1 ? "paper" : "papers"} found
-          </p>
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+        <div className="min-w-0 flex-1">
+          {isError ? (
+            <p className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
+              Failed to load questions: {error.message}
+            </p>
+          ) : isPending ? (
+            <div className="flex flex-col gap-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <QuestionCardSkeleton key={i} />
+              ))}
+            </div>
+          ) : (
+            <>
+              <p className="mb-3 text-sm text-gray-500 dark:text-gray-400">
+                <span className="font-bold text-gray-900 dark:text-gray-100">
+                  {result.meta.total.toLocaleString()}
+                </span>{" "}
+                {result.meta.total === 1 ? "paper" : "papers"} found
+              </p>
 
-          <div
-            className={cx(
-              "flex flex-col gap-3 transition-opacity",
-              isFetching && "opacity-60"
-            )}
-          >
-            {result.data.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-gray-200 py-16 text-center dark:border-gray-800">
-                <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                  No questions found
-                </h2>
-                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                  Try relaxing one of the filters and search again.
-                </p>
+              <div
+                className={cx(
+                  "flex flex-col gap-3 transition-opacity",
+                  isFetching && "opacity-60"
+                )}
+              >
+                {result.data.length === 0 ? (
+                  <div className="rounded-xl border border-dashed border-gray-200 py-16 text-center dark:border-gray-800">
+                    <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                      No questions found
+                    </h2>
+                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                      Try relaxing one of the filters and search again.
+                    </p>
+                  </div>
+                ) : (
+                  result.data.map((q) => <QuestionCard key={q.id} question={q} />)
+                )}
               </div>
-            ) : (
-              result.data.map((q) => <QuestionCard key={q.id} question={q} />)
-            )}
-          </div>
 
-          {result.data.length > 0 && <AdSlot name="questions-list" />}
+              {result.data.length > 0 && <AdSlot name="questions-list" />}
 
-          <Pagination meta={result.meta} onPageChange={goToPage} />
-        </>
-      )}
+              <Pagination meta={result.meta} onPageChange={goToPage} />
+            </>
+          )}
+        </div>
+
+        <aside className="hidden w-full shrink-0 lg:sticky lg:top-20 lg:block lg:w-80">
+          <AdSlot name="questions-sidebar" className="!my-0" />
+        </aside>
+      </div>
     </main>
   );
 }
