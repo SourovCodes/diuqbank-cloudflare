@@ -143,8 +143,8 @@ export const submissions = sqliteTable(
   ],
 );
 
-export const autoSubmissions = sqliteTable(
-  "auto_submissions",
+export const manualSubmissions = sqliteTable(
+  "manual_submissions",
   {
     id: integer("id").primaryKey({ autoIncrement: true }),
     userId: integer("user_id")
@@ -160,21 +160,20 @@ export const autoSubmissions = sqliteTable(
     pdfKey: text("pdf_key").notNull(),
     fileSize: integer("file_size").notNull(),
     status: text("status", {
-      enum: ["processing", "needs_review", "published", "rejected", "failed"],
+      enum: ["pending", "published", "rejected"],
     })
       .notNull()
-      .default("processing"),
-    // AI extraction snapshot — null until the queue consumer runs.
-    isAcceptable: integer("is_acceptable", { mode: "boolean" }),
-    aiReasoning: text("ai_reasoning"),
-    extractedDepartmentName: text("extracted_department_name"),
-    extractedCourseName: text("extracted_course_name"),
-    extractedSemesterName: text("extracted_semester_name"),
-    extractedExamTypeName: text("extracted_exam_type_name"),
+      .default("pending"),
+    // Free-text taxonomy values typed by the uploader. Nullable because rows
+    // migrated from the old AI pipeline may be partial; the approve route
+    // refuses to publish until every value resolves to an existing taxonomy
+    // entity (the admin creates the entity or edits the value to match one).
+    departmentName: text("department_name"),
+    courseName: text("course_name"),
+    semesterName: text("semester_name"),
+    examTypeName: text("exam_type_name"),
     section: text("section"),
     batch: text("batch"),
-    // Optional hint the uploader provides to help the model resolve ambiguity.
-    extraContext: text("extra_context"),
     // Review / linkage.
     rejectedReason: text("rejected_reason"),
     reviewedBy: integer("reviewed_by").references(() => users.id, {
@@ -186,18 +185,16 @@ export const autoSubmissions = sqliteTable(
     submissionId: integer("submission_id").references(() => submissions.id, {
       onDelete: "restrict",
     }),
-    // Infra-failure detail for the `failed` status.
-    processingError: text("processing_error"),
     createdAt: integer("created_at")
       .notNull()
       .default(sql`(unixepoch())`),
   },
   (table) => [
-    index("auto_submissions_user_id_idx").on(table.userId),
-    index("auto_submissions_status_idx").on(table.status),
+    index("manual_submissions_user_id_idx").on(table.userId),
+    index("manual_submissions_status_idx").on(table.status),
     check(
-      "auto_submissions_status_check",
-      sql`${table.status} IN ('processing', 'needs_review', 'published', 'rejected', 'failed')`,
+      "manual_submissions_status_check",
+      sql`${table.status} IN ('pending', 'published', 'rejected')`,
     ),
   ],
 );
@@ -241,16 +238,16 @@ export const questionsRelations = relations(questions, ({ one, many }) => ({
     references: [examTypes.id],
   }),
   submissions: many(submissions),
-  autoSubmissions: many(autoSubmissions),
+  manualSubmissions: many(manualSubmissions),
 }));
 
 export const usersRelations = relations(users, ({ many }) => ({
   submissions: many(submissions),
-  autoSubmissions: many(autoSubmissions, {
-    relationName: "autoSubmissionOwner",
+  manualSubmissions: many(manualSubmissions, {
+    relationName: "manualSubmissionOwner",
   }),
-  reviewedAutoSubmissions: many(autoSubmissions, {
-    relationName: "autoSubmissionReviewer",
+  reviewedManualSubmissions: many(manualSubmissions, {
+    relationName: "manualSubmissionReviewer",
   }),
 }));
 
@@ -265,25 +262,25 @@ export const submissionsRelations = relations(submissions, ({ one }) => ({
   }),
 }));
 
-export const autoSubmissionsRelations = relations(
-  autoSubmissions,
+export const manualSubmissionsRelations = relations(
+  manualSubmissions,
   ({ one }) => ({
     user: one(users, {
-      fields: [autoSubmissions.userId],
+      fields: [manualSubmissions.userId],
       references: [users.id],
-      relationName: "autoSubmissionOwner",
+      relationName: "manualSubmissionOwner",
     }),
     reviewer: one(users, {
-      fields: [autoSubmissions.reviewedBy],
+      fields: [manualSubmissions.reviewedBy],
       references: [users.id],
-      relationName: "autoSubmissionReviewer",
+      relationName: "manualSubmissionReviewer",
     }),
     question: one(questions, {
-      fields: [autoSubmissions.questionId],
+      fields: [manualSubmissions.questionId],
       references: [questions.id],
     }),
     submission: one(submissions, {
-      fields: [autoSubmissions.submissionId],
+      fields: [manualSubmissions.submissionId],
       references: [submissions.id],
     }),
   }),
@@ -297,5 +294,5 @@ export type Semester = typeof semesters.$inferSelect;
 export type ExamType = typeof examTypes.$inferSelect;
 export type Question = typeof questions.$inferSelect;
 export type Submission = typeof submissions.$inferSelect;
-export type AutoSubmission = typeof autoSubmissions.$inferSelect;
-export type NewAutoSubmission = typeof autoSubmissions.$inferInsert;
+export type ManualSubmission = typeof manualSubmissions.$inferSelect;
+export type NewManualSubmission = typeof manualSubmissions.$inferInsert;

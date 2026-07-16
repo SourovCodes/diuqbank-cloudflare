@@ -1,14 +1,13 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAdminAutoSubmissions } from "../../hooks/adminQueries";
+import { useAdminManualSubmissions } from "../../hooks/adminQueries";
 import {
-  approveAutoSubmission,
-  deleteAdminAutoSubmission,
-  rejectAutoSubmission,
-  reprocessAutoSubmission,
-  type AdminAutoSubmissionParams,
+  approveManualSubmission,
+  deleteAdminManualSubmission,
+  rejectManualSubmission,
+  type AdminManualSubmissionParams,
 } from "../../api";
-import type { AutoSubmissionStatus } from "../../types/api";
+import type { ManualSubmissionStatus } from "../../types/api";
 import { DataTable, type Column } from "../../components/admin/DataTable";
 import {
   BulkBar,
@@ -23,39 +22,37 @@ import { formatDate } from "../../lib/format";
 import { AdminHeader, ErrorBox, usePageParam } from "./shared";
 
 type Row = NonNullable<
-  ReturnType<typeof useAdminAutoSubmissions>["data"]
+  ReturnType<typeof useAdminManualSubmissions>["data"]
 >["data"][number];
 
 const STATUS_OPTIONS: { value: string; label: string }[] = [
-  { value: "needs_review", label: "Needs review" },
-  { value: "processing", label: "Processing" },
+  { value: "pending", label: "Pending review" },
   { value: "published", label: "Published" },
   { value: "rejected", label: "Rejected" },
-  { value: "failed", label: "Failed" },
   { value: "", label: "All statuses" },
 ];
 
-export default function AdminAutoSubmissionList() {
+export default function AdminManualSubmissionList() {
   const navigate = useNavigate();
   const { page, setPage, searchParams, setSearchParams } = usePageParam();
-  const status = searchParams.get("status") ?? "needs_review";
+  const status = searchParams.get("status") ?? "pending";
   const bulk = useBulkActions([
-    ["admin", "auto-submissions"],
-    ["admin", "auto-submission"],
+    ["admin", "manual-submissions"],
+    ["admin", "manual-submission"],
   ]);
   const [rejectOpen, setRejectOpen] = useState(false);
 
   useEffect(() => {
-    document.title = "Auto queue | Admin";
+    document.title = "Review queue | Admin";
   }, []);
 
-  const params: AdminAutoSubmissionParams = {
+  const params: AdminManualSubmissionParams = {
     page,
     perPage: 20,
-    status: status ? (status as AutoSubmissionStatus) : undefined,
+    status: status ? (status as ManualSubmissionStatus) : undefined,
   };
   const { data, isPending, isError, error, isFetching } =
-    useAdminAutoSubmissions(params);
+    useAdminManualSubmissions(params);
 
   function setStatus(next: string) {
     setSearchParams((prev) => {
@@ -69,7 +66,7 @@ export default function AdminAutoSubmissionList() {
 
   const columns: Column<Row>[] = [
     {
-      header: "Detected paper",
+      header: "Paper",
       cell: (r) => (
         <div>
           <p className="font-medium text-gray-900 dark:text-gray-100">
@@ -78,7 +75,7 @@ export default function AdminAutoSubmissionList() {
           <p className="text-xs text-gray-500 dark:text-gray-400">
             {[r.departmentName, r.semesterName, r.examTypeName]
               .filter(Boolean)
-              .join(" · ") || "No metadata yet"}
+              .join(" · ") || "No details"}
           </p>
         </div>
       ),
@@ -105,11 +102,11 @@ export default function AdminAutoSubmissionList() {
   return (
     <div>
       <AdminHeader
-        title="Auto review queue"
+        title="Review queue"
         description={
           data?.meta.total
             ? `${data.meta.total} matching submissions.`
-            : "AI-processed uploads flagged for review."
+            : "User uploads awaiting review."
         }
         actions={
           <select
@@ -134,7 +131,7 @@ export default function AdminAutoSubmissionList() {
             <BulkButton
               label="Approve & publish"
               bulk={bulk}
-              onClick={() => bulk.run("Approve", approveAutoSubmission)}
+              onClick={() => bulk.run("Approve", approveManualSubmission)}
             />
             <BulkButton
               label="Reject…"
@@ -143,21 +140,16 @@ export default function AdminAutoSubmissionList() {
               onClick={() => setRejectOpen(true)}
             />
             <BulkButton
-              label="Reprocess with AI"
-              bulk={bulk}
-              onClick={() => bulk.run("Reprocess", reprocessAutoSubmission)}
-            />
-            <BulkButton
               label="Delete"
               bulk={bulk}
               variant="danger"
               onClick={() => {
                 if (
                   confirm(
-                    `Delete ${bulk.selected.size} auto submission(s) and their uploaded PDFs? Published live submissions keep their own copies.`
+                    `Delete ${bulk.selected.size} manual submission(s) and their uploaded PDFs? Published live submissions keep their own copies.`
                   )
                 ) {
-                  bulk.run("Delete", deleteAdminAutoSubmission);
+                  bulk.run("Delete", deleteAdminManualSubmission);
                 }
               }}
             />
@@ -169,7 +161,7 @@ export default function AdminAutoSubmissionList() {
             isLoading={isPending}
             isFetching={isFetching}
             emptyMessage="No submissions match this filter."
-            onRowClick={(r) => navigate(`/admin/auto-submissions/${r.id}`)}
+            onRowClick={(r) => navigate(`/admin/manual-submissions/${r.id}`)}
             selection={{
               selected: bulk.selected,
               onChange: bulk.onSelectionChange,
@@ -185,7 +177,7 @@ export default function AdminAutoSubmissionList() {
         onClose={() => setRejectOpen(false)}
         onSubmit={(reason) => {
           setRejectOpen(false);
-          bulk.run("Reject", (id) => rejectAutoSubmission(id, reason));
+          bulk.run("Reject", (id) => rejectManualSubmission(id, reason));
         }}
       />
     </div>

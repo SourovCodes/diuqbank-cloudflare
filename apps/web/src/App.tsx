@@ -15,18 +15,18 @@ import ContributorList from "./pages/ContributorList";
 import ContributorDetail from "./pages/ContributorDetail";
 import Login from "./pages/Login";
 import Profile from "./pages/Profile";
-import AutoSubmissionList from "./pages/AutoSubmissionList";
-import AutoSubmissionCreate from "./pages/AutoSubmissionCreate";
-import AutoSubmissionDetail from "./pages/AutoSubmissionDetail";
+import SubmissionList from "./pages/SubmissionList";
+import SubmissionCreate from "./pages/SubmissionCreate";
+import SubmissionDetail from "./pages/SubmissionDetail";
 import NotFound from "./pages/NotFound";
 // Admin pages are lazy so the (much larger) public audience never downloads
 // them; Vite splits each into its own chunk loaded on first admin navigation.
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
-const AdminAutoSubmissionList = lazy(
-  () => import("./pages/admin/AdminAutoSubmissionList")
+const AdminManualSubmissionList = lazy(
+  () => import("./pages/admin/AdminManualSubmissionList")
 );
-const AdminAutoSubmissionDetail = lazy(
-  () => import("./pages/admin/AdminAutoSubmissionDetail")
+const AdminManualSubmissionDetail = lazy(
+  () => import("./pages/admin/AdminManualSubmissionDetail")
 );
 const AdminUserList = lazy(() => import("./pages/admin/AdminUserList"));
 const AdminUserDetail = lazy(() => import("./pages/admin/AdminUserDetail"));
@@ -96,7 +96,7 @@ const navLinks: NavLinkItem[] = [
   { label: "Questions", to: "/questions" },
   { label: "Contributors", to: "/contributors" },
   // Guests are bounced to /login by RequireAuth and returned here after.
-  { label: "Upload", to: "/submissions/auto/new" },
+  { label: "Upload", to: "/submissions/new" },
 ];
 
 const linkClass = ({ isActive }: NavLinkRenderProps) =>
@@ -170,7 +170,7 @@ function Navbar() {
           ))}
           {user ? (
             <>
-              <NavLink to="/submissions/auto" onClick={close} className={linkClass}>
+              <NavLink to="/submissions" end onClick={close} className={linkClass}>
                 <span className="block py-2">Your submissions</span>
               </NavLink>
               <NavLink to="/profile" onClick={close} className={linkClass}>
@@ -267,12 +267,16 @@ export default function App() {
         <Route path="/login" element={<Login />} />
 
         <Route element={<RequireAuth />}>
-          <Route path="/submissions" element={<Navigate to="/submissions/auto" replace />} />
+          {/* Old AI-upload URLs (bookmarks, back buttons) land on the list. */}
+          <Route
+            path="/submissions/auto/*"
+            element={<Navigate to="/submissions" replace />}
+          />
           <Route element={<DashboardLayout />}>
             <Route path="/profile" element={<Profile />} />
-            <Route path="/submissions/auto" element={<AutoSubmissionList />} />
-            <Route path="/submissions/auto/new" element={<AutoSubmissionCreate />} />
-            <Route path="/submissions/auto/:id" element={<AutoSubmissionDetail />} />
+            <Route path="/submissions" element={<SubmissionList />} />
+            <Route path="/submissions/new" element={<SubmissionCreate />} />
+            <Route path="/submissions/:id" element={<SubmissionDetail />} />
           </Route>
         </Route>
 
@@ -281,12 +285,12 @@ export default function App() {
             <Route element={<LazyOutlet />}>
               <Route path="/admin" element={<AdminDashboard />} />
               <Route
-                path="/admin/auto-submissions"
-                element={<AdminAutoSubmissionList />}
+                path="/admin/manual-submissions"
+                element={<AdminManualSubmissionList />}
               />
               <Route
-                path="/admin/auto-submissions/:id"
-                element={<AdminAutoSubmissionDetail />}
+                path="/admin/manual-submissions/:id"
+                element={<AdminManualSubmissionDetail />}
               />
               <Route path="/admin/questions" element={<AdminQuestionList />} />
               <Route path="/admin/questions/:id" element={<AdminQuestionDetail />} />

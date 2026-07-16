@@ -804,7 +804,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/auto-submissions": {
+    "/manual-submissions": {
         parameters: {
             query?: never;
             header?: never;
@@ -812,10 +812,10 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List your auto-submissions
+         * List your manual submissions
          * @description **Access:** `User` — Requires a bearer token. Open to any signed-in user (admins included).
          *
-         *     Returns only AI auto-submissions owned by the authenticated user, newest first.
+         *     Returns only manual submissions owned by the authenticated user, newest first.
          */
         get: {
             parameters: {
@@ -837,7 +837,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["AutoSubmissionList"];
+                        "application/json": components["schemas"]["ManualSubmissionList"];
                     };
                 };
                 /** @description Validation failed or bad request */
@@ -862,10 +862,10 @@ export interface paths {
         };
         put?: never;
         /**
-         * Create an auto-submission
+         * Create a manual submission
          * @description **Access:** `User` — Requires a bearer token. Open to any signed-in user (admins included).
          *
-         *     Uploads just a PDF (plus an optional context hint). Returns immediately with `status: processing`; an AI pipeline then extracts the metadata and either auto-publishes a live submission or routes it to admin review. Poll `GET /auto-submissions/{id}` for the outcome.
+         *     Uploads a PDF plus the paper's metadata as free text (department, course, semester, exam type; the UI suggests existing values but new ones are allowed). The submission starts as `pending` and becomes a live submission once an admin approves it.
          */
         post: {
             parameters: {
@@ -876,7 +876,7 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "multipart/form-data": components["schemas"]["AutoSubmissionCreateForm"];
+                    "multipart/form-data": components["schemas"]["ManualSubmissionCreateForm"];
                 };
             };
             responses: {
@@ -886,7 +886,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["AutoSubmission"];
+                        "application/json": components["schemas"]["ManualSubmission"];
                     };
                 };
                 /** @description Validation failed or bad request */
@@ -933,7 +933,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/auto-submissions/{id}": {
+    "/manual-submissions/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -941,17 +941,17 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get one of your auto-submissions
+         * Get one of your manual submissions
          * @description **Access:** `User` — Requires a bearer token. Open to any signed-in user (admins included).
          *
-         *     A single auto-submission you own, including its processing status, the AI's extracted metadata/reasoning, and the linked submission once published.
+         *     A single manual submission you own, including its review status, the rejection reason if any, and the linked live submission once published.
          */
         get: {
             parameters: {
                 query?: never;
                 header?: never;
                 path: {
-                    /** @description Auto submission id. */
+                    /** @description Manual submission id. */
                     id: number;
                 };
                 cookie?: never;
@@ -964,7 +964,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["AutoSubmission"];
+                        "application/json": components["schemas"]["ManualSubmission"];
                     };
                 };
                 /** @description Missing or invalid bearer token */
@@ -990,17 +990,17 @@ export interface paths {
         put?: never;
         post?: never;
         /**
-         * Delete your auto-submission
+         * Delete your manual submission
          * @description **Access:** `User` — Requires a bearer token. Open to any signed-in user (admins included).
          *
-         *     Deletes an auto-submission only when it belongs to the authenticated user, then removes its PDF from storage. Published auto-submissions cannot be deleted by users.
+         *     Deletes a manual submission only when it belongs to the authenticated user, then removes its PDF from storage. Published manual submissions cannot be deleted by users.
          */
         delete: {
             parameters: {
                 query?: never;
                 header?: never;
                 path: {
-                    /** @description Auto submission id. */
+                    /** @description Manual submission id. */
                     id: number;
                 };
                 cookie?: never;
@@ -1032,7 +1032,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description Published auto submissions cannot be deleted by users */
+                /** @description Published manual submissions cannot be deleted by users */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -3301,7 +3301,7 @@ export interface paths {
          * Get a submission by id
          * @description **Access:** `Admin` — Requires a bearer token from an account with `role: "admin"`.
          *
-         *     A single submission with its question, contributor, file URLs, and the id of the auto submission it was published from (if any).
+         *     A single submission with its question, contributor, file URLs, and the id of the manual submission it was published from (if any).
          */
         get: {
             parameters: {
@@ -3407,7 +3407,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description An approved auto submission references this submission */
+                /** @description An approved manual submission references this submission */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -3668,7 +3668,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/admin/auto-submissions": {
+    "/admin/manual-submissions": {
         parameters: {
             query?: never;
             header?: never;
@@ -3676,10 +3676,10 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List AI auto-submissions
+         * List manual submissions
          * @description **Access:** `Admin` — Requires a bearer token from an account with `role: "admin"`.
          *
-         *     Paginated review queue for AI auto-submissions. Filter by status or user. `needs_review`/`failed` rows are the ones awaiting an admin.
+         *     Paginated review queue for manual submissions. Filter by status or user. `pending` rows are the ones awaiting an admin.
          */
         get: {
             parameters: {
@@ -3688,8 +3688,8 @@ export interface paths {
                     page?: number;
                     /** @description Items per page (max 100). */
                     perPage?: number;
-                    /** @description Filter by processing/review status. */
-                    status?: "processing" | "needs_review" | "published" | "rejected" | "failed";
+                    /** @description Filter by review status. */
+                    status?: "pending" | "published" | "rejected";
                     /** @description Filter by submitting user id. */
                     userId?: number;
                 };
@@ -3705,7 +3705,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["AdminAutoSubmissionList"];
+                        "application/json": components["schemas"]["AdminManualSubmissionList"];
                     };
                 };
                 /** @description Validation failed or bad request */
@@ -3745,7 +3745,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/admin/auto-submissions/{id}": {
+    "/admin/manual-submissions/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -3753,17 +3753,17 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get an auto-submission
+         * Get a manual submission
          * @description **Access:** `Admin` — Requires a bearer token from an account with `role: "admin"`.
          *
-         *     Returns the AI extraction snapshot, submitter, reviewer, PDF URL, linked records once published, and the contributor's review-history stats.
+         *     Returns the uploader's metadata, submitter, reviewer, PDF URL, linked records once published, the contributor's review-history stats, and `taxonomyMatches` — which existing taxonomy entity each free-text value resolves to (null = missing; approval is blocked until every value matches).
          */
         get: {
             parameters: {
                 query?: never;
                 header?: never;
                 path: {
-                    /** @description Auto submission id. */
+                    /** @description Manual submission id. */
                     id: number;
                 };
                 cookie?: never;
@@ -3776,7 +3776,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["AdminAutoSubmissionDetail"];
+                        "application/json": components["schemas"]["AdminManualSubmissionDetail"];
                     };
                 };
                 /** @description Missing or invalid bearer token */
@@ -3811,17 +3811,17 @@ export interface paths {
         put?: never;
         post?: never;
         /**
-         * Delete an auto-submission
+         * Delete a manual submission
          * @description **Access:** `Admin` — Requires a bearer token from an account with `role: "admin"`.
          *
-         *     Deletes the auto-submission record and its original uploaded PDF. The published live submission (with its own copied PDF) is unaffected.
+         *     Deletes the manual-submission record and its original uploaded PDF. The published live submission (with its own copied PDF) is unaffected.
          */
         delete: {
             parameters: {
                 query?: never;
                 header?: never;
                 path: {
-                    /** @description Auto submission id. */
+                    /** @description Manual submission id. */
                     id: number;
                 };
                 cookie?: never;
@@ -3867,24 +3867,24 @@ export interface paths {
         options?: never;
         head?: never;
         /**
-         * Edit an auto-submission
+         * Edit a manual submission
          * @description **Access:** `Admin` — Requires a bearer token from an account with `role: "admin"`.
          *
-         *     Corrects the AI-extracted metadata (department, course, semester, exam type, section, batch) and the uploader's extra-context hint before approving or reprocessing. Published rows are immutable.
+         *     Corrects the uploader's metadata (department, course, semester, exam type, section, batch) before approving — e.g. to align a free-text value with an existing taxonomy entity. Published rows are immutable.
          */
         patch: {
             parameters: {
                 query?: never;
                 header?: never;
                 path: {
-                    /** @description Auto submission id. */
+                    /** @description Manual submission id. */
                     id: number;
                 };
                 cookie?: never;
             };
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["UpdateAutoSubmission"];
+                    "application/json": components["schemas"]["UpdateManualSubmission"];
                 };
             };
             responses: {
@@ -3894,7 +3894,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["AdminAutoSubmission"];
+                        "application/json": components["schemas"]["AdminManualSubmissionDetail"];
                     };
                 };
                 /** @description Validation failed or bad request */
@@ -3933,7 +3933,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description Published auto submissions cannot be edited */
+                /** @description Published manual submissions cannot be edited */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -3946,7 +3946,7 @@ export interface paths {
         };
         trace?: never;
     };
-    "/admin/auto-submissions/{id}/approve": {
+    "/admin/manual-submissions/{id}/approve": {
         parameters: {
             query?: never;
             header?: never;
@@ -3956,17 +3956,17 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Approve an auto-submission
+         * Approve a manual submission
          * @description **Access:** `Admin` — Requires a bearer token from an account with `role: "admin"`.
          *
-         *     Uses the (possibly edited) extracted metadata to race-safely find-or-create the department/course/semester/exam-type and question, copies the PDF into `submissions/`, creates the real submission, links it, and records the reviewing admin.
+         *     Publishes a pending manual submission as a live submission. Every free-text taxonomy value must resolve to an EXISTING entity (case-insensitive) — this endpoint never creates taxonomy; a `409` lists the missing entities so the admin can create them (or edit the values) first. On success the question row is find-or-created from the resolved ids, the PDF is copied into `submissions/`, the live submission is created and linked, and the reviewing admin is recorded.
          */
         post: {
             parameters: {
                 query?: never;
                 header?: never;
                 path: {
-                    /** @description Auto submission id. */
+                    /** @description Manual submission id. */
                     id: number;
                 };
                 cookie?: never;
@@ -3979,7 +3979,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["AdminAutoSubmission"];
+                        "application/json": components["schemas"]["AdminManualSubmissionDetail"];
                     };
                 };
                 /** @description Required metadata is missing — fill it in before approving */
@@ -4018,7 +4018,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description Already published, or the PDF is missing from storage */
+                /** @description Missing taxonomy entities, already published, or the PDF is missing from storage */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -4035,7 +4035,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/admin/auto-submissions/{id}/reject": {
+    "/admin/manual-submissions/{id}/reject": {
         parameters: {
             query?: never;
             header?: never;
@@ -4045,24 +4045,24 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Reject an auto-submission
+         * Reject a manual submission
          * @description **Access:** `Admin` — Requires a bearer token from an account with `role: "admin"`.
          *
-         *     Rejects an unpublished auto-submission with a required reason and records the reviewing admin.
+         *     Rejects an unpublished manual submission with a required reason and records the reviewing admin.
          */
         post: {
             parameters: {
                 query?: never;
                 header?: never;
                 path: {
-                    /** @description Auto submission id. */
+                    /** @description Manual submission id. */
                     id: number;
                 };
                 cookie?: never;
             };
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["RejectAutoSubmission"];
+                    "application/json": components["schemas"]["RejectManualSubmission"];
                 };
             };
             responses: {
@@ -4072,7 +4072,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["AdminAutoSubmission"];
+                        "application/json": components["schemas"]["AdminManualSubmissionDetail"];
                     };
                 };
                 /** @description Validation failed or bad request */
@@ -4111,87 +4111,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description Published auto submissions cannot be rejected */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/admin/auto-submissions/{id}/reprocess": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Reprocess an auto-submission
-         * @description **Access:** `Admin` — Requires a bearer token from an account with `role: "admin"`.
-         *
-         *     Resets an auto-submission that isn't already `processing` or `published` back to `processing` and re-enqueues it on the throttled PDF queue for a fresh AI extraction (e.g. after fixing the Gemini key). `processing` and `published` rows are ineligible.
-         */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Auto submission id. */
-                    id: number;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Reprocessing */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["AdminAutoSubmission"];
-                    };
-                };
-                /** @description Missing or invalid bearer token */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Admin access required */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Resource not found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Only non-processing, unpublished auto submissions can be reprocessed */
+                /** @description Published manual submissions cannot be rejected */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -4354,7 +4274,7 @@ export interface paths {
          * Delete a user
          * @description **Access:** `Admin` — Requires a bearer token from an account with `role: "admin"`.
          *
-         *     Deletes a user only when no question-bank or auto submissions reference them. You cannot delete your own account.
+         *     Deletes a user only when no live or manual submissions reference them. You cannot delete your own account.
          */
         delete: {
             parameters: {
@@ -5102,19 +5022,16 @@ export interface components {
                 } | null;
             }[];
         };
-        AutoSubmission: {
+        ManualSubmission: {
             id: number;
             /** @enum {string} */
-            status: "processing" | "needs_review" | "published" | "rejected" | "failed";
-            isAcceptable: boolean | null;
-            aiReasoning: string | null;
+            status: "pending" | "published" | "rejected";
             departmentName: string | null;
             courseName: string | null;
             semesterName: string | null;
             examTypeName: string | null;
             section: string | null;
             batch: string | null;
-            extraContext: string | null;
             rejectedReason: string | null;
             questionId: number | null;
             submissionId: number | null;
@@ -5123,20 +5040,17 @@ export interface components {
             /** @description Unix epoch seconds (UTC) */
             createdAt: number;
         };
-        AutoSubmissionList: {
+        ManualSubmissionList: {
             data: {
                 id: number;
                 /** @enum {string} */
-                status: "processing" | "needs_review" | "published" | "rejected" | "failed";
-                isAcceptable: boolean | null;
-                aiReasoning: string | null;
+                status: "pending" | "published" | "rejected";
                 departmentName: string | null;
                 courseName: string | null;
                 semesterName: string | null;
                 examTypeName: string | null;
                 section: string | null;
                 batch: string | null;
-                extraContext: string | null;
                 rejectedReason: string | null;
                 questionId: number | null;
                 submissionId: number | null;
@@ -5152,14 +5066,27 @@ export interface components {
                 totalPages: number;
             };
         };
-        AutoSubmissionCreateForm: {
+        ManualSubmissionCreateForm: {
             /**
              * Format: binary
              * @description PDF file (max 20 MB).
              */
             pdf: string;
-            /** @description Optional hint for the AI (e.g. department or semester) to resolve ambiguity. */
-            extraContext?: string;
+            /** @description Department name as free text. Pick an existing department when possible; new values need an admin to create the department before the submission can be approved. */
+            departmentName: string;
+            /** @description Course name as free text (scoped to the department). New values need an admin to create the course before approval. */
+            courseName: string;
+            /** @description Semester name as free text, e.g. "Spring 25". New values need an admin to create the semester before approval. */
+            semesterName: string;
+            /**
+             * @description One of the platform's allowed exam types.
+             * @enum {string}
+             */
+            examTypeName: "Midterm" | "Final" | "Quiz" | "Lab Midterm" | "Lab Final";
+            /** @description Optional section label. */
+            section?: string;
+            /** @description Optional batch label. */
+            batch?: string;
         };
         MergeRequest: {
             keepId: number;
@@ -5215,7 +5142,7 @@ export interface components {
             semesterId?: number;
             examTypeId?: number;
         };
-        UpdateAutoSubmission: {
+        UpdateManualSubmission: {
             departmentName?: string;
             courseName?: string;
             semesterName?: string;
@@ -5223,9 +5150,8 @@ export interface components {
             examTypeName?: "Midterm" | "Final" | "Quiz" | "Lab Midterm" | "Lab Final";
             section?: string;
             batch?: string;
-            extraContext?: string;
         };
-        RejectAutoSubmission: {
+        RejectManualSubmission: {
             reason: string;
         };
         UpdateSubmission: {
@@ -5442,8 +5368,8 @@ export interface components {
             watermarkedPdfUrl: string | null;
             /** @description Unix epoch seconds (UTC) */
             createdAt: number;
-            /** @description Id of the auto submission this submission was published from, if any. */
-            autoSubmissionId: number | null;
+            /** @description Id of the manual submission this submission was published from, if any. */
+            manualSubmissionId: number | null;
         };
         AdminSubmissionList: {
             data: {
@@ -5481,7 +5407,7 @@ export interface components {
                 totalPages: number;
             };
         };
-        AdminAutoSubmission: {
+        AdminManualSubmission: {
             id: number;
             userId: number;
             /** @description Source id when bulk-imported from legacy diuqbank.com; else null. */
@@ -5502,19 +5428,15 @@ export interface components {
                 createdAt: number;
             };
             /** @enum {string} */
-            status: "processing" | "needs_review" | "published" | "rejected" | "failed";
-            isAcceptable: boolean | null;
-            aiReasoning: string | null;
+            status: "pending" | "published" | "rejected";
             departmentName: string | null;
             courseName: string | null;
             semesterName: string | null;
             examTypeName: string | null;
             section: string | null;
             batch: string | null;
-            extraContext: string | null;
             /** @description Size of the uploaded PDF in bytes. */
             fileSize: number;
-            processingError: string | null;
             rejectedReason: string | null;
             reviewedBy: number | null;
             reviewer: {
@@ -5537,7 +5459,7 @@ export interface components {
             /** @description Unix epoch seconds (UTC) */
             createdAt: number;
         };
-        AdminAutoSubmissionDetail: {
+        AdminManualSubmissionDetail: {
             id: number;
             userId: number;
             /** @description Source id when bulk-imported from legacy diuqbank.com; else null. */
@@ -5558,19 +5480,15 @@ export interface components {
                 createdAt: number;
             };
             /** @enum {string} */
-            status: "processing" | "needs_review" | "published" | "rejected" | "failed";
-            isAcceptable: boolean | null;
-            aiReasoning: string | null;
+            status: "pending" | "published" | "rejected";
             departmentName: string | null;
             courseName: string | null;
             semesterName: string | null;
             examTypeName: string | null;
             section: string | null;
             batch: string | null;
-            extraContext: string | null;
             /** @description Size of the uploaded PDF in bytes. */
             fileSize: number;
-            processingError: string | null;
             rejectedReason: string | null;
             reviewedBy: number | null;
             reviewer: {
@@ -5596,12 +5514,20 @@ export interface components {
             contributorStats: {
                 /** @description Live submissions currently on the site. */
                 liveSubmissionCount: number;
-                autoPublished: number;
-                autoRejected: number;
-                autoPendingReview: number;
+                manualPublished: number;
+                manualRejected: number;
+                manualPending: number;
+            };
+            /** @description Which existing taxonomy entity each free-text value resolves to (case-insensitive), or null when none exists yet. Approving requires every id to be non-null. */
+            taxonomyMatches: {
+                departmentId: number | null;
+                /** @description Matched within the matched department; always null while the department is unmatched. */
+                courseId: number | null;
+                semesterId: number | null;
+                examTypeId: number | null;
             };
         };
-        AdminAutoSubmissionList: {
+        AdminManualSubmissionList: {
             data: {
                 id: number;
                 userId: number;
@@ -5623,19 +5549,15 @@ export interface components {
                     createdAt: number;
                 };
                 /** @enum {string} */
-                status: "processing" | "needs_review" | "published" | "rejected" | "failed";
-                isAcceptable: boolean | null;
-                aiReasoning: string | null;
+                status: "pending" | "published" | "rejected";
                 departmentName: string | null;
                 courseName: string | null;
                 semesterName: string | null;
                 examTypeName: string | null;
                 section: string | null;
                 batch: string | null;
-                extraContext: string | null;
                 /** @description Size of the uploaded PDF in bytes. */
                 fileSize: number;
-                processingError: string | null;
                 rejectedReason: string | null;
                 reviewedBy: number | null;
                 reviewer: {
@@ -5669,9 +5591,17 @@ export interface components {
         AdminContributorStats: {
             /** @description Live submissions currently on the site. */
             liveSubmissionCount: number;
-            autoPublished: number;
-            autoRejected: number;
-            autoPendingReview: number;
+            manualPublished: number;
+            manualRejected: number;
+            manualPending: number;
+        };
+        /** @description Which existing taxonomy entity each free-text value resolves to (case-insensitive), or null when none exists yet. Approving requires every id to be non-null. */
+        TaxonomyMatches: {
+            departmentId: number | null;
+            /** @description Matched within the matched department; always null while the department is unmatched. */
+            courseId: number | null;
+            semesterId: number | null;
+            examTypeId: number | null;
         };
         AdminUser: {
             id: number;

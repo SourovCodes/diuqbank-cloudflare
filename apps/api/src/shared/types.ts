@@ -81,28 +81,21 @@ export type ContributorSubmission = {
   }
 }
 
-export type AutoSubmissionStatus =
-  | 'processing'
-  | 'needs_review'
-  | 'published'
-  | 'rejected'
-  | 'failed'
+export type ManualSubmissionStatus = 'pending' | 'published' | 'rejected'
 
-// AI auto-submission (user uploads only a PDF; Gemini extracts the metadata).
-// Extracted fields are flat + nullable because they're filled asynchronously by
-// the queue consumer and may be partial when the AI isn't confident.
-export type AutoSubmission = {
+// Manual submission (user uploads a PDF and types the taxonomy values as free
+// text; an admin reviews it before it becomes a live submission). The name
+// fields are nullable because rows migrated from the old AI pipeline may be
+// partial.
+export type ManualSubmission = {
   id: number
-  status: AutoSubmissionStatus
-  isAcceptable: boolean | null
-  aiReasoning: string | null
+  status: ManualSubmissionStatus
   departmentName: string | null
   courseName: string | null
   semesterName: string | null
   examTypeName: string | null
   section: string | null
   batch: string | null
-  extraContext: string | null
   rejectedReason: string | null
   questionId: number | null
   submissionId: number | null
@@ -169,15 +162,15 @@ export type AdminSubmission = {
 }
 
 /**
- * Detail variant of `AdminSubmission`: also carries the id of the auto
+ * Detail variant of `AdminSubmission`: also carries the id of the manual
  * submission this live submission was published from (null when it wasn't
  * created through that pipeline).
  */
 export type AdminSubmissionDetail = AdminSubmission & {
-  autoSubmissionId: number | null
+  manualSubmissionId: number | null
 }
 
-export type AdminAutoSubmission = {
+export type AdminManualSubmission = {
   id: number
   userId: number
   /** Source submission id when bulk-imported from legacy diuqbank.com; else null. */
@@ -185,18 +178,14 @@ export type AdminAutoSubmission = {
   /** View count carried over from the legacy site; else null. */
   legacyViews: number | null
   contributor: User
-  status: AutoSubmissionStatus
-  isAcceptable: boolean | null
-  aiReasoning: string | null
+  status: ManualSubmissionStatus
   departmentName: string | null
   courseName: string | null
   semesterName: string | null
   examTypeName: string | null
   section: string | null
   batch: string | null
-  extraContext: string | null
   fileSize: number
-  processingError: string | null
   rejectedReason: string | null
   reviewedBy: number | null
   reviewer: User | null
@@ -213,14 +202,32 @@ export type AdminAutoSubmission = {
 export type AdminContributorStats = {
   /** Live submissions currently on the site (`users.submission_count`). */
   liveSubmissionCount: number
-  autoPublished: number
-  autoRejected: number
-  autoPendingReview: number
+  manualPublished: number
+  manualRejected: number
+  manualPending: number
 }
 
-/** Detail variant of `AdminAutoSubmission`: adds the contributor's track record. */
-export type AdminAutoSubmissionDetail = AdminAutoSubmission & {
+/**
+ * Which existing taxonomy entity each free-text value on a manual submission
+ * resolves to (case-insensitive match), or null when no entity with that name
+ * exists yet. Approving requires every id to be non-null — the admin either
+ * creates the missing entity or edits the value to match an existing one.
+ */
+export type TaxonomyMatches = {
+  departmentId: number | null
+  /** Matched within the matched department; always null while the department is unmatched. */
+  courseId: number | null
+  semesterId: number | null
+  examTypeId: number | null
+}
+
+/**
+ * Detail variant of `AdminManualSubmission`: adds the contributor's track
+ * record and the taxonomy resolution used to gate the approve action.
+ */
+export type AdminManualSubmissionDetail = AdminManualSubmission & {
   contributorStats: AdminContributorStats
+  taxonomyMatches: TaxonomyMatches
 }
 
 export type AdminUser = User & { submissionCount: number }

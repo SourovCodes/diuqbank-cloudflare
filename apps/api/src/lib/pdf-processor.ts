@@ -9,41 +9,6 @@ const MAX_WATERMARK_TEXT = 255;
 const PDF_PROCESSOR_TIMEOUT_MS = 120_000;
 
 /**
- * Compress a PDF via the external PDF Processor service (Ghostscript "ebook"
- * preset). Returns the smaller PDF bytes; throws on a non-2xx response. Used by
- * the AI pipeline to shrink a PDF before the Gemini call (smaller payload +
- * fewer tokens). Like `watermarkPdf`, this hits the concurrency-limited service
- * and so is only ever called from the throttled queue consumer.
- */
-export const compressPdf = async (
-  env: Bindings,
-  pdf: ArrayBuffer,
-): Promise<ArrayBuffer> => {
-  const form = new FormData();
-  form.append("pdf", new Blob([pdf], { type: "application/pdf" }), "upload.pdf");
-
-  const res = await fetch(`${env.PDF_PROCESSOR_URL}/api/pdfs/compress`, {
-    method: "POST",
-    headers: { "X-API-Key": env.PDF_PROCESSOR_API_KEY },
-    body: form,
-    signal: AbortSignal.timeout(PDF_PROCESSOR_TIMEOUT_MS),
-  });
-
-  if (!res.ok) {
-    let message = `PDF compression failed (${res.status})`;
-    try {
-      const body = (await res.json()) as { message?: string };
-      if (body?.message) message = body.message;
-    } catch {
-      // Non-JSON error body — keep the status-based message.
-    }
-    throw new Error(message);
-  }
-
-  return res.arrayBuffer();
-};
-
-/**
  * Build the top-header watermark text for a submission. Branding plus the
  * uploader's name, clamped to the service's 255-char limit.
  */

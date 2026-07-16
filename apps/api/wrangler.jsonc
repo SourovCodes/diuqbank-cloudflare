@@ -61,24 +61,18 @@
   //  - `0 */6 * * *` runs the backup job (src/lib/backup.ts): writes the
   //    referenced-files manifest + a fresh D1 SQL dump to BACKUP_BUCKET.
   "triggers": { "crons": ["*/15 * * * *", "0 */6 * * *"] },
-  // Two throttled queues, one consumer (src/queue.ts dispatches on `kind`):
+  // One throttled queue (consumer: src/queue.ts):
   //  - diuqbank-pdf: watermark jobs. Bounds concurrent load on the external
   //    PDF Processor. Host limits (100 entry processes, 4 cores, 4G RAM) sit
   //    at a few percent; much of each job's wall time is R2 I/O, not
   //    Ghostscript, so 15 in-flight jobs is comfortable. If jobs start
   //    brushing the 120s client timeout under load, lower this first.
-  //  - diuqbank-gemini: AI auto-submission (compress + Gemini call).
-  //    max_concurrency MUST stay 1 — Gemini calls are strictly serialized;
-  //    at no point may two run at once. (Its compress step adds at most one
-  //    concurrent request on top of the PDF queue's 15.)
   // Create the queues before first deploy:
   //   wrangler queues create diuqbank-pdf
-  //   wrangler queues create diuqbank-gemini
   //   wrangler queues create diuqbank-pdf-dlq
   "queues": {
     "producers": [
-      { "queue": "diuqbank-pdf", "binding": "PDF_QUEUE" },
-      { "queue": "diuqbank-gemini", "binding": "GEMINI_QUEUE" }
+      { "queue": "diuqbank-pdf", "binding": "PDF_QUEUE" }
     ],
     "consumers": [
       {
@@ -87,28 +81,15 @@
         "max_concurrency": 15,
         "max_retries": 3,
         "dead_letter_queue": "diuqbank-pdf-dlq"
-      },
-      {
-        "queue": "diuqbank-gemini",
-        "max_batch_size": 1,
-        "max_concurrency": 1,
-        "max_retries": 3,
-        "dead_letter_queue": "diuqbank-pdf-dlq"
       }
     ]
   },
   // Per-caller rate limiters (colo-local, no infra to provision). They cap how
-  // fast a single user/IP can flood the shared PDF queue, the paid Gemini path,
-  // and the login endpoint. `period` supports 10 or 60 seconds; `namespace_id`
-  // just has to be unique per limiter. See src/lib/rate-limit.ts.
+  // fast a single user/IP can flood the shared PDF queue and the login
+  // endpoint. `period` supports 10 or 60 seconds; `namespace_id` just has to
+  // be unique per limiter. See src/lib/rate-limit.ts.
   "unsafe": {
     "bindings": [
-      {
-        "name": "AUTO_SUBMISSION_RATE_LIMITER",
-        "type": "ratelimit",
-        "namespace_id": "1001",
-        "simple": { "limit": 15, "period": 60 }
-      },
       {
         "name": "SUBMISSION_UPLOAD_RATE_LIMITER",
         "type": "ratelimit",
@@ -149,9 +130,6 @@
       "ADMIN_EMAIL",
       // X-API-Key for the PDF Processor service (local dev: `.dev.vars`).
       "PDF_PROCESSOR_API_KEY",
-      // Google AI Studio key for Gemini (auto-submission extraction). Sent as
-      // the `x-goog-api-key` header. Local dev: `.dev.vars`.
-      "GEMINI_API_KEY",
       // reCAPTCHA v3 secret for verifying view-count tokens (siteverify).
       // Local dev: `.dev.vars`.
       "RECAPTCHA_SECRET_KEY",

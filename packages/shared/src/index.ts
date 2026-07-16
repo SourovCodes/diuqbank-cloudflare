@@ -20,8 +20,7 @@ export const PDF_MIME_TYPE = "application/pdf";
 
 /**
  * The only exam types the platform accepts, in display order. Enforced by the
- * API (request schemas + the auto-submission publish path) and used by the web
- * app to render exam-type dropdowns.
+ * API (request schemas) and used by the web app to render exam-type dropdowns.
  */
 export const ALLOWED_EXAM_TYPES = [
   "Midterm",
@@ -38,15 +37,6 @@ export const canonicalExamType = (name: string): AllowedExamType | null =>
   ALLOWED_EXAM_TYPES.find(
     (t) => t.toLowerCase() === name.trim().toLowerCase(),
   ) ?? null;
-
-/**
- * Feature flag (temporary kill switch): when `false`, the AI auto-submission
- * upload path is disabled — the API rejects `POST /auto-submissions` with 503
- * and the web app hides every upload entry point and shows a "paused" notice.
- * Viewing/deleting existing submissions is unaffected. Flip back to `true` and
- * redeploy both apps to re-enable.
- */
-export const AUTO_SUBMISSIONS_ENABLED: boolean = false;
 
 /** Default page size for paginated list endpoints (matches `pageFields`). */
 export const DEFAULT_PER_PAGE = 20;

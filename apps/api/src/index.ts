@@ -12,9 +12,9 @@ import { handleQueue } from "./queue";
 import { MAX_PDF_BYTES } from "@diuqbank/shared";
 import admin from "./routes/admin";
 import auth from "./routes/auth";
-import autoSubmissions from "./routes/auto-submissions";
 import contributors from "./routes/contributors";
 import filterOptions from "./routes/filter-options";
+import manualSubmissions from "./routes/manual-submissions";
 import questions from "./routes/questions";
 import submissions from "./routes/submissions";
 import type { AppEnv, Bindings } from "./types";
@@ -124,7 +124,7 @@ app.route("/contributors", contributors);
 app.route("/questions", questions);
 app.route("/submissions", submissions);
 app.route("/filter-options", filterOptions);
-app.route("/auto-submissions", autoSubmissions);
+app.route("/manual-submissions", manualSubmissions);
 app.route("/admin", admin);
 
 // ---------------------------------------------------------------------------
@@ -181,11 +181,10 @@ app.onError((err, c) => {
 app.notFound((c) => c.json({ error: "Not found" }, 404));
 
 // The Worker exports the HTTP handler, the queue consumer, and the cron
-// consumer. The queue handler drains both throttled queues — PDF_QUEUE
-// (watermarking; bounds PDF Processor load) and GEMINI_QUEUE (AI
-// auto-submission; concurrency 1 so Gemini calls never overlap). The
-// scheduled handler flushes buffered submission views from Analytics Engine
-// into D1 every 15 minutes (see src/cron.ts).
+// consumer. The queue handler drains the throttled PDF_QUEUE (watermarking;
+// bounds PDF Processor load). The scheduled handler flushes buffered
+// submission views from Analytics Engine into D1 every 15 minutes (see
+// src/cron.ts).
 export default {
   fetch: app.fetch,
   queue: handleQueue,

@@ -132,9 +132,8 @@ drop tables/columns need the owner's approval.
 ## Gotchas
 
 - Verify before declaring done: `pnpm typecheck && pnpm lint` (from the root).
-- Secrets (`JWT_SECRET`, `ADMIN_EMAIL`, `PDF_PROCESSOR_API_KEY`,
-  `GEMINI_API_KEY`) are Worker secrets; do not commit them. Local dev uses
-  `apps/api/.dev.vars`.
+- Secrets (`JWT_SECRET`, `ADMIN_EMAIL`, `PDF_PROCESSOR_API_KEY`) are Worker
+  secrets; do not commit them. Local dev uses `apps/api/.dev.vars`.
 - Do not install `@cloudflare/workers-types`; `wrangler types` generates
   `apps/api/worker-configuration.d.ts`.
 - Migrations are applied via `wrangler d1 migrations apply`, not the Drizzle
